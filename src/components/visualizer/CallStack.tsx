@@ -1,18 +1,21 @@
-import { Panel } from '@/components/ui/Panel';
-import { THEME } from '@/constants/theme';
-import { useVisualizerStore } from '@/store/useVisualizerStore';
-import type { CallStackFrame } from '@/types';
+import { Panel } from "@/components/ui/Panel";
+import { THEME } from "@/constants/theme";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
+import type { CallStackFrame } from "@/types";
 
-const TYPE_LABELS: Record<CallStackFrame['type'], string> = {
-  global: 'global',
-  function: 'fn',
-  method: 'method',
-  async: 'async',
-  generator: 'gen',
+const TYPE_LABELS: Record<CallStackFrame["type"], string> = {
+  global: "global",
+  function: "fn",
+  method: "method",
+  async: "async",
+  generator: "gen",
 };
 
 export function CallStack() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
+  const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
+  const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
+
   const frames = currentStep?.callStack ?? [];
   // Stack is displayed top-to-bottom with most recent (top of stack) first
   const reversed = [...frames].reverse();
@@ -26,29 +29,45 @@ export function CallStack() {
     >
       {reversed.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>Empty</span>
+          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>
+            Empty
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {reversed.map((frame) => {
             const color = frame.color ?? THEME.colors.border.callStack;
+            const isHovered = hoveredFrameId === frame.id;
             return (
               <div
                 key={frame.id}
                 className="px-3 py-2 rounded"
                 style={{
                   backgroundColor: THEME.colors.bg.elevated,
-                  border: `1px solid ${color}44`,
+                  border: `1px solid ${isHovered ? color : `${color}44`}`,
                   borderLeftWidth: 3,
                   borderLeftColor: color,
-                  borderLeftStyle: 'solid',
+                  borderLeftStyle: "solid",
                   color: THEME.colors.text.primary,
+                  boxShadow: isHovered ? `0 0 12px ${color}50` : "none",
+                  transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+                  cursor: "pointer",
                 }}
+                onMouseEnter={() => setHoveredFrameId(frame.id)}
+                onMouseLeave={() => setHoveredFrameId(null)}
               >
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span style={{ color, fontSize: 10, lineHeight: 1 }}>●</span>
-                    <span style={{ fontFamily: THEME.fonts.code, fontSize: 13, fontWeight: 600 }}>
+                    <span style={{ color, fontSize: 10, lineHeight: 1 }}>
+                      ●
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: THEME.fonts.code,
+                        fontSize: 13,
+                        fontWeight: 600,
+                      }}
+                    >
                       {frame.name}
                     </span>
                   </div>
@@ -58,7 +77,7 @@ export function CallStack() {
                       fontFamily: THEME.fonts.code,
                       color,
                       backgroundColor: `${color}22`,
-                      padding: '1px 5px',
+                      padding: "1px 5px",
                       borderRadius: 4,
                       flexShrink: 0,
                     }}
@@ -66,7 +85,14 @@ export function CallStack() {
                     {TYPE_LABELS[frame.type]}
                   </span>
                 </div>
-                <div style={{ fontSize: 11, color: THEME.colors.text.muted, marginTop: 2, fontFamily: THEME.fonts.code }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: THEME.colors.text.muted,
+                    marginTop: 2,
+                    fontFamily: THEME.fonts.code,
+                  }}
+                >
                   line {frame.line}, col {frame.column}
                 </div>
               </div>

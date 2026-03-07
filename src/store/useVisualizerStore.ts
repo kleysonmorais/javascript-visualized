@@ -1,16 +1,17 @@
-import { create } from 'zustand';
-import type { ExecutionStep, PlaybackSpeed } from '@/types';
-import { mockSteps } from '@/lib/mockSteps';
+import { create } from "zustand";
+import type { ExecutionStep, PlaybackSpeed } from "@/types";
+import { generateSteps } from "@/engine";
+import { mockSteps } from "@/lib/mockSteps";
 
-const DEFAULT_SOURCE_CODE = `setTimeout(() => {
-  console.log("2000ms");
-}, 2000);
+const DEFAULT_SOURCE_CODE = `function multiply(a, b) {
+  const result = a * b;
+  return result;
+}
 
-setTimeout(() => {
-  console.log("100ms");
-}, 100);
-
-console.log("End of script");`;
+const x = 10;
+const greeting = "Hello";
+const answer = multiply(3, 4);
+console.log(answer);`;
 
 interface VisualizerStore {
   // Source code
@@ -41,6 +42,22 @@ interface VisualizerStore {
   totalSteps: number;
   hasNext: boolean;
   hasPrevious: boolean;
+
+  // Engine
+  isRunning: boolean;
+  error: string | null;
+  errorLine: number | null;
+  runCode: () => void;
+  clearError: () => void;
+  resetToEdit: () => void;
+
+  // Hover state (for memory interactions)
+  hoveredFrameId: string | null;
+  hoveredHeapId: string | null;
+  hoveredPointerId: string | null;
+  setHoveredFrameId: (id: string | null) => void;
+  setHoveredHeapId: (id: string | null) => void;
+  setHoveredPointerId: (id: string | null) => void;
 
   // Mock data
   loadMockData: () => void;
@@ -128,6 +145,83 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
   hasNext: false,
   hasPrevious: false,
 
+  // Engine state
+  isRunning: false,
+  error: null,
+  errorLine: null,
+  runCode: () => {
+    const { sourceCode } = get();
+    set({ isRunning: true, error: null, errorLine: null });
+
+    try {
+      const result = generateSteps(sourceCode);
+
+      if (result.success) {
+        set({
+          steps: result.steps,
+          currentStepIndex: 0,
+          currentStep: result.steps[0] ?? null,
+          totalSteps: result.steps.length,
+          hasNext: result.steps.length > 1,
+          hasPrevious: false,
+          isRunning: false,
+          isPlaying: false,
+        });
+      } else {
+        const errorMsg = result.error.line
+          ? `Line ${result.error.line}: ${result.error.message}`
+          : result.error.message;
+        set({
+          error: errorMsg,
+          errorLine: result.error.line ?? null,
+          steps: [],
+          currentStepIndex: 0,
+          currentStep: null,
+          totalSteps: 0,
+          hasNext: false,
+          hasPrevious: false,
+          isRunning: false,
+          isPlaying: false,
+        });
+      }
+    } catch (err) {
+      set({
+        error:
+          err instanceof Error ? err.message : "An unexpected error occurred",
+        errorLine: null,
+        steps: [],
+        currentStepIndex: 0,
+        currentStep: null,
+        totalSteps: 0,
+        hasNext: false,
+        hasPrevious: false,
+        isRunning: false,
+        isPlaying: false,
+      });
+    }
+  },
+  clearError: () => set({ error: null, errorLine: null }),
+  resetToEdit: () =>
+    set({
+      steps: [],
+      currentStepIndex: 0,
+      currentStep: null,
+      totalSteps: 0,
+      hasNext: false,
+      hasPrevious: false,
+      isPlaying: false,
+      error: null,
+      errorLine: null,
+    }),
+
+  // Hover state
+  hoveredFrameId: null,
+  hoveredHeapId: null,
+  hoveredPointerId: null,
+  setHoveredFrameId: (id) => set({ hoveredFrameId: id }),
+  setHoveredHeapId: (id) => set({ hoveredHeapId: id }),
+  setHoveredPointerId: (id) => set({ hoveredPointerId: id }),
+
   loadMockData: () =>
     set({
       steps: mockSteps,
@@ -147,5 +241,10 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
       hasNext: false,
       hasPrevious: false,
       isPlaying: false,
+      error: null,
+      errorLine: null,
+      hoveredFrameId: null,
+      hoveredHeapId: null,
+      hoveredPointerId: null,
     }),
 }));

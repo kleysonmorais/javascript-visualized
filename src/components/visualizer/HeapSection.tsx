@@ -1,75 +1,116 @@
-import { THEME } from '@/constants/theme';
-import type { HeapObject, HeapObjectProperty } from '@/types';
+import { THEME } from "@/constants/theme";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
+import type { HeapObject, HeapObjectProperty } from "@/types";
 
 function primitiveColor(displayValue: string): string {
-  if (displayValue === 'undefined' || displayValue === 'null') return THEME.colors.text.muted;
-  if (displayValue === 'true' || displayValue === 'false') return THEME.colors.syntax.keyword;
+  if (displayValue === "undefined" || displayValue === "null")
+    return THEME.colors.text.muted;
+  if (displayValue === "true" || displayValue === "false")
+    return THEME.colors.syntax.keyword;
   if (/^-?\d/.test(displayValue)) return THEME.colors.syntax.number;
-  if (displayValue.startsWith('"') || displayValue.startsWith("'")) return THEME.colors.syntax.string;
+  if (displayValue.startsWith('"') || displayValue.startsWith("'"))
+    return THEME.colors.syntax.string;
   return THEME.colors.text.primary;
 }
 
 function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
-  if (prop.valueType === 'function') {
+  if (prop.valueType === "function") {
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
         <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
         {prop.pointerColor && (
-          <span style={{ color: prop.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+          <span
+            style={{ color: prop.pointerColor, fontSize: 9, marginLeft: 3 }}
+          >
+            ●
+          </span>
         )}
       </span>
     );
   }
-  if (prop.valueType === 'object') {
+  if (prop.valueType === "object") {
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
         <span style={{ color: THEME.colors.text.secondary }}>[Ptr]</span>
         {prop.pointerColor && (
-          <span style={{ color: prop.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+          <span
+            style={{ color: prop.pointerColor, fontSize: 9, marginLeft: 3 }}
+          >
+            ●
+          </span>
         )}
       </span>
     );
   }
   return (
-    <span style={{ fontFamily: THEME.fonts.code, fontSize: 11, color: primitiveColor(prop.displayValue) }}>
+    <span
+      style={{
+        fontFamily: THEME.fonts.code,
+        fontSize: 11,
+        color: primitiveColor(prop.displayValue),
+      }}
+    >
       {prop.displayValue}
     </span>
   );
 }
 
-function HeapCard({ obj }: { obj: HeapObject }) {
+interface HeapCardProps {
+  obj: HeapObject;
+  isHighlighted: boolean;
+}
+
+function HeapCard({ obj, isHighlighted }: HeapCardProps) {
+  const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+
   return (
     <div
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.sm,
-        padding: '6px 8px',
-        border: `1px solid ${obj.color}33`,
+        padding: "6px 8px",
+        border: `1px solid ${isHighlighted ? obj.color : `${obj.color}33`}`,
+        boxShadow: isHighlighted ? `0 0 12px ${obj.color}50` : "none",
+        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+        cursor: "pointer",
       }}
+      onMouseEnter={() => setHoveredHeapId(obj.id)}
+      onMouseLeave={() => setHoveredHeapId(null)}
     >
       <div className="flex items-start gap-2">
-        <span style={{ color: obj.color, fontSize: 11, lineHeight: 1.6, flexShrink: 0 }}>●</span>
+        <span
+          style={{
+            color: obj.color,
+            fontSize: 11,
+            lineHeight: 1.6,
+            flexShrink: 0,
+          }}
+        >
+          ●
+        </span>
         <div style={{ flex: 1, minWidth: 0 }}>
-          {obj.type === 'function' ? (
+          {obj.type === "function" ? (
             <pre
               style={{
                 margin: 0,
                 fontFamily: THEME.fonts.code,
                 fontSize: 11,
                 color: THEME.colors.syntax.function,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-all",
               }}
             >
               {obj.functionSource ?? obj.label}
             </pre>
           ) : obj.properties && obj.properties.length > 0 ? (
             <div style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
-              <span style={{ color: THEME.colors.text.secondary }}>{'{ '}</span>
+              <span style={{ color: THEME.colors.text.secondary }}>{"{ "}</span>
               <div style={{ paddingLeft: 10 }}>
                 {obj.properties.map((prop, i) => (
                   <div key={prop.key} className="flex items-center gap-1">
-                    <span style={{ color: THEME.colors.syntax.variable }}>{prop.key}</span>
+                    <span style={{ color: THEME.colors.syntax.variable }}>
+                      {prop.key}
+                    </span>
                     <span style={{ color: THEME.colors.text.muted }}>:</span>
                     <PropertyValue prop={prop} />
                     {i < obj.properties!.length - 1 && (
@@ -78,10 +119,16 @@ function HeapCard({ obj }: { obj: HeapObject }) {
                   </div>
                 ))}
               </div>
-              <span style={{ color: THEME.colors.text.secondary }}>{' }'}</span>
+              <span style={{ color: THEME.colors.text.secondary }}>{" }"}</span>
             </div>
           ) : (
-            <span style={{ fontFamily: THEME.fonts.code, fontSize: 11, color: THEME.colors.text.primary }}>
+            <span
+              style={{
+                fontFamily: THEME.fonts.code,
+                fontSize: 11,
+                color: THEME.colors.text.primary,
+              }}
+            >
               {obj.label}
             </span>
           )}
@@ -96,12 +143,14 @@ interface HeapSectionProps {
 }
 
 export function HeapSection({ heap }: HeapSectionProps) {
+  const hoveredPointerId = useVisualizerStore((s) => s.hoveredPointerId);
+
   return (
     <div
       style={{
         border: `1px dashed ${THEME.colors.text.muted}55`,
         borderRadius: THEME.radius.sm,
-        padding: '8px 10px',
+        padding: "8px 10px",
       }}
     >
       <div
@@ -111,20 +160,30 @@ export function HeapSection({ heap }: HeapSectionProps) {
           color: THEME.colors.text.muted,
           fontFamily: THEME.fonts.code,
           marginBottom: 8,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
         }}
       >
         Heap
       </div>
       {heap.length === 0 ? (
-        <div style={{ fontSize: 11, color: THEME.colors.text.muted, fontFamily: THEME.fonts.code }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: THEME.colors.text.muted,
+            fontFamily: THEME.fonts.code,
+          }}
+        >
           No heap objects
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {heap.map((obj) => (
-            <HeapCard key={obj.id} obj={obj} />
+            <HeapCard
+              key={obj.id}
+              obj={obj}
+              isHighlighted={hoveredPointerId === obj.id}
+            />
           ))}
         </div>
       )}
