@@ -1,11 +1,9 @@
 import {
   run,
   lastStep,
-  findStep,
   findStepWithFrame,
   getMemoryEntry,
   getHeapObject,
-  getMemoryEntryNames,
 } from "./helpers";
 
 describe("Interpreter — Memory Tracking", () => {

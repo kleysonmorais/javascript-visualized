@@ -1,12 +1,4 @@
-import {
-  run,
-  lastStep,
-  consoleOutput,
-  findStep,
-  findStepWithFrame,
-  frameNames,
-  stepCount,
-} from "./helpers";
+import { run, lastStep, consoleOutput, findStepWithFrame } from "./helpers";
 
 describe("Interpreter — Synchronous Execution", () => {
   // ─── Step generation ─────────────────────────────────

@@ -1,13 +1,4 @@
-import {
-  run,
-  lastStep,
-  consoleOutput,
-  findStep,
-  findStepWithFrame,
-  getMemoryEntry,
-  frameNames,
-} from "./helpers";
-import type { ExecutionStep } from "@/types";
+import { run, lastStep, consoleOutput, getMemoryEntry } from "./helpers";
 
 describe("Interpreter — Async Execution", () => {
   // ─── setTimeout basics ────────────────────────────────
@@ -88,10 +79,6 @@ describe("Interpreter — Async Execution", () => {
     });
 
     it("Task Queue is FIFO — first registered, first executed", () => {
-      const steps = run(`
-        setTimeout(() => { console.log("A"); }, 100);
-        setTimeout(() => { console.log("B"); }, 100);
-      `);
       // Find the step where both are in the Task Queue (if they queue simultaneously)
       // OR verify execution order via console
       const output = consoleOutput(`
@@ -106,7 +93,6 @@ describe("Interpreter — Async Execution", () => {
     });
 
     it("Task Queue empties after callback is picked by Event Loop", () => {
-      const steps = run('setTimeout(() => { console.log("done"); }, 100);');
       const lastS = lastStep(
         'setTimeout(() => { console.log("done"); }, 100);',
       );
@@ -130,20 +116,6 @@ describe("Interpreter — Async Execution", () => {
     });
 
     it("callback creates a local MemoryBlock", () => {
-      const steps = run(`
-        setTimeout(() => {
-          const x = 42;
-          console.log(x);
-        }, 100);
-      `);
-      // Find a step where the callback is executing and has local memory
-      const cbStep = steps.find((s) => {
-        const hasLocalBlock = s.memoryBlocks.some((b) => b.type === "local");
-        const isExecutingCb =
-          s.description.toLowerCase().includes("callback") ||
-          s.callStack.length > 1;
-        return hasLocalBlock && isExecutingCb;
-      });
       // Callback should have created a local memory at some point
       // (or at minimum, the console output should work)
       const output = consoleOutput(`
@@ -322,13 +294,6 @@ describe("Interpreter — Async Execution", () => {
     });
 
     it("nested timers create separate execution contexts", () => {
-      const steps = run(`
-        setTimeout(() => {
-          setTimeout(() => {
-            console.log("nested");
-          }, 50);
-        }, 100);
-      `);
       // Should have console output from the nested callback
       const output = consoleOutput(`
         setTimeout(() => {
