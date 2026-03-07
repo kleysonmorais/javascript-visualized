@@ -3,21 +3,11 @@ import type { ExecutionStep, PlaybackSpeed } from "@/types";
 import { generateSteps } from "@/engine";
 import { mockSteps } from "@/lib/mockSteps";
 
-const DEFAULT_SOURCE_CODE = `console.log("Start");
-
-setTimeout(() => {
-  console.log("Timeout 1 - 2000ms");
-}, 2000);
-
-setTimeout(() => {
-  console.log("Timeout 2 - 100ms");
-}, 100);
-
-setTimeout(() => {
-  console.log("Timeout 3 - 0ms");
-}, 0);
-
-console.log("End");`;
+const DEFAULT_SOURCE_CODE = `// Classic Event Loop quiz
+console.log("1");
+setTimeout(() => console.log("2"), 0);
+console.log("3");
+// Output: 1, 3, 2`;
 
 interface VisualizerStore {
   // Source code
