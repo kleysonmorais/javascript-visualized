@@ -485,7 +485,8 @@ export class Interpreter {
       // Update Event Loop phase
       this.eventLoop = {
         phase: "draining-microtasks",
-        description: "Draining Microtask Queue",
+        description:
+          "Event Loop: draining Microtask Queue (priority over Task Queue)",
       };
 
       // Remove from visualization queue
@@ -965,6 +966,26 @@ export class Interpreter {
   private resolveValueForMemory(value: unknown): ResolvedValue {
     const valueType = getValueType(value);
     const display = displayValue(value);
+
+    // Handle Promise wrappers — link to existing heap object
+    if (this.isPromiseWrapper(value)) {
+      const promiseId = (value as PromiseWrapper).promiseId;
+      const internalPromise = this.promises.get(promiseId);
+      if (internalPromise) {
+        const heapObj = this.heap.find(
+          (h) => h.id === internalPromise.heapObjectId,
+        );
+        if (heapObj) {
+          return {
+            value,
+            displayValue: "[Pointer]",
+            valueType: "object",
+            heapReferenceId: heapObj.id,
+            pointerColor: heapObj.color,
+          };
+        }
+      }
+    }
 
     if (valueType === "primitive") {
       return {
@@ -1803,6 +1824,79 @@ export class Interpreter {
           );
         }
       }
+
+      // Handle native array methods
+      const arrayMethods = [
+        "join",
+        "push",
+        "pop",
+        "shift",
+        "unshift",
+        "slice",
+        "splice",
+        "concat",
+        "indexOf",
+        "includes",
+        "reverse",
+        "sort",
+        "map",
+        "filter",
+        "reduce",
+        "forEach",
+        "find",
+        "findIndex",
+        "some",
+        "every",
+        "flat",
+        "flatMap",
+        "fill",
+        "copyWithin",
+        "entries",
+        "keys",
+        "values",
+        "toString",
+        "toLocaleString",
+      ];
+      if (arrayMethods.includes(propName)) {
+        const objValue = this.evaluateExpression(memberCallee.object);
+        if (Array.isArray(objValue)) {
+          return this.handleArrayMethodCall(objValue, propName, node);
+        }
+      }
+
+      // Handle String methods
+      const stringMethods = [
+        "charAt",
+        "charCodeAt",
+        "concat",
+        "includes",
+        "endsWith",
+        "indexOf",
+        "lastIndexOf",
+        "match",
+        "padEnd",
+        "padStart",
+        "repeat",
+        "replace",
+        "replaceAll",
+        "search",
+        "slice",
+        "split",
+        "startsWith",
+        "substring",
+        "toLowerCase",
+        "toUpperCase",
+        "trim",
+        "trimEnd",
+        "trimStart",
+        "toString",
+      ];
+      if (stringMethods.includes(propName)) {
+        const objValue = this.evaluateExpression(memberCallee.object);
+        if (typeof objValue === "string") {
+          return this.handleStringMethodCall(objValue, propName, node);
+        }
+      }
     }
 
     // Regular function call
@@ -1970,6 +2064,44 @@ export class Interpreter {
       `${calleeName} called`,
       code,
     );
+  }
+
+  // Handle native array method calls
+  private handleArrayMethodCall(
+    arr: unknown[],
+    method: string,
+    node: CallExpressionNode,
+  ): unknown {
+    const args = node.arguments.map((arg) =>
+      this.evaluateExpression(arg as ExpressionNode),
+    );
+
+    // Type-safe method invocation
+    type ArrayMethod = keyof unknown[];
+    const fn = (arr as unknown[])[method as ArrayMethod];
+    if (typeof fn === "function") {
+      return fn.apply(arr, args);
+    }
+    return undefined;
+  }
+
+  // Handle native string method calls
+  private handleStringMethodCall(
+    str: string,
+    method: string,
+    node: CallExpressionNode,
+  ): unknown {
+    const args = node.arguments.map((arg) =>
+      this.evaluateExpression(arg as ExpressionNode),
+    );
+
+    // Type-safe method invocation
+    type StringMethod = keyof string;
+    const fn = (str as string)[method as StringMethod];
+    if (typeof fn === "function") {
+      return (fn as (...args: unknown[]) => unknown).apply(str, args);
+    }
+    return undefined;
   }
 
   private handleFunctionCall(node: CallExpressionNode): unknown {
@@ -2295,6 +2427,7 @@ export class Interpreter {
       resolveValue: value,
       resultPromiseId: reaction.resultPromiseId,
       capturedEnvStack: this.envStack.map((env) => ({ ...env })),
+      preserveValue: reaction.preserveValue,
     };
     this.pendingMicrotasks.push(microtask);
 
@@ -2339,7 +2472,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Creating new Promise — state: pending`,
+      `new Promise() — executor will run immediately`,
       code,
     );
 
@@ -2392,7 +2525,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(executorNode),
       this.getColumn(executorNode),
-      "Executing Promise executor",
+      "Executing Promise executor — runs synchronously",
       executorSource,
     );
 
@@ -2439,7 +2572,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise.resolve(${displayValue(value)})`,
+        `Promise.resolve(${displayValue(value)}) — creates fulfilled Promise`,
         code,
       );
       return wrapper;
@@ -2457,7 +2590,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise.reject(${displayValue(reason)})`,
+        `Promise.reject(${displayValue(reason)}) — creates rejected Promise`,
         code,
       );
       return wrapper;
@@ -2669,6 +2802,23 @@ export class Interpreter {
         if (sourcePromise.state === "rejected") {
           this.rejectPromise(resultPromise, sourcePromise.result);
         }
+      } else {
+        // Empty .then() — pass value through to next promise
+        if (sourcePromise.state === "fulfilled") {
+          this.resolvePromise(resultPromise, sourcePromise.result);
+        } else if (sourcePromise.state === "rejected") {
+          this.rejectPromise(resultPromise, sourcePromise.result);
+        } else {
+          // pending — add identity reactions to propagate when settled
+          const identityFulfillReaction: PromiseReaction = {
+            id: `reaction-${this.reactionCounter++}`,
+            type: "fulfill",
+            callbackNode: null as unknown,
+            callbackSource: "(identity)",
+            resultPromiseId: resultPromise.id,
+          };
+          sourcePromise.fulfillReactions.push(identityFulfillReaction);
+        }
       }
 
       if (onRejectedNode) {
@@ -2719,6 +2869,7 @@ export class Interpreter {
           callbackNode: onFinallyNode,
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
+          preserveValue: true, // .finally() preserves original value
         };
         const rejectReaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
@@ -2726,6 +2877,7 @@ export class Interpreter {
           callbackNode: onFinallyNode,
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
+          preserveValue: true, // .finally() preserves original value
         };
 
         if (sourcePromise.state === "fulfilled") {
@@ -2740,12 +2892,34 @@ export class Interpreter {
       }
     }
 
-    this.snapshot(
-      this.getLine(node),
-      this.getColumn(node),
-      `.${method}() registered on Promise — callback will execute when ${method === "catch" ? "rejected" : "resolved"}`,
-      code,
-    );
+    // Generate educational description for the step
+    let description: string;
+    if (method === "then") {
+      if (sourcePromise.state === "fulfilled") {
+        description = `.then() — Promise already fulfilled, callback → Microtask Queue`;
+      } else if (sourcePromise.state === "rejected") {
+        description = `.then() skipped — Promise is rejected`;
+      } else {
+        description = `.then() registered — callback queued when Promise settles`;
+      }
+    } else if (method === "catch") {
+      if (sourcePromise.state === "rejected") {
+        description = `.catch() — Promise rejected, callback → Microtask Queue`;
+      } else if (sourcePromise.state === "fulfilled") {
+        description = `.catch() skipped — Promise is fulfilled`;
+      } else {
+        description = `.catch() registered — will handle rejection`;
+      }
+    } else {
+      // finally
+      if (sourcePromise.state !== "pending") {
+        description = `.finally() — callback → Microtask Queue (will run on settle)`;
+      } else {
+        description = `.finally() registered — will run on settle`;
+      }
+    }
+
+    this.snapshot(this.getLine(node), this.getColumn(node), description, code);
 
     return resultWrapper;
   }
@@ -2775,13 +2949,14 @@ export class Interpreter {
 
     this.eventLoop = {
       phase: "draining-microtasks",
-      description: "Draining Microtask Queue",
+      description:
+        "Event Loop: draining Microtask Queue (priority over Task Queue)",
     };
 
     this.snapshot(
       this.getLine(callbackNode),
       this.getColumn(callbackNode),
-      `Event Loop: executing microtask`,
+      `Executing .then()/.catch()/.finally() callback with value: ${displayValue(microtask.resolveValue)}`,
       microtask.callbackSource,
     );
 
@@ -2807,13 +2982,19 @@ export class Interpreter {
     this.popFrame();
 
     // Resolve the result promise with the callback's return value
+    // (or original value if preserveValue is set, e.g. for .finally())
     if (microtask.resultPromiseId) {
       const resultPromise = this.promises.get(microtask.resultPromiseId);
       if (resultPromise) {
-        if (this.isPromiseWrapper(returnVal)) {
+        // For .finally(), preserve the original value instead of using return value
+        const valueToResolve = microtask.preserveValue
+          ? microtask.resolveValue
+          : returnVal;
+
+        if (this.isPromiseWrapper(valueToResolve)) {
           // Callback returned a promise — adopt its state
           const innerPromise = this.promises.get(
-            (returnVal as PromiseWrapper).promiseId,
+            (valueToResolve as PromiseWrapper).promiseId,
           );
           if (innerPromise) {
             if (innerPromise.state === "fulfilled") {
@@ -2832,7 +3013,7 @@ export class Interpreter {
             }
           }
         } else {
-          this.resolvePromise(resultPromise, returnVal);
+          this.resolvePromise(resultPromise, valueToResolve);
         }
       }
     }
@@ -2857,7 +3038,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise resolved with ${displayValue(value)}`,
+        `resolve(${displayValue(value)}) — Promise fulfilled`,
         code,
       );
     } else {
@@ -2865,7 +3046,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise rejected with ${displayValue(value)}`,
+        `reject(${displayValue(value)}) — Promise rejected`,
         code,
       );
     }
