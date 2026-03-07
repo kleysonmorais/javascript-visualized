@@ -7,11 +7,19 @@ function PointerBadge({ color }: { color: string }) {
   );
 }
 
+function primitiveColor(displayValue: string): string {
+  if (displayValue === 'undefined' || displayValue === 'null') return THEME.colors.text.muted;
+  if (displayValue === 'true' || displayValue === 'false') return THEME.colors.syntax.keyword;
+  if (/^-?\d/.test(displayValue)) return THEME.colors.syntax.number;
+  if (displayValue.startsWith('"') || displayValue.startsWith("'")) return THEME.colors.syntax.string;
+  return THEME.colors.text.primary;
+}
+
 function EntryValue({ entry }: { entry: MemoryEntry }) {
   if (entry.valueType === 'function') {
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 12 }}>
-        <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
+        <span style={{ color: THEME.colors.syntax.function, fontWeight: 700 }}>ⓕ</span>
         {entry.pointerColor && <PointerBadge color={entry.pointerColor} />}
       </span>
     );
@@ -19,7 +27,7 @@ function EntryValue({ entry }: { entry: MemoryEntry }) {
   if (entry.valueType === 'object') {
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 12 }}>
-        <span style={{ color: THEME.colors.text.secondary }}>[Pointer]</span>
+        <span style={{ color: THEME.colors.text.muted, fontStyle: 'italic' }}>[Pointer]</span>
         {entry.pointerColor && <PointerBadge color={entry.pointerColor} />}
       </span>
     );
@@ -29,7 +37,7 @@ function EntryValue({ entry }: { entry: MemoryEntry }) {
       style={{
         fontFamily: THEME.fonts.code,
         fontSize: 12,
-        color: THEME.colors.syntax.string,
+        color: primitiveColor(entry.displayValue),
       }}
     >
       {entry.displayValue}
@@ -83,7 +91,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                 style={{
                   fontSize: 12,
                   fontFamily: THEME.fonts.code,
-                  color: THEME.colors.syntax.variable,
+                  color: THEME.colors.text.secondary,
                   flexShrink: 0,
                 }}
               >

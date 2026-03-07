@@ -1,8 +1,9 @@
 import type { ExecutionStep, MemoryBlock } from '@/types';
-import { getFrameColor } from '@/constants/theme';
+import { getFrameColor, getPointerColor } from '@/constants/theme';
 
 const GLOBAL_COLOR = getFrameColor(0); // amber
 const FN_COLOR = getFrameColor(1);     // green
+const FN2_COLOR = getFrameColor(2);    // blue
 
 const globalScope = {
   name: 'Global',
@@ -10,13 +11,51 @@ const globalScope = {
   variables: [],
 };
 
-// Global memory block with no variables yet
+// Global memory — script starts, no variables yet
 const globalMemoryEmpty: MemoryBlock = {
   frameId: 'frame-global',
   label: 'Global Memory',
   type: 'global',
   color: GLOBAL_COLOR,
   entries: [],
+};
+
+// Global memory with the two setTimeout callbacks visible as function refs
+const globalMemoryWithCallbacks: MemoryBlock = {
+  frameId: 'frame-global',
+  label: 'Global Memory',
+  type: 'global',
+  color: GLOBAL_COLOR,
+  entries: [
+    {
+      name: 'person',
+      kind: 'const',
+      valueType: 'object',
+      displayValue: '[Pointer]',
+      heapReferenceId: 'heap-person',
+      pointerColor: getPointerColor(0),
+    },
+    {
+      name: 'greet',
+      kind: 'const',
+      valueType: 'function',
+      displayValue: 'ⓕ',
+      heapReferenceId: 'heap-fn-greet',
+      pointerColor: getPointerColor(1),
+    },
+    {
+      name: 'count',
+      kind: 'let',
+      valueType: 'primitive',
+      displayValue: '0',
+    },
+    {
+      name: 'message',
+      kind: 'const',
+      valueType: 'primitive',
+      displayValue: '"Hello"',
+    },
+  ],
 };
 
 export const mockSteps: ExecutionStep[] = [
@@ -91,7 +130,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', pointerColor: '#ef4444' },
+          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', heapReferenceId: 'heap-cb-2000', pointerColor: getPointerColor(0) },
           { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '2000' },
         ],
       },
@@ -100,7 +139,7 @@ export const mockSteps: ExecutionStep[] = [
       {
         id: 'heap-cb-2000',
         type: 'function',
-        color: '#ef4444',
+        color: getPointerColor(0),
         label: '() => console.log("2000ms")',
         functionSource: '() => console.log("2000ms")',
       },
@@ -198,7 +237,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', pointerColor: '#3b82f6' },
+          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', heapReferenceId: 'heap-cb-100', pointerColor: getPointerColor(1) },
           { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '100' },
         ],
       },
@@ -207,7 +246,7 @@ export const mockSteps: ExecutionStep[] = [
       {
         id: 'heap-cb-100',
         type: 'function',
-        color: '#3b82f6',
+        color: getPointerColor(1),
         label: '() => console.log("100ms")',
         functionSource: '() => console.log("100ms")',
       },
@@ -491,9 +530,115 @@ export const mockSteps: ExecutionStep[] = [
     heap: [],
   },
 
-  // Step 9 — 2000ms timer fires, callback executes, console gets "2000ms"
+  // Step 9 — Heap demo: global scope with object + function refs in heap
   {
     index: 9,
+    line: 2,
+    column: 3,
+    highlightedLine: 2,
+    description: 'Heap demo — object and function references stored on the heap',
+    code: 'greet(person)',
+    callStack: [
+      {
+        id: 'frame-global',
+        name: '<global>',
+        type: 'global',
+        line: 2,
+        column: 3,
+        color: GLOBAL_COLOR,
+        scope: globalScope,
+      },
+      {
+        id: 'frame-greet',
+        name: 'greet',
+        type: 'function',
+        line: 2,
+        column: 3,
+        color: FN2_COLOR,
+        scope: { name: 'greet', type: 'function', variables: [] },
+      },
+    ],
+    webAPIs: [],
+    taskQueue: [],
+    microtaskQueue: [],
+    console: [
+      { id: 'log-1', method: 'log', args: ['"End of script"'], timestamp: 5 },
+      { id: 'log-2', method: 'log', args: ['"100ms"'], timestamp: 8 },
+    ],
+    eventLoop: { phase: 'executing-task', description: 'Executing task' },
+    scopes: [globalScope],
+    memoryBlocks: [
+      globalMemoryWithCallbacks,
+      {
+        frameId: 'frame-greet',
+        label: 'Local: greet',
+        type: 'local',
+        color: FN2_COLOR,
+        entries: [
+          {
+            name: 'person',
+            kind: 'param',
+            valueType: 'object',
+            displayValue: '[Pointer]',
+            heapReferenceId: 'heap-person',
+            pointerColor: getPointerColor(0),
+          },
+          {
+            name: 'isActive',
+            kind: 'let',
+            valueType: 'primitive',
+            displayValue: 'true',
+          },
+          {
+            name: 'retries',
+            kind: 'let',
+            valueType: 'primitive',
+            displayValue: '0',
+          },
+        ],
+      },
+    ],
+    heap: [
+      {
+        id: 'heap-person',
+        type: 'object',
+        color: getPointerColor(0),
+        label: '{ name: "Joe", age: 23, address: [Pointer] }',
+        properties: [
+          { key: 'name', displayValue: '"Joe"', valueType: 'primitive' },
+          { key: 'age', displayValue: '23', valueType: 'primitive' },
+          {
+            key: 'address',
+            displayValue: '[Pointer]',
+            valueType: 'object',
+            heapReferenceId: 'heap-address',
+            pointerColor: getPointerColor(3),
+          },
+        ],
+      },
+      {
+        id: 'heap-address',
+        type: 'object',
+        color: getPointerColor(3),
+        label: '{ city: "NY", zip: "10001" }',
+        properties: [
+          { key: 'city', displayValue: '"NY"', valueType: 'primitive' },
+          { key: 'zip', displayValue: '"10001"', valueType: 'primitive' },
+        ],
+      },
+      {
+        id: 'heap-fn-greet',
+        type: 'function',
+        color: getPointerColor(1),
+        label: 'function greet(person) { ... }',
+        functionSource: 'function greet(person) {\n  console.log("Hello " + person.name);\n}',
+      },
+    ],
+  },
+
+  // Step 10 — 2000ms timer fires, callback executes, console gets "2000ms"
+  {
+    index: 10,
     line: 2,
     column: 3,
     highlightedLine: 2,
@@ -535,7 +680,7 @@ export const mockSteps: ExecutionStep[] = [
     console: [
       { id: 'log-1', method: 'log', args: ['"End of script"'], timestamp: 5 },
       { id: 'log-2', method: 'log', args: ['"100ms"'], timestamp: 8 },
-      { id: 'log-3', method: 'log', args: ['"2000ms"'], timestamp: 9 },
+      { id: 'log-3', method: 'log', args: ['"2000ms"'], timestamp: 10 },
     ],
     eventLoop: { phase: 'executing-task', description: 'Executing task' },
     scopes: [{ name: 'anonymous', type: 'function', variables: [] }],

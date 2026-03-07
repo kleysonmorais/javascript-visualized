@@ -1,6 +1,14 @@
 import { THEME } from '@/constants/theme';
 import type { HeapObject, HeapObjectProperty } from '@/types';
 
+function primitiveColor(displayValue: string): string {
+  if (displayValue === 'undefined' || displayValue === 'null') return THEME.colors.text.muted;
+  if (displayValue === 'true' || displayValue === 'false') return THEME.colors.syntax.keyword;
+  if (/^-?\d/.test(displayValue)) return THEME.colors.syntax.number;
+  if (displayValue.startsWith('"') || displayValue.startsWith("'")) return THEME.colors.syntax.string;
+  return THEME.colors.text.primary;
+}
+
 function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
   if (prop.valueType === 'function') {
     return (
@@ -23,7 +31,7 @@ function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
     );
   }
   return (
-    <span style={{ fontFamily: THEME.fonts.code, fontSize: 11, color: THEME.colors.syntax.string }}>
+    <span style={{ fontFamily: THEME.fonts.code, fontSize: 11, color: primitiveColor(prop.displayValue) }}>
       {prop.displayValue}
     </span>
   );
@@ -88,8 +96,6 @@ interface HeapSectionProps {
 }
 
 export function HeapSection({ heap }: HeapSectionProps) {
-  if (heap.length === 0) return null;
-
   return (
     <div
       style={{
@@ -111,11 +117,17 @@ export function HeapSection({ heap }: HeapSectionProps) {
       >
         Heap
       </div>
-      <div className="flex flex-col gap-2">
-        {heap.map((obj) => (
-          <HeapCard key={obj.id} obj={obj} />
-        ))}
-      </div>
+      {heap.length === 0 ? (
+        <div style={{ fontSize: 11, color: THEME.colors.text.muted, fontFamily: THEME.fonts.code }}>
+          No heap objects
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {heap.map((obj) => (
+            <HeapCard key={obj.id} obj={obj} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
