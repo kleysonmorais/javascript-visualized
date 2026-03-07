@@ -1,4 +1,4 @@
-import { Play, Loader2, RotateCcw } from "lucide-react";
+import { Play, Loader2, RotateCcw, ChevronDown } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { CallStack } from "@/components/visualizer/CallStack";
@@ -14,6 +14,21 @@ import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
+function FlowArrow({ visible }: { visible: boolean }) {
+  return (
+    <div
+      className="flex justify-center"
+      style={{
+        height: 16,
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+      }}
+    >
+      <ChevronDown size={16} color={THEME.colors.text.muted} />
+    </div>
+  );
+}
+
 export function AppShell() {
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);
@@ -23,6 +38,9 @@ export function AppShell() {
   const clearError = useVisualizerStore((s) => s.clearError);
 
   const hasSteps = steps.length > 0;
+  const currentStep = useVisualizerStore((s) => s.currentStep);
+  const hasWebAPIs = (currentStep?.webAPIs?.length ?? 0) > 0;
+  const hasTaskQueue = (currentStep?.taskQueue?.length ?? 0) > 0;
 
   useAutoPlay();
   useKeyboardShortcuts();
@@ -165,15 +183,21 @@ export function AppShell() {
         </div>
 
         {/* Right column: Visualizer panels */}
-        <div className="flex flex-col gap-4 w-1/2">
+        <div className="flex flex-col w-1/2" style={{ gap: 0 }}>
           {/* Top row: Call Stack + Memory */}
           <div className="flex gap-4 flex-1">
             <CallStack />
             <MemoryPanel />
           </div>
 
+          {/* Flow indicator: Call Stack/Memory → Web APIs */}
+          <FlowArrow visible={hasWebAPIs} />
+
           {/* Middle row: Web APIs */}
           <WebAPIs />
+
+          {/* Flow indicator: Web APIs → Task Queue */}
+          <FlowArrow visible={hasTaskQueue} />
 
           {/* Bottom row: Event Loop + Task Queue + Microtask Queue */}
           <div className="flex gap-4">

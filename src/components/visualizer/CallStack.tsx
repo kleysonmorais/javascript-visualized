@@ -29,8 +29,11 @@ export function CallStack() {
     >
       {reversed.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>
-            Empty
+          <span
+            className="text-center text-xs"
+            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+          >
+            Run code to see the Call Stack
           </span>
         </div>
       ) : (

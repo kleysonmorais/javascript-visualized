@@ -1,6 +1,31 @@
 import { Panel } from '@/components/ui/Panel';
 import { THEME } from '@/constants/theme';
 import { useVisualizerStore } from '@/store/useVisualizerStore';
+import type { WebAPIEntry } from '@/types';
+
+function statusBorderColor(status: WebAPIEntry['status']): string {
+  if (status === 'running') return THEME.colors.border.webAPIs;
+  if (status === 'cancelled') return THEME.colors.status.error;
+  return THEME.colors.status.completed;
+}
+
+function StatusDot({ status }: { status: WebAPIEntry['status'] }) {
+  const color =
+    status === 'running'
+      ? THEME.colors.status.running
+      : status === 'cancelled'
+      ? THEME.colors.status.error
+      : THEME.colors.status.completed;
+
+  return (
+    <span className="flex items-center gap-1" style={{ fontSize: 11, color }}>
+      <span style={{ fontSize: 8 }}>●</span>
+      <span style={{ textDecoration: status === 'cancelled' ? 'line-through' : 'none' }}>
+        {status}
+      </span>
+    </span>
+  );
+}
 
 export function WebAPIs() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
@@ -11,69 +36,146 @@ export function WebAPIs() {
       title="Web APIs"
       borderColor={THEME.colors.border.webAPIs}
       glowEffect={THEME.glow.webAPIs}
-      className="flex-1"
     >
       {activeEntries.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>No active APIs</span>
+          <span
+            className="text-center text-xs"
+            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+          >
+            Web APIs will appear here when the code uses setTimeout, fetch, etc.
+          </span>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 overflow-y-auto">
           {activeEntries.map((entry) => {
-            const progress = entry.delay && entry.elapsed !== undefined
-              ? Math.min(entry.elapsed / entry.delay, 1)
-              : 0;
             const isCompleted = entry.status === 'completed';
+            const isCancelled = entry.status === 'cancelled';
+            const progress =
+              entry.delay && entry.elapsed !== undefined
+                ? Math.min(entry.elapsed / entry.delay, 1)
+                : 0;
+            const borderColor = statusBorderColor(entry.status);
+
             return (
               <div
                 key={entry.id}
-                className="px-3 py-2 rounded"
                 style={{
-                  backgroundColor: THEME.colors.bg.elevated,
-                  border: `1px solid ${THEME.colors.border.webAPIs}55`,
-                  borderLeft: `3px solid ${THEME.colors.border.webAPIs}`,
+                  backgroundColor: THEME.colors.bg.tertiary,
+                  border: `1px solid ${borderColor}`,
+                  borderRadius: THEME.radius.md,
+                  padding: '10px 12px',
+                  opacity: isCompleted || isCancelled ? 0.6 : 1,
+                  transition: 'opacity 0.2s ease',
                 }}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <span style={{ fontFamily: THEME.fonts.code, fontSize: 13, fontWeight: 600, color: THEME.colors.text.primary }}>
-                    {entry.label}
-                  </span>
-                  <span
-                    style={{
-                      fontSize: 10,
-                      fontFamily: THEME.fonts.code,
-                      color: isCompleted ? THEME.colors.status.completed : THEME.colors.status.running,
-                      backgroundColor: isCompleted ? `${THEME.colors.status.completed}22` : `${THEME.colors.status.running}22`,
-                      padding: '1px 5px',
-                      borderRadius: 4,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {entry.status}
-                  </span>
+                {/* Header */}
+                <div
+                  className="font-bold mb-2"
+                  style={{
+                    fontFamily: THEME.fonts.code,
+                    fontSize: 13,
+                    color: THEME.colors.syntax.function,
+                  }}
+                >
+                  {entry.type}
                 </div>
-                <div className="flex gap-4 mt-1">
-                  <span style={{ fontSize: 11, color: THEME.colors.text.muted, fontFamily: THEME.fonts.code }}>
-                    cb: <span style={{ color: THEME.colors.text.secondary }}>{entry.callback}</span>
-                  </span>
-                  {entry.delay !== undefined && (
-                    <span style={{ fontSize: 11, color: THEME.colors.text.muted, fontFamily: THEME.fonts.code }}>
-                      delay: <span style={{ color: THEME.colors.text.secondary }}>{entry.delay}ms</span>
+
+                {/* Detail rows */}
+                <div className="flex flex-col gap-1 mb-2">
+                  <div className="flex gap-2">
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: THEME.colors.text.muted,
+                        fontFamily: THEME.fonts.code,
+                        minWidth: 52,
+                        flexShrink: 0,
+                      }}
+                    >
+                      callback
                     </span>
+                    <span
+                      style={{
+                        fontSize: 11,
+                        color: THEME.colors.text.secondary,
+                        fontFamily: THEME.fonts.code,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={entry.callback}
+                    >
+                      {entry.callback.length > 60
+                        ? entry.callback.slice(0, 60) + '…'
+                        : entry.callback}
+                    </span>
+                  </div>
+                  {entry.delay !== undefined && (
+                    <div className="flex gap-2">
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: THEME.colors.text.muted,
+                          fontFamily: THEME.fonts.code,
+                          minWidth: 52,
+                          flexShrink: 0,
+                        }}
+                      >
+                        delay
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontFamily: THEME.fonts.code,
+                          color: THEME.colors.syntax.number,
+                        }}
+                      >
+                        {entry.delay}ms
+                      </span>
+                    </div>
                   )}
                 </div>
-                {entry.delay !== undefined && (
-                  <div style={{ marginTop: 6, height: 3, borderRadius: 2, backgroundColor: THEME.colors.bg.primary, overflow: 'hidden' }}>
+
+                {/* Progress bar */}
+                {entry.status === 'running' && entry.delay !== undefined && entry.delay > 0 && (
+                  <div
+                    style={{
+                      height: 4,
+                      borderRadius: 2,
+                      backgroundColor: THEME.colors.bg.primary,
+                      overflow: 'hidden',
+                      marginBottom: 8,
+                    }}
+                  >
                     <div
                       style={{
                         height: '100%',
                         width: `${progress * 100}%`,
-                        backgroundColor: isCompleted ? THEME.colors.status.completed : THEME.colors.border.webAPIs,
+                        backgroundColor: THEME.colors.status.running,
                         transition: 'width 0.3s ease',
                       }}
                     />
                   </div>
                 )}
+
+                {/* Status badge */}
+                <div className="flex justify-between items-center">
+                  {entry.elapsed !== undefined && entry.status === 'running' && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: THEME.colors.text.muted,
+                        fontFamily: THEME.fonts.code,
+                      }}
+                    >
+                      elapsed: {entry.elapsed}ms
+                    </span>
+                  )}
+                  <div className="ml-auto">
+                    <StatusDot status={entry.status} />
+                  </div>
+                </div>
               </div>
             );
           })}

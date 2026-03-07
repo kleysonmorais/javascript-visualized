@@ -3,15 +3,21 @@ import type { ExecutionStep, PlaybackSpeed } from "@/types";
 import { generateSteps } from "@/engine";
 import { mockSteps } from "@/lib/mockSteps";
 
-const DEFAULT_SOURCE_CODE = `function multiply(a, b) {
-  const result = a * b;
-  return result;
-}
+const DEFAULT_SOURCE_CODE = `console.log("Start");
 
-const x = 10;
-const greeting = "Hello";
-const answer = multiply(3, 4);
-console.log(answer);`;
+setTimeout(() => {
+  console.log("Timeout 1 - 2000ms");
+}, 2000);
+
+setTimeout(() => {
+  console.log("Timeout 2 - 100ms");
+}, 100);
+
+setTimeout(() => {
+  console.log("Timeout 3 - 0ms");
+}, 0);
+
+console.log("End");`;
 
 interface VisualizerStore {
   // Source code

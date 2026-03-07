@@ -22,7 +22,12 @@ export function MemoryPanel() {
     >
       {isEmpty ? (
         <div className="flex items-center justify-center h-full">
-          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>Empty</span>
+          <span
+            className="text-center text-xs"
+            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+          >
+            Run code to see Memory allocation
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-3 overflow-y-auto" style={{ maxHeight: '100%' }}>

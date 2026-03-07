@@ -14,23 +14,64 @@ export function TaskQueue() {
     >
       {tasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
-          <span style={{ color: THEME.colors.text.muted, fontSize: 13 }}>No tasks</span>
+          <span
+            className="text-center text-xs"
+            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+          >
+            Callbacks from Web APIs will queue here
+          </span>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {/* Dequeue direction indicator */}
+          <span
+            style={{
+              fontSize: 12,
+              color: THEME.colors.text.muted,
+              flexShrink: 0,
+              userSelect: 'none',
+            }}
+          >
+            ▶
+          </span>
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="px-3 py-2 rounded"
               style={{
                 backgroundColor: THEME.colors.bg.tertiary,
-                border: `1px solid ${THEME.colors.border.taskQueue}44`,
-                color: THEME.colors.text.primary,
-                fontFamily: THEME.fonts.code,
-                fontSize: 13,
+                border: `1px solid ${THEME.colors.border.taskQueue}`,
+                borderRadius: THEME.radius.md,
+                padding: '6px 10px',
+                flexShrink: 0,
+                minWidth: 100,
+                maxWidth: 160,
               }}
             >
-              {task.callbackLabel}
+              <div
+                style={{
+                  fontFamily: THEME.fonts.code,
+                  fontSize: 12,
+                  color: THEME.colors.text.primary,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                title={task.callbackLabel}
+              >
+                {task.callbackLabel.length > 40
+                  ? task.callbackLabel.slice(0, 40) + '…'
+                  : task.callbackLabel}
+              </div>
+              <div
+                style={{
+                  fontFamily: THEME.fonts.ui,
+                  fontSize: 10,
+                  color: THEME.colors.text.muted,
+                  marginTop: 2,
+                }}
+              >
+                {task.sourceType}
+              </div>
             </div>
           ))}
         </div>
