@@ -25,6 +25,11 @@ import {
   deepClone,
   stringifyForConsole,
 } from "./utils";
+import type {
+  InternalPromise,
+  PendingMicrotask,
+  PromiseReaction,
+} from "./promise";
 
 // ESTree node types (extending acorn.Node)
 interface BaseNode {
@@ -208,6 +213,12 @@ interface ConditionalExpressionNode extends BaseNode {
   alternate: ExpressionNode;
 }
 
+interface NewExpressionNode extends BaseNode {
+  type: "NewExpression";
+  callee: ExpressionNode;
+  arguments: ExpressionNode[];
+}
+
 type StatementNode =
   | VariableDeclarationNode
   | FunctionDeclarationNode
@@ -233,7 +244,8 @@ type ExpressionNode =
   | FunctionExpressionNode
   | ArrowFunctionExpressionNode
   | TemplateLiteralNode
-  | ConditionalExpressionNode;
+  | ConditionalExpressionNode
+  | NewExpressionNode;
 
 type PatternNode = IdentifierNode;
 
@@ -244,6 +256,19 @@ interface FunctionValue {
   body: BlockStatementNode | ExpressionNode;
   isArrow: boolean;
   source: string;
+}
+
+// Runtime value stored in variables when a Promise is created/returned
+interface PromiseWrapper {
+  __isPromise: true;
+  promiseId: string;
+}
+
+// Runtime value for built-in resolve/reject functions injected into executor scope
+interface BuiltinFn {
+  __isBuiltin: true;
+  kind: "promise-resolve" | "promise-reject";
+  promiseId: string;
 }
 
 // Result of resolving a value
@@ -259,6 +284,7 @@ const MAX_STEPS = 2000;
 const MAX_LOOP_ITERATIONS = 1000;
 const MAX_INTERVAL_ITERATIONS = 3;
 const MAX_ASYNC_ITERATIONS = 50; // nested timer depth limit
+const MAX_MICROTASK_DRAIN = 100; // safety limit per drain cycle
 
 // Internal timer tracking
 interface PendingTimer {
@@ -310,6 +336,13 @@ export class Interpreter {
   private timerIdCounter: number = 1;
   private clearedTimerIds: Set<string> = new Set();
 
+  // Promise engine state
+  private promises: Map<string, InternalPromise> = new Map();
+  private promiseCounter: number = 0;
+  private pendingMicrotasks: PendingMicrotask[] = [];
+  private microtaskCounter: number = 0;
+  private reactionCounter: number = 0;
+
   // Global memory block kept accessible during async phase for closure support
   private globalMemoryBlock: MemoryBlock | null = null;
 
@@ -350,8 +383,23 @@ export class Interpreter {
   private processAsyncCallbacks(): void {
     let iteration = 0;
 
+    // STEP 1: Drain microtasks queued during synchronous execution
+    if (this.pendingMicrotasks.length > 0) {
+      this.eventLoop = {
+        phase: "checking-microtasks",
+        description: "Checking Microtask Queue...",
+      };
+      this.snapshot(
+        0,
+        0,
+        "Checking Microtask Queue after synchronous code",
+        "",
+      );
+      this.drainMicrotaskQueue();
+    }
+
     while (iteration < MAX_ASYNC_ITERATIONS && this.stepIndex < MAX_STEPS) {
-      // Find unprocessed, uncancelled timers sorted by delay then registration order
+      // STEP 2: Get the next timer from the Task Queue
       const activeTimers = this.pendingTimers
         .filter((t) => !t.cancelled && !t.processed)
         .sort((a, b) =>
@@ -360,15 +408,51 @@ export class Interpreter {
             : a.registeredAtStep - b.registeredAtStep,
         );
 
+      if (activeTimers.length === 0 && this.pendingMicrotasks.length === 0)
+        break;
+
+      // Process microtasks again if any were added during the last iteration
+      if (this.pendingMicrotasks.length > 0) {
+        this.eventLoop = {
+          phase: "checking-microtasks",
+          description: "Checking Microtask Queue...",
+        };
+        this.snapshot(
+          0,
+          0,
+          "Microtasks pending — draining before next task",
+          "",
+        );
+        this.drainMicrotaskQueue();
+        continue;
+      }
+
       if (activeTimers.length === 0) break;
 
-      for (const timer of activeTimers) {
-        if (timer.cancelled || this.stepIndex >= MAX_STEPS) continue;
-        timer.processed = true;
-        this.runTimerCallback(timer);
+      const timer = activeTimers[0];
+      if (timer.cancelled || this.stepIndex >= MAX_STEPS) {
+        iteration++;
+        continue;
+      }
+      timer.processed = true;
+      this.runTimerCallback(timer);
+
+      // STEP 3: After callback execution, drain microtasks before picking next task
+      if (this.pendingMicrotasks.length > 0) {
+        this.eventLoop = {
+          phase: "checking-microtasks",
+          description: "Checking Microtask Queue...",
+        };
+        this.snapshot(0, 0, "Callback done — checking Microtask Queue", "");
+        this.drainMicrotaskQueue();
       }
 
       iteration++;
+    }
+
+    // Final microtask drain
+    if (this.pendingMicrotasks.length > 0) {
+      this.drainMicrotaskQueue();
     }
 
     // Remove cancelled timers from Web APIs (they were already shown as cancelled)
@@ -380,9 +464,48 @@ export class Interpreter {
     }
 
     const hasAnyTimers = this.pendingTimers.length > 0;
-    if (hasAnyTimers) {
+    const hadMicrotasks =
+      this.microtaskQueue.length > 0 || this.pendingMicrotasks.length > 0;
+    if (hasAnyTimers || hadMicrotasks) {
       this.eventLoop = { phase: "idle", description: "All tasks completed" };
       this.snapshot(0, 0, "Execution complete — all tasks processed", "");
+    }
+  }
+
+  private drainMicrotaskQueue(): void {
+    let drainCount = 0;
+
+    while (
+      this.pendingMicrotasks.length > 0 &&
+      drainCount < MAX_MICROTASK_DRAIN &&
+      this.stepIndex < MAX_STEPS
+    ) {
+      const microtask = this.pendingMicrotasks.shift()!;
+
+      // Update Event Loop phase
+      this.eventLoop = {
+        phase: "draining-microtasks",
+        description: "Draining Microtask Queue",
+      };
+
+      // Remove from visualization queue
+      this.microtaskQueue = this.microtaskQueue.filter(
+        (q) => q.id !== microtask.id,
+      );
+
+      // Execute the microtask
+      this.executeMicrotask(microtask);
+
+      this.eventLoop = {
+        phase: "checking-microtasks",
+        description: "Checking for more microtasks...",
+      };
+
+      drainCount++;
+    }
+
+    if (drainCount >= MAX_MICROTASK_DRAIN) {
+      console.warn("Microtask drain limit reached (possible infinite loop)");
     }
   }
 
@@ -979,6 +1102,15 @@ export class Interpreter {
     );
   }
 
+  private isBuiltinFn(value: unknown): value is BuiltinFn {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "__isBuiltin" in value &&
+      (value as BuiltinFn).__isBuiltin === true
+    );
+  }
+
   private getLine(node: BaseNode): number {
     return node.loc?.start.line ?? 1;
   }
@@ -1344,6 +1476,8 @@ export class Interpreter {
         return this.evaluateConditionalExpression(
           node as ConditionalExpressionNode,
         );
+      case "NewExpression":
+        return this.evaluateNewExpression(node as NewExpressionNode);
       default:
         console.warn(`Unsupported expression type: ${node.type}`);
         return undefined;
@@ -1644,6 +1778,33 @@ export class Interpreter {
       return this.handleClearTimerCall(node);
     }
 
+    // Check for Promise.resolve / Promise.reject / Promise.all / Promise.race
+    if (
+      node.callee.type === "MemberExpression" &&
+      (node.callee as MemberExpressionNode).object.type === "Identifier" &&
+      ((node.callee as MemberExpressionNode).object as IdentifierNode).name ===
+        "Promise"
+    ) {
+      return this.handlePromiseStaticCall(node);
+    }
+
+    // Check for promise.then() / promise.catch() / promise.finally()
+    if (node.callee.type === "MemberExpression") {
+      const memberCallee = node.callee as MemberExpressionNode;
+      const propName = (memberCallee.property as IdentifierNode).name;
+      if (["then", "catch", "finally"].includes(propName)) {
+        // Check if the object resolves to a promise wrapper
+        const objValue = this.evaluateExpression(memberCallee.object);
+        if (this.isPromiseWrapper(objValue)) {
+          return this.handlePromiseChainCall(
+            objValue as PromiseWrapper,
+            propName,
+            node,
+          );
+        }
+      }
+    }
+
     // Regular function call
     return this.handleFunctionCall(node);
   }
@@ -1842,6 +2003,11 @@ export class Interpreter {
       return undefined;
     }
 
+    // Handle builtin resolve/reject calls
+    if (this.isBuiltinFn(funcValue)) {
+      return this.handleBuiltinCall(node, funcValue);
+    }
+
     if (!this.isFunctionValue(funcValue)) {
       console.warn(`${funcName} is not a function`);
       return undefined;
@@ -1990,6 +2156,721 @@ export class Interpreter {
     return test
       ? this.evaluateExpression(node.consequent)
       : this.evaluateExpression(node.alternate);
+  }
+
+  // === Promise Engine ===
+
+  // PromiseWrapper is the runtime value stored in variables / returned to user code.
+  // It carries the internal promise id so chaining and reactions can look it up.
+  private makePromiseWrapper(promiseId: string): PromiseWrapper {
+    return { __isPromise: true, promiseId };
+  }
+
+  private isPromiseWrapper(value: unknown): value is PromiseWrapper {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "__isPromise" in value &&
+      (value as PromiseWrapper).__isPromise === true
+    );
+  }
+
+  // Create a new InternalPromise + matching HeapObject, return the wrapper.
+  private createInternalPromise(): {
+    promise: InternalPromise;
+    wrapper: PromiseWrapper;
+  } {
+    const id = `promise-${this.promiseCounter++}`;
+    const heapId = generateId("heap", this.heapCounter++);
+    const color = getPointerColor(this.pointerCounter++);
+
+    const heapObj: HeapObject = {
+      id: heapId,
+      type: "object",
+      color,
+      label: "Promise",
+      properties: [
+        {
+          key: "[[PromiseState]]",
+          displayValue: '"pending"',
+          valueType: "primitive",
+        },
+        {
+          key: "[[PromiseResult]]",
+          displayValue: "undefined",
+          valueType: "primitive",
+        },
+        {
+          key: "[[PromiseFulfillReactions]]",
+          displayValue: "[]",
+          valueType: "primitive",
+        },
+      ],
+    };
+    this.heap.push(heapObj);
+
+    const promise: InternalPromise = {
+      id,
+      heapObjectId: heapId,
+      state: "pending",
+      result: undefined,
+      fulfillReactions: [],
+      rejectReactions: [],
+    };
+    this.promises.set(id, promise);
+
+    return { promise, wrapper: this.makePromiseWrapper(id) };
+  }
+
+  // Update the HeapObject to reflect the promise's current state.
+  private syncPromiseHeap(promise: InternalPromise): void {
+    const heapObj = this.heap.find((h) => h.id === promise.heapObjectId);
+    if (!heapObj) return;
+
+    const reactionLabels = promise.fulfillReactions
+      .map((r) => r.callbackSource.slice(0, 25))
+      .join(", ");
+
+    heapObj.properties = [
+      {
+        key: "[[PromiseState]]",
+        displayValue: `"${promise.state}"`,
+        valueType: "primitive",
+      },
+      {
+        key: "[[PromiseResult]]",
+        displayValue:
+          promise.state === "pending"
+            ? "undefined"
+            : displayValue(promise.result),
+        valueType: "primitive",
+      },
+      {
+        key: "[[PromiseFulfillReactions]]",
+        displayValue:
+          promise.fulfillReactions.length === 0 ? "[]" : `[${reactionLabels}]`,
+        valueType: "primitive",
+      },
+    ];
+  }
+
+  // Settle a promise (fulfill or reject) and schedule reactions as microtasks.
+  private resolvePromise(promise: InternalPromise, value: unknown): void {
+    if (promise.state !== "pending") return; // already settled
+
+    // If resolved with another promise wrapper, adopt its state (simplified: use value directly)
+    promise.state = "fulfilled";
+    promise.result = value;
+    this.syncPromiseHeap(promise);
+
+    for (const reaction of promise.fulfillReactions) {
+      this.scheduleMicrotask(reaction, value);
+    }
+    promise.fulfillReactions = [];
+    promise.rejectReactions = [];
+  }
+
+  private rejectPromise(promise: InternalPromise, reason: unknown): void {
+    if (promise.state !== "pending") return;
+
+    promise.state = "rejected";
+    promise.result = reason;
+    this.syncPromiseHeap(promise);
+
+    for (const reaction of promise.rejectReactions) {
+      this.scheduleMicrotask(reaction, reason);
+    }
+    promise.fulfillReactions = [];
+    promise.rejectReactions = [];
+  }
+
+  private scheduleMicrotask(reaction: PromiseReaction, value: unknown): void {
+    const microtaskId = `microtask-${this.microtaskCounter++}`;
+
+    const microtask: PendingMicrotask = {
+      id: microtaskId,
+      callbackNode: reaction.callbackNode,
+      callbackSource: reaction.callbackSource,
+      sourcePromiseId: reaction.id,
+      resolveValue: value,
+      resultPromiseId: reaction.resultPromiseId,
+      capturedEnvStack: this.envStack.map((env) => ({ ...env })),
+    };
+    this.pendingMicrotasks.push(microtask);
+
+    // Show in microtask queue panel
+    const queueItem: QueueItem = {
+      id: microtaskId,
+      callbackLabel:
+        reaction.callbackSource.length > 35
+          ? reaction.callbackSource.slice(0, 35) + "..."
+          : reaction.callbackSource,
+      sourceType: "promise",
+      sourceId: reaction.id,
+    };
+    this.microtaskQueue.push(queueItem);
+  }
+
+  // Handle new Promise(executor)
+  private evaluateNewExpression(node: NewExpressionNode): unknown {
+    const callee = node.callee;
+    if (
+      callee.type === "Identifier" &&
+      (callee as IdentifierNode).name === "Promise"
+    ) {
+      return this.handleNewPromise(node);
+    }
+
+    // Fallback: try to call as a regular constructor (unsupported — return undefined)
+    const code = extractSource(this.sourceCode, node);
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `new ${callee.type === "Identifier" ? (callee as IdentifierNode).name : "?"} (not supported)`,
+      code,
+    );
+    return undefined;
+  }
+
+  private handleNewPromise(node: NewExpressionNode): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+    const { promise, wrapper } = this.createInternalPromise();
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Creating new Promise — state: pending`,
+      code,
+    );
+
+    // Executor must be a function/arrow expression (first arg)
+    if (node.arguments.length === 0) return wrapper;
+
+    const executorArg = node.arguments[0] as ExpressionNode;
+    const executorNode =
+      executorArg.type === "FunctionExpression" ||
+      executorArg.type === "ArrowFunctionExpression"
+        ? (executorArg as FunctionExpressionNode | ArrowFunctionExpressionNode)
+        : null;
+
+    if (!executorNode) {
+      // Executor from variable — unsupported inline; skip
+      return wrapper;
+    }
+
+    const executorSource = extractSource(this.sourceCode, executorNode);
+
+    // Build special resolve/reject functions stored in env
+    const resolveFn: BuiltinFn = {
+      __isBuiltin: true,
+      kind: "promise-resolve",
+      promiseId: promise.id,
+    };
+    const rejectFn: BuiltinFn = {
+      __isBuiltin: true,
+      kind: "promise-reject",
+      promiseId: promise.id,
+    };
+
+    const executorParams = executorNode.params.map(
+      (p) => (p as IdentifierNode).name,
+    );
+    const resolveParamName = executorParams[0] ?? "resolve";
+    const rejectParamName = executorParams[1] ?? "reject";
+
+    // Push executor frame with resolve + reject as params
+    this.pushFrame(
+      "Promise executor",
+      this.getLine(executorNode),
+      this.getColumn(executorNode),
+      [
+        { name: resolveParamName, value: resolveFn },
+        { name: rejectParamName, value: rejectFn },
+      ],
+    );
+
+    this.snapshot(
+      this.getLine(executorNode),
+      this.getColumn(executorNode),
+      "Executing Promise executor",
+      executorSource,
+    );
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    if (
+      executorNode.type === "ArrowFunctionExpression" &&
+      (executorNode as ArrowFunctionExpressionNode).expression
+    ) {
+      this.evaluateExpression(
+        (executorNode as ArrowFunctionExpressionNode).body as ExpressionNode,
+      );
+    } else {
+      this.visitBlockStatement(executorNode.body as BlockStatementNode);
+    }
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+
+    this.syncPromiseHeap(promise);
+    return wrapper;
+  }
+
+  // Handle Promise.resolve(v), Promise.reject(r), Promise.all([...]), Promise.race([...])
+  private handlePromiseStaticCall(
+    node: CallExpressionNode,
+  ): PromiseWrapper | unknown {
+    const memberExpr = node.callee as MemberExpressionNode;
+    const methodName = (memberExpr.property as IdentifierNode).name;
+    const code = extractSource(this.sourceCode, node);
+
+    if (methodName === "resolve") {
+      const value =
+        node.arguments.length > 0
+          ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+          : undefined;
+
+      const { promise, wrapper } = this.createInternalPromise();
+      this.resolvePromise(promise, value);
+
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `Promise.resolve(${displayValue(value)})`,
+        code,
+      );
+      return wrapper;
+    }
+
+    if (methodName === "reject") {
+      const reason =
+        node.arguments.length > 0
+          ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+          : undefined;
+
+      const { promise, wrapper } = this.createInternalPromise();
+      this.rejectPromise(promise, reason);
+
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `Promise.reject(${displayValue(reason)})`,
+        code,
+      );
+      return wrapper;
+    }
+
+    if (methodName === "all") {
+      return this.handlePromiseAll(node, false);
+    }
+
+    if (methodName === "race") {
+      return this.handlePromiseRace(node);
+    }
+
+    if (methodName === "allSettled") {
+      return this.handlePromiseAll(node, true);
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Promise.${methodName} (not supported)`,
+      code,
+    );
+    return undefined;
+  }
+
+  private handlePromiseAll(
+    node: CallExpressionNode,
+    settled: boolean,
+  ): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+    const { promise: resultPromise, wrapper } = this.createInternalPromise();
+
+    const label = settled ? "Promise.allSettled" : "Promise.all";
+
+    if (node.arguments.length === 0) {
+      this.resolvePromise(resultPromise, []);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `${label}([]) — resolved with []`,
+        code,
+      );
+      return wrapper;
+    }
+
+    const iterableArg = this.evaluateExpression(
+      node.arguments[0] as ExpressionNode,
+    );
+    if (!Array.isArray(iterableArg)) {
+      this.resolvePromise(resultPromise, []);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `${label}: argument not iterable`,
+        code,
+      );
+      return wrapper;
+    }
+
+    const values: unknown[] = [];
+    let hasRejected = false;
+
+    for (const item of iterableArg) {
+      if (this.isPromiseWrapper(item)) {
+        const p = this.promises.get((item as PromiseWrapper).promiseId);
+        if (p) {
+          if (p.state === "fulfilled") {
+            values.push(
+              settled ? { status: "fulfilled", value: p.result } : p.result,
+            );
+          } else if (p.state === "rejected") {
+            if (!settled) {
+              hasRejected = true;
+              this.rejectPromise(resultPromise, p.result);
+              break;
+            } else {
+              values.push({ status: "rejected", reason: p.result });
+            }
+          } else {
+            // pending — treat as undefined for simplicity
+            values.push(settled ? { status: "pending" } : undefined);
+          }
+        }
+      } else {
+        values.push(settled ? { status: "fulfilled", value: item } : item);
+      }
+    }
+
+    if (!hasRejected) {
+      this.resolvePromise(resultPromise, values);
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `${label}([${iterableArg.length} promises]) — ${hasRejected ? "rejected" : `resolved with [${values.length} values]`}`,
+      code,
+    );
+    return wrapper;
+  }
+
+  private handlePromiseRace(node: CallExpressionNode): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+    const { promise: resultPromise, wrapper } = this.createInternalPromise();
+
+    if (node.arguments.length === 0) {
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        "Promise.race([]) — forever pending",
+        code,
+      );
+      return wrapper;
+    }
+
+    const iterableArg = this.evaluateExpression(
+      node.arguments[0] as ExpressionNode,
+    );
+    if (!Array.isArray(iterableArg)) {
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        "Promise.race: argument not iterable",
+        code,
+      );
+      return wrapper;
+    }
+
+    for (const item of iterableArg) {
+      if (this.isPromiseWrapper(item)) {
+        const p = this.promises.get((item as PromiseWrapper).promiseId);
+        if (p && p.state !== "pending") {
+          if (p.state === "fulfilled") {
+            this.resolvePromise(resultPromise, p.result);
+          } else {
+            this.rejectPromise(resultPromise, p.result);
+          }
+          break;
+        }
+      } else {
+        this.resolvePromise(resultPromise, item);
+        break;
+      }
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Promise.race([${iterableArg.length} promises]) — ${resultPromise.state === "pending" ? "all pending" : `${resultPromise.state} with ${displayValue(resultPromise.result)}`}`,
+      code,
+    );
+    return wrapper;
+  }
+
+  // Handle promise.then(onFulfilled, onRejected), .catch(onRejected), .finally(onFinally)
+  private handlePromiseChainCall(
+    wrapper: PromiseWrapper,
+    method: string,
+    node: CallExpressionNode,
+  ): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+    const sourcePromise = this.promises.get(wrapper.promiseId);
+    if (!sourcePromise) return wrapper;
+
+    // Create the result promise that .then()/.catch()/.finally() returns
+    const { promise: resultPromise, wrapper: resultWrapper } =
+      this.createInternalPromise();
+
+    const getCallbackNode = (index: number) => {
+      const arg = node.arguments[index];
+      if (!arg) return null;
+      if (
+        arg.type === "FunctionExpression" ||
+        arg.type === "ArrowFunctionExpression"
+      ) {
+        return arg as FunctionExpressionNode | ArrowFunctionExpressionNode;
+      }
+      return null;
+    };
+
+    const getCallbackSource = (index: number): string => {
+      const arg = node.arguments[index];
+      if (!arg) return "(no callback)";
+      return extractSource(this.sourceCode, arg as BaseNode);
+    };
+
+    if (method === "then") {
+      const onFulfilledNode = getCallbackNode(0);
+      const onRejectedNode = getCallbackNode(1);
+
+      if (onFulfilledNode) {
+        const reaction: PromiseReaction = {
+          id: `reaction-${this.reactionCounter++}`,
+          type: "fulfill",
+          callbackNode: onFulfilledNode,
+          callbackSource: getCallbackSource(0),
+          resultPromiseId: resultPromise.id,
+        };
+
+        if (sourcePromise.state === "fulfilled") {
+          this.scheduleMicrotask(reaction, sourcePromise.result);
+        } else if (sourcePromise.state === "pending") {
+          sourcePromise.fulfillReactions.push(reaction);
+          this.syncPromiseHeap(sourcePromise);
+        }
+        // If already rejected, onFulfilled is skipped — resultPromise stays pending
+        // (simplified: propagate rejection)
+        if (sourcePromise.state === "rejected") {
+          this.rejectPromise(resultPromise, sourcePromise.result);
+        }
+      }
+
+      if (onRejectedNode) {
+        const reaction: PromiseReaction = {
+          id: `reaction-${this.reactionCounter++}`,
+          type: "reject",
+          callbackNode: onRejectedNode,
+          callbackSource: getCallbackSource(1),
+          resultPromiseId: resultPromise.id,
+        };
+
+        if (sourcePromise.state === "rejected") {
+          this.scheduleMicrotask(reaction, sourcePromise.result);
+        } else if (sourcePromise.state === "pending") {
+          sourcePromise.rejectReactions.push(reaction);
+        }
+      }
+    } else if (method === "catch") {
+      const onRejectedNode = getCallbackNode(0);
+
+      if (onRejectedNode) {
+        const reaction: PromiseReaction = {
+          id: `reaction-${this.reactionCounter++}`,
+          type: "reject",
+          callbackNode: onRejectedNode,
+          callbackSource: getCallbackSource(0),
+          resultPromiseId: resultPromise.id,
+        };
+
+        if (sourcePromise.state === "rejected") {
+          this.scheduleMicrotask(reaction, sourcePromise.result);
+        } else if (sourcePromise.state === "pending") {
+          sourcePromise.rejectReactions.push(reaction);
+        } else {
+          // fulfilled — propagate to result promise
+          this.resolvePromise(resultPromise, sourcePromise.result);
+        }
+      }
+    } else if (method === "finally") {
+      const onFinallyNode = getCallbackNode(0);
+      const finallySource = getCallbackSource(0);
+
+      if (onFinallyNode) {
+        // Both fulfill and reject call the same callback, then propagate original value
+        const fulfillReaction: PromiseReaction = {
+          id: `reaction-${this.reactionCounter++}`,
+          type: "fulfill",
+          callbackNode: onFinallyNode,
+          callbackSource: finallySource,
+          resultPromiseId: resultPromise.id,
+        };
+        const rejectReaction: PromiseReaction = {
+          id: `reaction-${this.reactionCounter++}`,
+          type: "reject",
+          callbackNode: onFinallyNode,
+          callbackSource: finallySource,
+          resultPromiseId: resultPromise.id,
+        };
+
+        if (sourcePromise.state === "fulfilled") {
+          this.scheduleMicrotask(fulfillReaction, sourcePromise.result);
+        } else if (sourcePromise.state === "rejected") {
+          this.scheduleMicrotask(rejectReaction, sourcePromise.result);
+        } else {
+          sourcePromise.fulfillReactions.push(fulfillReaction);
+          sourcePromise.rejectReactions.push(rejectReaction);
+          this.syncPromiseHeap(sourcePromise);
+        }
+      }
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `.${method}() registered on Promise — callback will execute when ${method === "catch" ? "rejected" : "resolved"}`,
+      code,
+    );
+
+    return resultWrapper;
+  }
+
+  // Execute a single microtask (a .then/.catch/.finally callback)
+  private executeMicrotask(microtask: PendingMicrotask): void {
+    const callbackNode = microtask.callbackNode as
+      | FunctionExpressionNode
+      | ArrowFunctionExpressionNode;
+
+    const params = callbackNode.params.map((p) => (p as IdentifierNode).name);
+    const resolveParamName = params[0];
+
+    const frameParams =
+      resolveParamName !== undefined
+        ? [{ name: resolveParamName, value: microtask.resolveValue }]
+        : [];
+
+    this.pushFrame(
+      microtask.callbackSource.length > 20
+        ? microtask.callbackSource.slice(0, 20) + "..."
+        : microtask.callbackSource,
+      this.getLine(callbackNode),
+      this.getColumn(callbackNode),
+      frameParams,
+    );
+
+    this.eventLoop = {
+      phase: "draining-microtasks",
+      description: "Draining Microtask Queue",
+    };
+
+    this.snapshot(
+      this.getLine(callbackNode),
+      this.getColumn(callbackNode),
+      `Event Loop: executing microtask`,
+      microtask.callbackSource,
+    );
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    if (
+      callbackNode.type === "ArrowFunctionExpression" &&
+      (callbackNode as ArrowFunctionExpressionNode).expression
+    ) {
+      this.returnValue = this.evaluateExpression(
+        (callbackNode as ArrowFunctionExpressionNode).body as ExpressionNode,
+      );
+      this.hasReturned = true;
+    } else {
+      this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+    }
+
+    const returnVal = this.returnValue;
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+
+    // Resolve the result promise with the callback's return value
+    if (microtask.resultPromiseId) {
+      const resultPromise = this.promises.get(microtask.resultPromiseId);
+      if (resultPromise) {
+        if (this.isPromiseWrapper(returnVal)) {
+          // Callback returned a promise — adopt its state
+          const innerPromise = this.promises.get(
+            (returnVal as PromiseWrapper).promiseId,
+          );
+          if (innerPromise) {
+            if (innerPromise.state === "fulfilled") {
+              this.resolvePromise(resultPromise, innerPromise.result);
+            } else if (innerPromise.state === "rejected") {
+              this.rejectPromise(resultPromise, innerPromise.result);
+            } else {
+              // pending inner promise — chain reactions
+              innerPromise.fulfillReactions.push({
+                id: `reaction-${this.reactionCounter++}`,
+                type: "fulfill",
+                callbackNode: null,
+                callbackSource: "(chain)",
+                resultPromiseId: resultPromise.id,
+              });
+            }
+          }
+        } else {
+          this.resolvePromise(resultPromise, returnVal);
+        }
+      }
+    }
+  }
+
+  // Handle builtin resolve/reject calls inside Promise executor
+  private handleBuiltinCall(
+    node: CallExpressionNode,
+    builtin: BuiltinFn,
+  ): unknown {
+    const code = extractSource(this.sourceCode, node);
+    const promise = this.promises.get(builtin.promiseId);
+    if (!promise) return undefined;
+
+    const value =
+      node.arguments.length > 0
+        ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+        : undefined;
+
+    if (builtin.kind === "promise-resolve") {
+      this.resolvePromise(promise, value);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `Promise resolved with ${displayValue(value)}`,
+        code,
+      );
+    } else {
+      this.rejectPromise(promise, value);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `Promise rejected with ${displayValue(value)}`,
+        code,
+      );
+    }
+
+    return undefined;
   }
 
   // === Function Creation ===
