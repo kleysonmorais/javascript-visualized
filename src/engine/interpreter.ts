@@ -263,7 +263,7 @@ const MAX_ASYNC_ITERATIONS = 50; // nested timer depth limit
 // Internal timer tracking
 interface PendingTimer {
   id: string;
-  numericId: number;       // the number returned to user code (e.g. 1, 2, 3…)
+  numericId: number; // the number returned to user code (e.g. 1, 2, 3…)
   type: "setTimeout" | "setInterval";
   callbackNode: BaseNode;
   callbackSource: string;
@@ -271,7 +271,7 @@ interface PendingTimer {
   registeredAtStep: number;
   cancelled: boolean;
   intervalCount: number;
-  processed: boolean;      // true once picked up by processAsyncCallbacks
+  processed: boolean; // true once picked up by processAsyncCallbacks
 }
 
 export class Interpreter {
@@ -332,7 +332,12 @@ export class Interpreter {
       phase: "checking-tasks",
       description: "All synchronous code executed — checking for async tasks",
     };
-    this.snapshot(0, 0, "All synchronous code executed — checking for async tasks", "");
+    this.snapshot(
+      0,
+      0,
+      "All synchronous code executed — checking for async tasks",
+      "",
+    );
 
     // Phase 2: Process async callbacks (supports nested timers via iteration)
     this.processAsyncCallbacks();
@@ -444,7 +449,10 @@ export class Interpreter {
       callbackNode.loc?.start.column ?? 0,
       [],
     );
-    this.eventLoop = { phase: "executing-task", description: "Executing callback" };
+    this.eventLoop = {
+      phase: "executing-task",
+      description: "Executing callback",
+    };
     this.snapshot(0, 0, execDescription, timer.callbackSource);
 
     this.hasReturned = false;
@@ -499,12 +507,7 @@ export class Interpreter {
           "",
         );
       } else {
-        this.snapshot(
-          0,
-          0,
-          "setInterval iteration limit reached (3 max)",
-          "",
-        );
+        this.snapshot(0, 0, "setInterval iteration limit reached (3 max)", "");
       }
     }
   }
@@ -1777,9 +1780,12 @@ export class Interpreter {
       );
       const numericId = Number(idValue);
 
-      // Find the timer by its numericId (the value returned to user code)
-      const timer = this.pendingTimers.find((t) => t.numericId === numericId);
-      if (timer && !timer.processed) {
+      // Find the timer by its numericId — find the most recent one that isn't cancelled
+      // This handles both pending timers and currently-executing timers (for setInterval)
+      const timer = this.pendingTimers
+        .filter((t) => t.numericId === numericId && !t.cancelled)
+        .pop(); // Get the last (most recently added) one
+      if (timer) {
         timer.cancelled = true;
         this.clearedTimerIds.add(timer.id);
         // Update WebAPI entry to show cancelled state
