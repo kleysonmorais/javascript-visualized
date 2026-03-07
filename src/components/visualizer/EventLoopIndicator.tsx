@@ -10,6 +10,7 @@ interface PhaseConfig {
   dotColor: string;
   usePulse: boolean;
   glowColor?: string;
+  isMicrotaskPhase?: boolean;
 }
 
 const PHASE_CONFIG: Record<EventLoopPhase, PhaseConfig> = {
@@ -43,15 +44,55 @@ const PHASE_CONFIG: Record<EventLoopPhase, PhaseConfig> = {
     opacity: 1,
     dotColor: THEME.colors.border.microtaskQueue,
     usePulse: true,
+    glowColor: THEME.glow.microtaskQueue,
+    isMicrotaskPhase: true,
   },
   'draining-microtasks': {
-    animationDuration: '0.8s',
+    animationDuration: '0.6s',
     opacity: 1,
     dotColor: THEME.colors.border.microtaskQueue,
     usePulse: true,
     glowColor: THEME.glow.microtaskQueue,
+    isMicrotaskPhase: true,
   },
 };
+
+/** Show priority order when relevant */
+function PriorityIndicator({ phase }: { phase: EventLoopPhase }) {
+  const showIndicator =
+    phase === 'checking-microtasks' ||
+    phase === 'draining-microtasks' ||
+    phase === 'checking-tasks';
+
+  if (!showIndicator) return null;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        marginTop: 8,
+        padding: '6px 8px',
+        backgroundColor: `${THEME.colors.bg.tertiary}`,
+        borderRadius: THEME.radius.sm,
+        fontSize: 9,
+        fontFamily: THEME.fonts.ui,
+      }}
+    >
+      <div className="flex items-center gap-1.5">
+        <span style={{ color: THEME.colors.text.secondary }}>①</span>
+        <span style={{ color: THEME.colors.border.microtaskQueue, fontWeight: 600 }}>
+          Microtasks
+        </span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        <span style={{ color: THEME.colors.text.secondary }}>②</span>
+        <span style={{ color: THEME.colors.border.taskQueue }}>Tasks</span>
+      </div>
+    </div>
+  );
+}
 
 export function EventLoopIndicator() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
@@ -67,9 +108,13 @@ export function EventLoopIndicator() {
       ? `event-loop-pulse-anim ${config.animationDuration} ease-in-out infinite`
       : `event-loop-spin ${config.animationDuration} linear infinite`,
     opacity: config.opacity,
-    color: THEME.colors.text.accent,
-    filter: config.glowColor ? `drop-shadow(0 0 6px ${THEME.colors.text.accent})` : 'none',
-    transition: 'opacity 0.3s ease',
+    color: config.isMicrotaskPhase
+      ? THEME.colors.border.microtaskQueue
+      : THEME.colors.text.accent,
+    filter: config.glowColor
+      ? `drop-shadow(0 0 8px ${config.isMicrotaskPhase ? THEME.colors.border.microtaskQueue : THEME.colors.text.accent})`
+      : 'none',
+    transition: 'opacity 0.3s ease, color 0.3s ease',
   };
 
   return (
@@ -88,8 +133,12 @@ export function EventLoopIndicator() {
           0%, 100% { opacity: 1; transform: rotate(0deg) scale(1); }
           50% { opacity: 0.6; transform: rotate(180deg) scale(0.9); }
         }
+        @keyframes event-loop-microtask-pulse {
+          0%, 100% { opacity: 1; transform: rotate(0deg) scale(1); filter: drop-shadow(0 0 8px ${THEME.colors.border.microtaskQueue}); }
+          50% { opacity: 0.7; transform: rotate(180deg) scale(0.95); filter: drop-shadow(0 0 12px ${THEME.colors.border.microtaskQueue}); }
+        }
       `}</style>
-      <div className="flex flex-col items-center gap-3 py-2">
+      <div className="flex flex-col items-center gap-2 py-2">
         <RefreshCw size={34} style={iconStyle} />
 
         {/* Phase badge */}
@@ -102,12 +151,17 @@ export function EventLoopIndicator() {
               backgroundColor: config.dotColor,
               flexShrink: 0,
               display: 'inline-block',
+              boxShadow: config.isMicrotaskPhase
+                ? `0 0 6px ${config.dotColor}`
+                : 'none',
             }}
           />
           <span
             className="text-center text-xs leading-tight"
             style={{
-              color: THEME.colors.text.secondary,
+              color: config.isMicrotaskPhase
+                ? THEME.colors.border.microtaskQueue
+                : THEME.colors.text.secondary,
               fontFamily: THEME.fonts.ui,
               maxWidth: 100,
               wordBreak: 'break-word',
@@ -116,6 +170,9 @@ export function EventLoopIndicator() {
             {eventLoop.description}
           </span>
         </div>
+
+        {/* Priority indicator */}
+        <PriorityIndicator phase={eventLoop.phase} />
       </div>
     </Panel>
   );

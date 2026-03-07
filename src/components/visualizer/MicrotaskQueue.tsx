@@ -1,9 +1,73 @@
-import { Panel } from '@/components/ui/Panel';
-import { THEME } from '@/constants/theme';
-import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { Panel } from "@/components/ui/Panel";
+import { THEME } from "@/constants/theme";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
+import type { QueueItem } from "@/types";
+
+interface MicrotaskCardProps {
+  task: QueueItem;
+  isHighlighted: boolean;
+}
+
+function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
+  const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+
+  return (
+    <div
+      style={{
+        backgroundColor: THEME.colors.bg.tertiary,
+        border: `1px solid ${THEME.colors.border.microtaskQueue}`,
+        borderRadius: THEME.radius.md,
+        padding: "6px 10px",
+        flexShrink: 0,
+        minWidth: 100,
+        maxWidth: 180,
+        boxShadow: isHighlighted
+          ? `0 0 12px ${THEME.colors.border.microtaskQueue}50`
+          : "none",
+        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+        cursor: "pointer",
+      }}
+      onMouseEnter={() => task.sourceId && setHoveredPointerId(task.sourceId)}
+      onMouseLeave={() => setHoveredPointerId(null)}
+    >
+      <div
+        style={{
+          fontFamily: THEME.fonts.code,
+          fontSize: 12,
+          color: THEME.colors.text.primary,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+        title={task.callbackLabel}
+      >
+        {task.callbackLabel.length > 35
+          ? task.callbackLabel.slice(0, 35) + "…"
+          : task.callbackLabel}
+      </div>
+      {/* Source badge - shows "Promise" for promise microtasks */}
+      <div
+        style={{
+          fontFamily: THEME.fonts.ui,
+          fontSize: 10,
+          marginTop: 3,
+          display: "inline-block",
+          padding: "1px 6px",
+          borderRadius: 4,
+          backgroundColor: `${THEME.colors.border.microtaskQueue}22`,
+          color: THEME.colors.border.microtaskQueue,
+          textTransform: "capitalize",
+        }}
+      >
+        {task.sourceType === "promise" ? "Promise" : task.sourceType}
+      </div>
+    </div>
+  );
+}
 
 export function MicrotaskQueue() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
+  const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const microtasks = currentStep?.microtaskQueue ?? [];
 
   return (
@@ -16,63 +80,38 @@ export function MicrotaskQueue() {
         <div className="flex items-center justify-center h-full">
           <span
             className="text-center text-xs"
-            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+            style={{
+              color: THEME.colors.text.muted,
+              fontFamily: THEME.fonts.ui,
+            }}
           >
-            Promise callbacks will queue here
+            No microtasks
           </span>
         </div>
       ) : (
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
           {/* Dequeue direction indicator */}
-          <span
+          <div
             style={{
-              fontSize: 12,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              fontSize: 10,
               color: THEME.colors.text.muted,
               flexShrink: 0,
-              userSelect: 'none',
+              userSelect: "none",
+              gap: 2,
             }}
           >
-            ▶
-          </span>
+            <span style={{ fontSize: 12 }}>▶</span>
+            <span style={{ fontSize: 8, opacity: 0.7 }}>OUT</span>
+          </div>
           {microtasks.map((task) => (
-            <div
+            <MicrotaskCard
               key={task.id}
-              style={{
-                backgroundColor: THEME.colors.bg.tertiary,
-                border: `1px solid ${THEME.colors.border.microtaskQueue}`,
-                borderRadius: THEME.radius.md,
-                padding: '6px 10px',
-                flexShrink: 0,
-                minWidth: 100,
-                maxWidth: 160,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: THEME.fonts.code,
-                  fontSize: 12,
-                  color: THEME.colors.text.primary,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-                title={task.callbackLabel}
-              >
-                {task.callbackLabel.length > 40
-                  ? task.callbackLabel.slice(0, 40) + '…'
-                  : task.callbackLabel}
-              </div>
-              <div
-                style={{
-                  fontFamily: THEME.fonts.ui,
-                  fontSize: 10,
-                  color: THEME.colors.text.muted,
-                  marginTop: 2,
-                }}
-              >
-                {task.sourceType}
-              </div>
-            </div>
+              task={task}
+              isHighlighted={hoveredHeapId === task.sourceId}
+            />
           ))}
         </div>
       )}

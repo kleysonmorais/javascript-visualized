@@ -1,4 +1,4 @@
-import { Play, Loader2, RotateCcw, ChevronDown } from "lucide-react";
+import { Play, Loader2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { CallStack } from "@/components/visualizer/CallStack";
@@ -13,6 +13,7 @@ import { TransportControls } from "@/components/controls/TransportControls";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import type { EventLoopPhase } from "@/types";
 
 function FlowArrow({ visible }: { visible: boolean }) {
   return (
@@ -29,6 +30,35 @@ function FlowArrow({ visible }: { visible: boolean }) {
   );
 }
 
+/** Cyan-colored flow arrow for microtask flows */
+function MicrotaskFlowArrow({
+  visible,
+  direction = 'down',
+}: {
+  visible: boolean;
+  direction?: 'down' | 'right';
+}) {
+  const Icon = direction === 'down' ? ChevronDown : ChevronRight;
+  return (
+    <div
+      className={direction === 'down' ? 'flex justify-center' : 'flex items-center'}
+      style={{
+        height: direction === 'down' ? 16 : 'auto',
+        width: direction === 'right' ? 16 : 'auto',
+        opacity: visible ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+      }}
+    >
+      <Icon size={16} color={THEME.colors.border.microtaskQueue} />
+    </div>
+  );
+}
+
+/** Check if event loop is in a microtask-related phase */
+function isMicrotaskPhase(phase: EventLoopPhase): boolean {
+  return phase === 'checking-microtasks' || phase === 'draining-microtasks';
+}
+
 export function AppShell() {
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);
@@ -41,6 +71,9 @@ export function AppShell() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const hasWebAPIs = (currentStep?.webAPIs?.length ?? 0) > 0;
   const hasTaskQueue = (currentStep?.taskQueue?.length ?? 0) > 0;
+  const hasMicrotaskQueue = (currentStep?.microtaskQueue?.length ?? 0) > 0;
+  const eventLoopPhase = currentStep?.eventLoop?.phase ?? 'idle';
+  const showMicrotaskFlow = hasMicrotaskQueue || isMicrotaskPhase(eventLoopPhase);
 
   useAutoPlay();
   useKeyboardShortcuts();
@@ -199,12 +232,21 @@ export function AppShell() {
           {/* Flow indicator: Web APIs → Task Queue */}
           <FlowArrow visible={hasTaskQueue} />
 
-          {/* Bottom row: Event Loop + Task Queue + Microtask Queue */}
+          {/* Bottom row: Event Loop + Queues with flow indicators */}
           <div className="flex gap-4">
-            <EventLoopIndicator />
-            <div className="flex flex-col gap-4 flex-1">
+            <div className="flex flex-col items-center gap-2">
+              <EventLoopIndicator />
+              {/* Flow indicator: Event Loop picks from queues */}
+              <MicrotaskFlowArrow visible={showMicrotaskFlow} direction="right" />
+            </div>
+            <div className="flex flex-col gap-2 flex-1">
+              {/* Microtask Queue with flow indicator from Promises */}
+              <div className="flex flex-col">
+                <MicrotaskFlowArrow visible={showMicrotaskFlow} direction="down" />
+                <MicrotaskQueue />
+              </div>
+              {/* Task Queue */}
               <TaskQueue />
-              <MicrotaskQueue />
             </div>
           </div>
         </div>
