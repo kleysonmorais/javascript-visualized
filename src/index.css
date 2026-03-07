@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  /* Backgrounds */
+  --color-bg-primary: #0a0a0f;
+  --color-bg-secondary: #12121a;
+  --color-bg-tertiary: #1a1a28;
+  --color-bg-elevated: #22222f;
+
+  /* Neon borders */
+  --color-border-call-stack: #f59e0b;
+  --color-border-web-apis: #a855f7;
+  --color-border-task-queue: #ec4899;
+  --color-border-microtask-queue: #06b6d4;
+  --color-border-event-loop: #06b6d4;
+  --color-border-console: #6b7280;
+  --color-border-editor: #374151;
+
+  /* Text */
+  --color-text-primary: #e5e7eb;
+  --color-text-secondary: #9ca3af;
+  --color-text-muted: #6b7280;
+  --color-text-accent: #22d3ee;
+
+  /* Syntax */
+  --color-syntax-keyword: #c084fc;
+  --color-syntax-string: #fbbf24;
+  --color-syntax-number: #f472b6;
+  --color-syntax-function: #34d399;
+  --color-syntax-variable: #60a5fa;
+  --color-syntax-comment: #6b7280;
+
+  /* Status */
+  --color-status-running: #22c55e;
+  --color-status-pending: #f59e0b;
+  --color-status-completed: #6b7280;
+  --color-status-error: #ef4444;
+
+  /* Fonts */
+  --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-ui: 'Geist', 'Inter', system-ui, sans-serif;
+
+  /* Border radius */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
