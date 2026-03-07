@@ -257,6 +257,19 @@ interface ResolvedValue {
 
 const MAX_STEPS = 2000;
 const MAX_LOOP_ITERATIONS = 1000;
+const MAX_INTERVAL_ITERATIONS = 3;
+
+// Internal timer tracking
+interface PendingTimer {
+  id: string;
+  type: "setTimeout" | "setInterval";
+  callbackNode: BaseNode;
+  callbackSource: string;
+  delay: number;
+  registeredAtStep: number;
+  cancelled: boolean;
+  intervalCount: number;
+}
 
 export class Interpreter {
   private steps: ExecutionStep[] = [];
@@ -289,19 +302,129 @@ export class Interpreter {
   private returnValue: unknown = undefined;
   private hasReturned: boolean = false;
 
+  // Async engine state
+  private pendingTimers: PendingTimer[] = [];
+  private timerIdCounter: number = 1;
+  private clearedTimerIds: Set<string> = new Set();
+
   execute(ast: acorn.Node, sourceCode: string): ExecutionStep[] {
     this.sourceCode = sourceCode;
 
-    // Initialize global execution context
+    // Phase 1: Synchronous execution
     this.pushGlobalFrame();
-
-    // Walk the program body
     this.visitProgram(ast as ProgramNode);
-
-    // Pop global frame
     this.popFrame();
 
+    this.eventLoop = { phase: "checking-tasks", description: "Checking Task Queue..." };
+    this.snapshot(0, 0, "Synchronous code execution completed", "");
+
+    // Phase 2: Process async callbacks
+    this.processAsyncCallbacks();
+
     return this.steps;
+  }
+
+  // === Async Phase ===
+
+  private processAsyncCallbacks(): void {
+    const activeTimers = this.pendingTimers
+      .filter((t) => !t.cancelled)
+      .sort((a, b) => a.delay !== b.delay ? a.delay - b.delay : a.registeredAtStep - b.registeredAtStep);
+
+    for (const timer of activeTimers) {
+      if (timer.cancelled || this.stepIndex >= MAX_STEPS) break;
+      this.runTimerCallback(timer);
+    }
+
+    if (this.pendingTimers.length > 0) {
+      this.eventLoop = { phase: "idle", description: "Waiting for tasks..." };
+      this.snapshot(0, 0, "All async callbacks executed", "");
+    }
+  }
+
+  private runTimerCallback(timer: PendingTimer): void {
+    // Step 1: Timer completes in Web APIs
+    const webAPI = this.webAPIs.find((w) => w.id === timer.id);
+    if (webAPI) {
+      webAPI.elapsed = timer.delay;
+      webAPI.status = "completed";
+    }
+    this.eventLoop = { phase: "checking-tasks", description: "Checking Task Queue..." };
+    this.snapshot(0, 0, `${timer.delay}ms timer completed`, "");
+
+    // Step 2: Move callback to Task Queue
+    if (webAPI) {
+      webAPI.status = "completed";
+    }
+    const taskItem: QueueItem = {
+      id: `task-${timer.id}`,
+      callbackLabel: timer.callbackSource.length > 30
+        ? timer.callbackSource.slice(0, 30) + "..."
+        : timer.callbackSource,
+      sourceType: timer.type,
+      sourceId: timer.id,
+    };
+    this.taskQueue.push(taskItem);
+    this.snapshot(0, 0, "Callback moved to Task Queue", "");
+
+    // Step 3: Event Loop picks task
+    this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
+    // Remove from webAPIs
+    this.webAPIs = this.webAPIs.filter((w) => w.id !== timer.id);
+    this.eventLoop = { phase: "picking-task", description: "Picking task from Task Queue" };
+    this.snapshot(0, 0, "Event Loop picks task from Task Queue", "");
+
+    // Step 4: Execute the callback body
+    const callbackNode = timer.callbackNode as FunctionExpressionNode | ArrowFunctionExpressionNode;
+    const callbackName =
+      (callbackNode as FunctionExpressionNode).id?.name ?? "callback";
+
+    this.pushFrame(callbackName, callbackNode.loc?.start.line ?? 0, callbackNode.loc?.start.column ?? 0, []);
+    this.eventLoop = { phase: "executing-task", description: "Executing current task" };
+    this.snapshot(0, 0, `Executing ${timer.type} callback`, timer.callbackSource);
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    if (callbackNode.type === "ArrowFunctionExpression" && callbackNode.expression) {
+      this.evaluateExpression(callbackNode.body as ExpressionNode);
+    } else {
+      this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+    }
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+    this.eventLoop = { phase: "idle", description: "Waiting for tasks..." };
+    this.snapshot(0, 0, "Callback execution completed", "");
+
+    // Step 5: For setInterval, re-register up to MAX_INTERVAL_ITERATIONS
+    if (timer.type === "setInterval" && !timer.cancelled) {
+      timer.intervalCount = (timer.intervalCount ?? 0) + 1;
+      if (timer.intervalCount < MAX_INTERVAL_ITERATIONS) {
+        const newId = generateId("webapi", this.webAPICounter++);
+        const newTimer: PendingTimer = {
+          ...timer,
+          id: newId,
+          registeredAtStep: this.stepIndex,
+          intervalCount: timer.intervalCount,
+        };
+        this.pendingTimers.push(newTimer);
+        this.webAPIs.push({
+          id: newId,
+          type: "setInterval",
+          label: "setInterval",
+          callback: timer.callbackSource,
+          delay: timer.delay,
+          elapsed: 0,
+          status: "running",
+        });
+        this.snapshot(0, 0, `setInterval re-registered (iteration ${timer.intervalCount + 1})`, "");
+        // Immediately run the next iteration
+        this.runTimerCallback(newTimer);
+      }
+    }
   }
 
   // === Core internal methods ===
@@ -1422,6 +1545,16 @@ export class Interpreter {
       return this.handleTimerCall(node);
     }
 
+    // Check for clearTimeout/clearInterval
+    if (
+      node.callee.type === "Identifier" &&
+      ["clearTimeout", "clearInterval"].includes(
+        (node.callee as IdentifierNode).name,
+      )
+    ) {
+      return this.handleClearTimerCall(node);
+    }
+
     // Regular function call
     return this.handleFunctionCall(node);
   }
@@ -1467,19 +1600,20 @@ export class Interpreter {
     );
   }
 
-  private handleTimerCall(node: CallExpressionNode): string {
+  private handleTimerCall(node: CallExpressionNode): number {
     const timerName = (node.callee as IdentifierNode).name as
       | "setTimeout"
       | "setInterval";
     const code = extractSource(this.sourceCode, node);
 
     // Get callback and delay
+    let callbackNode: BaseNode | null = null;
     let callbackSource = "";
     let delay = 0;
 
     if (node.arguments.length > 0) {
-      const callbackNode = node.arguments[0];
-      callbackSource = extractSource(this.sourceCode, callbackNode as BaseNode);
+      callbackNode = node.arguments[0] as BaseNode;
+      callbackSource = extractSource(this.sourceCode, callbackNode);
     }
 
     if (node.arguments.length > 1) {
@@ -1489,8 +1623,34 @@ export class Interpreter {
       delay = Number(delayValue) || 0;
     }
 
-    // Register Web API
-    const id = this.addWebAPIEntry(timerName, callbackSource, delay);
+    // Register Web API entry
+    const webApiId = this.addWebAPIEntry(timerName, callbackSource, delay);
+
+    // Register pending timer with callback AST node for Phase 2
+    if (callbackNode) {
+      const timerId = this.timerIdCounter;
+      this.timerIdCounter++;
+      const timer: PendingTimer = {
+        id: webApiId,
+        type: timerName,
+        callbackNode,
+        callbackSource,
+        delay,
+        registeredAtStep: this.stepIndex,
+        cancelled: false,
+        intervalCount: 0,
+      };
+      this.pendingTimers.push(timer);
+
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `${timerName} registered — callback will execute after ${delay}ms`,
+        code,
+      );
+
+      return timerId;
+    }
 
     this.snapshot(
       this.getLine(node),
@@ -1499,7 +1659,50 @@ export class Interpreter {
       code,
     );
 
-    return id;
+    return this.timerIdCounter++;
+  }
+
+  private handleClearTimerCall(node: CallExpressionNode): void {
+    const code = extractSource(this.sourceCode, node);
+    const calleeName = (node.callee as IdentifierNode).name;
+
+    if (node.arguments.length > 0) {
+      const idValue = this.evaluateExpression(node.arguments[0] as ExpressionNode);
+      const numericId = Number(idValue);
+
+      // Find the timer whose timerIdCounter index matches
+      // We stored timerIdCounter - 1 as the returned value, so find by position
+      // Actually we track by webApiId — match via the numeric return value
+      // Since we return timerIdCounter (1-based incremented), find by index
+      // The simplest approach: mark timer at position (numericId - 1) as cancelled
+      const timerIndex = numericId - 1;
+      if (timerIndex >= 0 && timerIndex < this.pendingTimers.length) {
+        const timer = this.pendingTimers[timerIndex];
+        if (timer) {
+          timer.cancelled = true;
+          this.clearedTimerIds.add(timer.id);
+          // Update WebAPI entry
+          const webAPI = this.webAPIs.find((w) => w.id === timer.id);
+          if (webAPI) {
+            webAPI.status = "cancelled";
+          }
+          this.snapshot(
+            this.getLine(node),
+            this.getColumn(node),
+            `${calleeName} called — timer cancelled`,
+            code,
+          );
+          return;
+        }
+      }
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `${calleeName} called`,
+      code,
+    );
   }
 
   private handleFunctionCall(node: CallExpressionNode): unknown {
