@@ -1,9 +1,22 @@
-import type { ExecutionStep } from '@/types';
+import type { ExecutionStep, MemoryBlock } from '@/types';
+import { getFrameColor } from '@/constants/theme';
+
+const GLOBAL_COLOR = getFrameColor(0); // amber
+const FN_COLOR = getFrameColor(1);     // green
 
 const globalScope = {
   name: 'Global',
   type: 'global' as const,
   variables: [],
+};
+
+// Global memory block with no variables yet
+const globalMemoryEmpty: MemoryBlock = {
+  frameId: 'frame-global',
+  label: 'Global Memory',
+  type: 'global',
+  color: GLOBAL_COLOR,
+  entries: [],
 };
 
 export const mockSteps: ExecutionStep[] = [
@@ -22,6 +35,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 1,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
     ],
@@ -31,6 +45,8 @@ export const mockSteps: ExecutionStep[] = [
     console: [],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [globalMemoryEmpty],
+    heap: [],
   },
 
   // Step 1 — setTimeout(cb, 2000) is called
@@ -48,6 +64,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 1,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
       {
@@ -56,6 +73,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 1,
         column: 1,
+        color: FN_COLOR,
         scope: { name: 'setTimeout', type: 'function', variables: [] },
       },
     ],
@@ -65,6 +83,28 @@ export const mockSteps: ExecutionStep[] = [
     console: [],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [
+      globalMemoryEmpty,
+      {
+        frameId: 'frame-st1',
+        label: 'Local: setTimeout',
+        type: 'local',
+        color: FN_COLOR,
+        entries: [
+          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', pointerColor: '#ef4444' },
+          { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '2000' },
+        ],
+      },
+    ],
+    heap: [
+      {
+        id: 'heap-cb-2000',
+        type: 'function',
+        color: '#ef4444',
+        label: '() => console.log("2000ms")',
+        functionSource: '() => console.log("2000ms")',
+      },
+    ],
   },
 
   // Step 2 — setTimeout leaves stack, timer registered in Web APIs
@@ -82,6 +122,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 5,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
     ],
@@ -101,6 +142,8 @@ export const mockSteps: ExecutionStep[] = [
     console: [],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [globalMemoryEmpty],
+    heap: [],
   },
 
   // Step 3 — setTimeout(cb, 100) is called
@@ -118,6 +161,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 5,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
       {
@@ -126,6 +170,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 5,
         column: 1,
+        color: FN_COLOR,
         scope: { name: 'setTimeout', type: 'function', variables: [] },
       },
     ],
@@ -145,6 +190,28 @@ export const mockSteps: ExecutionStep[] = [
     console: [],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [
+      globalMemoryEmpty,
+      {
+        frameId: 'frame-st2',
+        label: 'Local: setTimeout',
+        type: 'local',
+        color: FN_COLOR,
+        entries: [
+          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', pointerColor: '#3b82f6' },
+          { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '100' },
+        ],
+      },
+    ],
+    heap: [
+      {
+        id: 'heap-cb-100',
+        type: 'function',
+        color: '#3b82f6',
+        label: '() => console.log("100ms")',
+        functionSource: '() => console.log("100ms")',
+      },
+    ],
   },
 
   // Step 4 — second setTimeout leaves stack, timer registered
@@ -162,6 +229,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 9,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
     ],
@@ -190,6 +258,8 @@ export const mockSteps: ExecutionStep[] = [
     console: [],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [globalMemoryEmpty],
+    heap: [],
   },
 
   // Step 5 — console.log("End of script") executes
@@ -207,6 +277,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'global',
         line: 9,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: globalScope,
       },
       {
@@ -215,6 +286,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 9,
         column: 1,
+        color: FN_COLOR,
         scope: { name: 'console.log', type: 'function', variables: [] },
       },
     ],
@@ -245,6 +317,19 @@ export const mockSteps: ExecutionStep[] = [
     ],
     eventLoop: { phase: 'executing-task', description: 'Running script' },
     scopes: [globalScope],
+    memoryBlocks: [
+      globalMemoryEmpty,
+      {
+        frameId: 'frame-cl1',
+        label: 'Local: console.log',
+        type: 'local',
+        color: FN_COLOR,
+        entries: [
+          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"End of script"' },
+        ],
+      },
+    ],
+    heap: [],
   },
 
   // Step 6 — Call stack empties, 100ms timer fires → callback in Task Queue
@@ -285,6 +370,8 @@ export const mockSteps: ExecutionStep[] = [
     ],
     eventLoop: { phase: 'checking-tasks', description: 'Checking Task Queue' },
     scopes: [globalScope],
+    memoryBlocks: [],
+    heap: [],
   },
 
   // Step 7 — Event Loop picks task, moves to Call Stack
@@ -302,6 +389,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 9,
         column: 1,
+        color: GLOBAL_COLOR,
         scope: { name: 'anonymous', type: 'function', variables: [] },
       },
     ],
@@ -323,6 +411,16 @@ export const mockSteps: ExecutionStep[] = [
     ],
     eventLoop: { phase: 'picking-task', description: 'Executing task from queue' },
     scopes: [{ name: 'anonymous', type: 'function', variables: [] }],
+    memoryBlocks: [
+      {
+        frameId: 'frame-cb1',
+        label: 'Local: anonymous',
+        type: 'local',
+        color: GLOBAL_COLOR,
+        entries: [],
+      },
+    ],
+    heap: [],
   },
 
   // Step 8 — Callback executes console.log("100ms")
@@ -340,6 +438,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 2,
         column: 3,
+        color: GLOBAL_COLOR,
         scope: { name: 'anonymous', type: 'function', variables: [] },
       },
       {
@@ -348,6 +447,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 2,
         column: 3,
+        color: FN_COLOR,
         scope: { name: 'console.log', type: 'function', variables: [] },
       },
     ],
@@ -370,6 +470,25 @@ export const mockSteps: ExecutionStep[] = [
     ],
     eventLoop: { phase: 'executing-task', description: 'Executing task' },
     scopes: [{ name: 'anonymous', type: 'function', variables: [] }],
+    memoryBlocks: [
+      {
+        frameId: 'frame-cb1',
+        label: 'Local: anonymous',
+        type: 'local',
+        color: GLOBAL_COLOR,
+        entries: [],
+      },
+      {
+        frameId: 'frame-cl2',
+        label: 'Local: console.log',
+        type: 'local',
+        color: FN_COLOR,
+        entries: [
+          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"100ms"' },
+        ],
+      },
+    ],
+    heap: [],
   },
 
   // Step 9 — 2000ms timer fires, callback executes, console gets "2000ms"
@@ -387,6 +506,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 2,
         column: 3,
+        color: GLOBAL_COLOR,
         scope: { name: 'anonymous', type: 'function', variables: [] },
       },
       {
@@ -395,6 +515,7 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         line: 2,
         column: 3,
+        color: FN_COLOR,
         scope: { name: 'console.log', type: 'function', variables: [] },
       },
     ],
@@ -418,5 +539,24 @@ export const mockSteps: ExecutionStep[] = [
     ],
     eventLoop: { phase: 'executing-task', description: 'Executing task' },
     scopes: [{ name: 'anonymous', type: 'function', variables: [] }],
+    memoryBlocks: [
+      {
+        frameId: 'frame-cb2',
+        label: 'Local: anonymous',
+        type: 'local',
+        color: GLOBAL_COLOR,
+        entries: [],
+      },
+      {
+        frameId: 'frame-cl3',
+        label: 'Local: console.log',
+        type: 'local',
+        color: FN_COLOR,
+        entries: [
+          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"2000ms"' },
+        ],
+      },
+    ],
+    heap: [],
   },
 ];

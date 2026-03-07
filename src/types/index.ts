@@ -22,6 +22,7 @@ export interface CallStackFrame {
   line: number;
   column: number;
   scope: VariableScope;
+  color: string;           // border color (matches its MemoryBlock)
   isAsync?: boolean;
   isGenerator?: boolean;
   status?: 'executing' | 'suspended'; // for async/generators
@@ -72,6 +73,44 @@ export interface EventLoopState {
   description: string;     // descriptive text of what's happening
 }
 
+// === Memory System Types ===
+
+export type MemoryValueType = 'primitive' | 'function' | 'object';
+
+export interface MemoryEntry {
+  name: string;
+  kind: VariableKind | 'param' | 'function';
+  valueType: MemoryValueType;
+  displayValue: string;        // "42", '"hello"', "undefined", "ⓕ", "[Pointer]"
+  heapReferenceId?: string;    // links to HeapObject.id if valueType is 'function' | 'object'
+  pointerColor?: string;       // color badge for this pointer (matches HeapObject color)
+}
+
+export interface MemoryBlock {
+  frameId: string;             // matches CallStackFrame.id
+  label: string;               // "Global Memory" or "Local: functionName"
+  type: 'global' | 'local';
+  color: string;               // border color (matches its Call Stack frame)
+  entries: MemoryEntry[];
+}
+
+export interface HeapObjectProperty {
+  key: string;
+  displayValue: string;
+  valueType: MemoryValueType;
+  heapReferenceId?: string;
+  pointerColor?: string;
+}
+
+export interface HeapObject {
+  id: string;
+  type: 'object' | 'array' | 'function';
+  color: string;               // badge color (matches pointers referencing this)
+  label: string;               // short display: "{ name: 'Joe' }"
+  properties?: HeapObjectProperty[];
+  functionSource?: string;     // source for functions
+}
+
 export interface ExecutionStep {
   index: number;
   line: number;
@@ -86,6 +125,8 @@ export interface ExecutionStep {
   eventLoop: EventLoopState;
   scopes: VariableScope[];
   highlightedLine: number; // line to highlight in editor
+  memoryBlocks: MemoryBlock[];
+  heap: HeapObject[];
 }
 
 // === UI State Types ===

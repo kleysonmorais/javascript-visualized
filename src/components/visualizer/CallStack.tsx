@@ -30,41 +30,48 @@ export function CallStack() {
         </div>
       ) : (
         <div className="flex flex-col gap-2">
-          {reversed.map((frame) => (
-            <div
-              key={frame.id}
-              className="px-3 py-2 rounded"
-              style={{
-                backgroundColor: THEME.colors.bg.elevated,
-                borderLeft: `3px solid ${THEME.colors.border.callStack}`,
-                border: `1px solid ${THEME.colors.border.callStack}44`,
-                borderLeftWidth: 3,
-                color: THEME.colors.text.primary,
-              }}
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span style={{ fontFamily: THEME.fonts.code, fontSize: 13, fontWeight: 600 }}>
-                  {frame.name}
-                </span>
-                <span
-                  style={{
-                    fontSize: 10,
-                    fontFamily: THEME.fonts.code,
-                    color: THEME.colors.border.callStack,
-                    backgroundColor: `${THEME.colors.border.callStack}22`,
-                    padding: '1px 5px',
-                    borderRadius: 4,
-                    flexShrink: 0,
-                  }}
-                >
-                  {TYPE_LABELS[frame.type]}
-                </span>
+          {reversed.map((frame) => {
+            const color = frame.color ?? THEME.colors.border.callStack;
+            return (
+              <div
+                key={frame.id}
+                className="px-3 py-2 rounded"
+                style={{
+                  backgroundColor: THEME.colors.bg.elevated,
+                  border: `1px solid ${color}44`,
+                  borderLeftWidth: 3,
+                  borderLeftColor: color,
+                  borderLeftStyle: 'solid',
+                  color: THEME.colors.text.primary,
+                }}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span style={{ color, fontSize: 10, lineHeight: 1 }}>●</span>
+                    <span style={{ fontFamily: THEME.fonts.code, fontSize: 13, fontWeight: 600 }}>
+                      {frame.name}
+                    </span>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontFamily: THEME.fonts.code,
+                      color,
+                      backgroundColor: `${color}22`,
+                      padding: '1px 5px',
+                      borderRadius: 4,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {TYPE_LABELS[frame.type]}
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: THEME.colors.text.muted, marginTop: 2, fontFamily: THEME.fonts.code }}>
+                  line {frame.line}, col {frame.column}
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: THEME.colors.text.muted, marginTop: 2, fontFamily: THEME.fonts.code }}>
-                line {frame.line}, col {frame.column}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Panel>

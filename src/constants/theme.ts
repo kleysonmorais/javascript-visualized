@@ -62,3 +62,33 @@ export const THEME = {
     xl: '16px',
   },
 } as const;
+
+export const FRAME_COLORS = [
+  '#f59e0b', // amber — reserved for <global>
+  '#22c55e', // green
+  '#3b82f6', // blue
+  '#ef4444', // red
+  '#a855f7', // purple
+  '#ec4899', // pink
+  '#14b8a6', // teal
+  '#f97316', // orange
+] as const;
+
+export const POINTER_COLORS = [
+  '#ef4444', // red
+  '#3b82f6', // blue
+  '#22c55e', // green
+  '#f59e0b', // amber
+  '#ec4899', // pink
+  '#8b5cf6', // violet
+  '#06b6d4', // cyan
+] as const;
+
+export const getFrameColor = (index: number): string => {
+  if (index === 0) return FRAME_COLORS[0];
+  return FRAME_COLORS[((index - 1) % (FRAME_COLORS.length - 1)) + 1];
+};
+
+export const getPointerColor = (index: number): string => {
+  return POINTER_COLORS[index % POINTER_COLORS.length];
+};

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { THEME } from '@/constants/theme';
 import { CodeEditor } from '@/components/editor/CodeEditor';
 import { CallStack } from '@/components/visualizer/CallStack';
+import { MemoryPanel } from '@/components/visualizer/MemoryPanel';
 import { WebAPIs } from '@/components/visualizer/WebAPIs';
 import { TaskQueue } from '@/components/visualizer/TaskQueue';
 import { MicrotaskQueue } from '@/components/visualizer/MicrotaskQueue';
@@ -58,11 +59,14 @@ export function AppShell() {
 
         {/* Right column: Visualizer panels */}
         <div className="flex flex-col gap-4 w-1/2">
-          {/* Top row: Call Stack + Web APIs */}
+          {/* Top row: Call Stack + Memory */}
           <div className="flex gap-4 flex-1">
             <CallStack />
-            <WebAPIs />
+            <MemoryPanel />
           </div>
+
+          {/* Middle row: Web APIs */}
+          <WebAPIs />
 
           {/* Bottom row: Event Loop + Task Queue + Microtask Queue */}
           <div className="flex gap-4">
