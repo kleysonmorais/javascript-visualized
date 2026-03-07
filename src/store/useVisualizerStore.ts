@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { ExecutionStep, PlaybackSpeed } from '@/types';
+import { mockSteps } from '@/lib/mockSteps';
 
 const DEFAULT_SOURCE_CODE = `setTimeout(() => {
   console.log("2000ms");
@@ -40,6 +41,9 @@ interface VisualizerStore {
   totalSteps: number;
   hasNext: boolean;
   hasPrevious: boolean;
+
+  // Mock data
+  loadMockData: () => void;
 
   // Reset
   reset: () => void;
@@ -123,6 +127,16 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
   totalSteps: 0,
   hasNext: false,
   hasPrevious: false,
+
+  loadMockData: () =>
+    set({
+      steps: mockSteps,
+      currentStepIndex: 0,
+      currentStep: mockSteps[0] ?? null,
+      totalSteps: mockSteps.length,
+      hasNext: mockSteps.length > 1,
+      hasPrevious: false,
+    }),
 
   reset: () =>
     set({
