@@ -17,7 +17,7 @@ export function MemoryPanel() {
   return (
     <Panel
       title="Memory"
-      borderColor={THEME.colors.border.webAPIs}
+      borderColor={THEME.colors.border.memory}
       className="flex-1"
     >
       {isEmpty ? (

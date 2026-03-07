@@ -16,6 +16,7 @@ export const THEME = {
       eventLoop: '#06b6d4',    // cyan
       console: '#6b7280',      // gray
       editor: '#374151',       // dark gray
+      memory: '#a855f7',       // purple — matches webAPIs panel area
     },
     // Text
     text: {
@@ -48,6 +49,7 @@ export const THEME = {
     taskQueue: '0 0 15px rgba(236, 72, 153, 0.3)',
     microtaskQueue: '0 0 15px rgba(6, 182, 212, 0.3)',
     eventLoop: '0 0 15px rgba(6, 182, 212, 0.3)',
+    memory: '0 0 15px rgba(168, 85, 247, 0.3)',
   },
   // Fonts
   fonts: {
