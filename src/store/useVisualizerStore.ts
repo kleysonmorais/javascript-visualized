@@ -5,18 +5,19 @@ import { mockSteps } from "@/lib/mockSteps";
 
 const DEFAULT_SOURCE_CODE = `console.log("Start");
 
-setTimeout(() => {
-  console.log("setTimeout");
-}, 0);
+async function fetchData() {
+  console.log("Fetching...");
+  const response = await fetch("https://api.example.com/data");
+  const data = await response.json();
+  console.log("Data:", data);
+  return data;
+}
 
-Promise.resolve().then(() => {
-  console.log("Promise 1");
-}).then(() => {
-  console.log("Promise 2");
+fetchData().then(result => {
+  console.log("Complete:", result);
 });
 
-console.log("End");
-// Output: Start, End, Promise 1, Promise 2, setTimeout`;
+console.log("End");`;
 
 interface VisualizerStore {
   // Source code

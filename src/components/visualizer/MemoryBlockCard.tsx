@@ -140,20 +140,22 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
   const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
 
   const isFrameHighlighted = hoveredFrameId === block.frameId;
+  const isSuspended = block.suspended === true;
+  const suspendedColor = THEME.colors.status.pending; // amber
 
   return (
     <div
       style={{
-        borderLeft: `3px solid ${block.color}`,
         border: `1px solid ${isFrameHighlighted ? block.color : `${block.color}33`}`,
         borderLeftWidth: 3,
-        borderLeftColor: block.color,
-        borderLeftStyle: "solid",
+        borderLeftColor: isSuspended ? suspendedColor : block.color,
+        borderLeftStyle: isSuspended ? "dashed" : "solid",
         borderRadius: THEME.radius.sm,
         backgroundColor: THEME.colors.bg.elevated,
         padding: "8px 10px",
         boxShadow: isFrameHighlighted ? `0 0 12px ${block.color}50` : "none",
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+        opacity: isSuspended ? 0.5 : 1,
+        transition: "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredFrameId(block.frameId)}
@@ -173,6 +175,17 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
           }}
         >
           {block.label}
+          {isSuspended && (
+            <span
+              style={{
+                color: THEME.colors.text.muted,
+                fontWeight: 400,
+                marginLeft: 4,
+              }}
+            >
+              (suspended)
+            </span>
+          )}
         </span>
       </div>
 

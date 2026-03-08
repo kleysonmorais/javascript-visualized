@@ -1,3 +1,4 @@
+import { Pause } from "lucide-react";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -41,6 +42,8 @@ export function CallStack() {
           {reversed.map((frame) => {
             const color = frame.color ?? THEME.colors.border.callStack;
             const isHovered = hoveredFrameId === frame.id;
+            const isSuspended = frame.status === "suspended";
+            const suspendedColor = THEME.colors.status.pending; // amber
             return (
               <div
                 key={frame.id}
@@ -49,11 +52,12 @@ export function CallStack() {
                   backgroundColor: THEME.colors.bg.elevated,
                   border: `1px solid ${isHovered ? color : `${color}44`}`,
                   borderLeftWidth: 3,
-                  borderLeftColor: color,
-                  borderLeftStyle: "solid",
+                  borderLeftColor: isSuspended ? suspendedColor : color,
+                  borderLeftStyle: isSuspended ? "dashed" : "solid",
                   color: THEME.colors.text.primary,
                   boxShadow: isHovered ? `0 0 12px ${color}50` : "none",
-                  transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+                  opacity: isSuspended ? 0.5 : 1,
+                  transition: "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
                   cursor: "pointer",
                 }}
                 onMouseEnter={() => setHoveredFrameId(frame.id)}
@@ -73,6 +77,27 @@ export function CallStack() {
                     >
                       {frame.name}
                     </span>
+                    {isSuspended && (
+                      <>
+                        <Pause
+                          size={12}
+                          style={{ color: suspendedColor, flexShrink: 0 }}
+                        />
+                        <span
+                          style={{
+                            fontSize: 9,
+                            fontFamily: THEME.fonts.code,
+                            color: suspendedColor,
+                            backgroundColor: `${suspendedColor}22`,
+                            padding: "1px 5px",
+                            borderRadius: 4,
+                            flexShrink: 0,
+                          }}
+                        >
+                          suspended
+                        </span>
+                      </>
+                    )}
                   </div>
                   <span
                     style={{

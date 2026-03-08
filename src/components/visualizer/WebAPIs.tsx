@@ -1,3 +1,4 @@
+import { Globe } from 'lucide-react';
 import { Panel } from '@/components/ui/Panel';
 import { THEME } from '@/constants/theme';
 import { useVisualizerStore } from '@/store/useVisualizerStore';
@@ -57,6 +58,14 @@ export function WebAPIs() {
                 : 0;
             const borderColor = statusBorderColor(entry.status);
 
+            const isFetch = entry.type === 'fetch';
+            const promiseStateColor =
+              entry.promiseState === 'fulfilled'
+                ? THEME.colors.status.running
+                : entry.promiseState === 'rejected'
+                ? THEME.colors.status.error
+                : THEME.colors.status.pending;
+
             return (
               <div
                 key={entry.id}
@@ -71,13 +80,16 @@ export function WebAPIs() {
               >
                 {/* Header */}
                 <div
-                  className="font-bold mb-2"
+                  className="flex items-center gap-1 font-bold mb-2"
                   style={{
                     fontFamily: THEME.fonts.code,
                     fontSize: 13,
                     color: THEME.colors.syntax.function,
                   }}
                 >
+                  {isFetch && (
+                    <Globe size={13} style={{ flexShrink: 0 }} />
+                  )}
                   {entry.type}
                 </div>
 
@@ -93,7 +105,7 @@ export function WebAPIs() {
                         flexShrink: 0,
                       }}
                     >
-                      callback
+                      {isFetch ? 'url' : 'callback'}
                     </span>
                     <span
                       style={{
@@ -135,6 +147,34 @@ export function WebAPIs() {
                       </span>
                     </div>
                   )}
+                  {/* Promise state row for fetch */}
+                  {isFetch && entry.promiseState && (
+                    <div className="flex gap-2 items-center">
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: THEME.colors.text.muted,
+                          fontFamily: THEME.fonts.code,
+                          minWidth: 52,
+                          flexShrink: 0,
+                          fontStyle: 'italic',
+                        }}
+                      >
+                        [[Promise]]
+                      </span>
+                      <span
+                        className="flex items-center gap-1"
+                        style={{
+                          fontSize: 11,
+                          fontFamily: THEME.fonts.code,
+                          color: promiseStateColor,
+                        }}
+                      >
+                        <span style={{ fontSize: 8 }}>●</span>
+                        {entry.promiseState}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress bar */}
@@ -152,7 +192,9 @@ export function WebAPIs() {
                       style={{
                         height: '100%',
                         width: `${progress * 100}%`,
-                        backgroundColor: THEME.colors.status.running,
+                        backgroundColor: isFetch
+                          ? THEME.colors.border.webAPIs
+                          : THEME.colors.status.running,
                         transition: 'width 0.3s ease',
                       }}
                     />

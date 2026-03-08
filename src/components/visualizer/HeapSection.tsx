@@ -295,18 +295,37 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
         </span>
         <div style={{ flex: 1, minWidth: 0 }}>
           {obj.type === "function" ? (
-            <pre
-              style={{
-                margin: 0,
-                fontFamily: THEME.fonts.code,
-                fontSize: 11,
-                color: THEME.colors.syntax.function,
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-all",
-              }}
-            >
-              {obj.functionSource ?? obj.label}
-            </pre>
+            <div>
+              {(obj.functionSource ?? obj.label).startsWith("async ") && (
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontFamily: THEME.fonts.code,
+                    color: THEME.colors.syntax.keyword,
+                    backgroundColor: `${THEME.colors.syntax.keyword}22`,
+                    padding: "1px 5px",
+                    borderRadius: 4,
+                    marginRight: 6,
+                    display: "inline-block",
+                    marginBottom: 2,
+                  }}
+                >
+                  async
+                </span>
+              )}
+              <pre
+                style={{
+                  margin: 0,
+                  fontFamily: THEME.fonts.code,
+                  fontSize: 11,
+                  color: THEME.colors.syntax.function,
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-all",
+                }}
+              >
+                {obj.functionSource ?? obj.label}
+              </pre>
+            </div>
           ) : obj.properties && obj.properties.length > 0 ? (
             <div style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
               <span style={{ color: THEME.colors.text.secondary }}>{"{ "}</span>

@@ -350,6 +350,22 @@ interface PendingTimer {
   processed: boolean; // true once picked up by processAsyncCallbacks
 }
 
+// Internal fetch tracking — resolves a promise when delay elapses
+interface PendingFetch {
+  id: string;
+  url: string;
+  delay: number;
+  promiseId: string; // the pending Promise to resolve when fetch "completes"
+  processed: boolean;
+}
+
+// Mock Response runtime value
+interface FetchResponse {
+  __isFetchResponse: true;
+  url: string;
+  heapObjectId: string; // the Response HeapObject
+}
+
 export class Interpreter {
   private steps: ExecutionStep[] = [];
   private callStack: CallStackFrame[] = [];
@@ -385,6 +401,10 @@ export class Interpreter {
   private pendingTimers: PendingTimer[] = [];
   private timerIdCounter: number = 1;
   private clearedTimerIds: Set<string> = new Set();
+
+  // Fetch engine state
+  private pendingFetches: PendingFetch[] = [];
+  private fetchCounter: number = 0;
 
   // Promise engine state
   private promises: Map<string, InternalPromise> = new Map();
@@ -452,6 +472,27 @@ export class Interpreter {
     }
 
     while (iteration < MAX_ASYNC_ITERATIONS && this.stepIndex < MAX_STEPS) {
+      // Process any pending fetches — they resolve Promises (→ microtasks) before timers run
+      const unprocessedFetches = this.pendingFetches.filter((f) => !f.processed);
+      if (unprocessedFetches.length > 0) {
+        this.eventLoop = {
+          phase: "checking-tasks",
+          description: "fetch() completed — resolving Promise",
+        };
+        this.processPendingFetches();
+        // Drain microtasks that the fetch resolution triggered
+        if (this.pendingMicrotasks.length > 0) {
+          this.eventLoop = {
+            phase: "checking-microtasks",
+            description: "fetch resolved — draining Microtask Queue",
+          };
+          this.snapshot(0, 0, "fetch resolved — checking Microtask Queue", "");
+          this.drainMicrotaskQueue();
+        }
+        iteration++;
+        continue;
+      }
+
       // STEP 2: Get the next timer from the Task Queue
       const activeTimers = this.pendingTimers
         .filter((t) => !t.cancelled && !t.processed)
@@ -1863,6 +1904,14 @@ export class Interpreter {
       return this.handleClearTimerCall(node);
     }
 
+    // Check for fetch(url)
+    if (
+      node.callee.type === "Identifier" &&
+      (node.callee as IdentifierNode).name === "fetch"
+    ) {
+      return this.handleFetchCall(node);
+    }
+
     // Check for Promise.resolve / Promise.reject / Promise.all / Promise.race
     if (
       node.callee.type === "MemberExpression" &&
@@ -1884,6 +1933,21 @@ export class Interpreter {
           return this.handlePromiseChainCall(
             objValue as PromiseWrapper,
             propName,
+            node,
+          );
+        }
+      }
+
+      // Handle response.json() on a FetchResponse runtime value
+      if (propName === "json") {
+        const objValue = this.evaluateExpression(memberCallee.object);
+        if (
+          typeof objValue === "object" &&
+          objValue !== null &&
+          "__isFetchResponse" in (objValue as Record<string, unknown>)
+        ) {
+          return this.handleResponseJsonCall(
+            objValue as FetchResponse,
             node,
           );
         }
@@ -2128,6 +2192,192 @@ export class Interpreter {
       `${calleeName} called`,
       code,
     );
+  }
+
+  // === Fetch Simulation ===
+
+  private handleFetchCall(node: CallExpressionNode): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+
+    // Evaluate the URL argument
+    const urlArg = node.arguments.length > 0
+      ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+      : "https://api.example.com/data";
+    const url = String(urlArg);
+
+    // 1. Create a pending Promise for the fetch result
+    const { promise: fetchPromise, wrapper } = this.createInternalPromise();
+
+    // 2. Register in Web APIs
+    const fetchId = generateId("webapi", this.webAPICounter++);
+    const delay = 1500; // simulated network delay
+
+    const entry: WebAPIEntry = {
+      id: fetchId,
+      type: "fetch",
+      label: "fetch",
+      callback: url,
+      delay,
+      elapsed: 0,
+      status: "running",
+      promiseState: "pending",
+    };
+    this.webAPIs.push(entry);
+
+    // 3. Register pending fetch
+    const pendingFetch: PendingFetch = {
+      id: fetchId,
+      url,
+      delay,
+      promiseId: fetchPromise.id,
+      processed: false,
+    };
+    this.pendingFetches.push(pendingFetch);
+
+    // 4. Snapshot
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `fetch("${url}") — network request registered in Web APIs`,
+      code,
+    );
+
+    return wrapper;
+  }
+
+  private handleResponseJsonCall(
+    _response: FetchResponse,
+    node: CallExpressionNode,
+  ): PromiseWrapper {
+    const code = extractSource(this.sourceCode, node);
+
+    // Create mock parsed data HeapObject
+    const dataHeapId = generateId("heap", this.heapCounter++);
+    const dataColor = getPointerColor(this.pointerCounter++);
+    const dataHeapObj: HeapObject = {
+      id: dataHeapId,
+      type: "object",
+      color: dataColor,
+      label: '{ message: "Mock data" }',
+      properties: [
+        {
+          key: "message",
+          displayValue: '"Mock data from fetch"',
+          valueType: "primitive",
+        },
+        {
+          key: "status",
+          displayValue: '"success"',
+          valueType: "primitive",
+        },
+      ],
+    };
+    this.heap.push(dataHeapObj);
+
+    // Create a resolved Promise with the data object
+    const { promise: jsonPromise, wrapper } = this.createInternalPromise();
+
+    // The runtime value for data — a plain object with the heap link
+    const dataValue: Record<string, unknown> & { __heapId: string } = {
+      __heapId: dataHeapId,
+      message: "Mock data from fetch",
+      status: "success",
+    };
+
+    this.resolvePromise(jsonPromise, dataValue);
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `response.json() — parsing response body`,
+      code,
+    );
+
+    return wrapper;
+  }
+
+  private processPendingFetches(): void {
+    const unprocessed = this.pendingFetches.filter((f) => !f.processed);
+    for (const fetch of unprocessed) {
+      fetch.processed = true;
+
+      // Update Web API entry — show fetch completing
+      const webAPI = this.webAPIs.find((w) => w.id === fetch.id);
+      if (webAPI) {
+        webAPI.elapsed = fetch.delay;
+        webAPI.status = "completed";
+        webAPI.promiseState = "fulfilled";
+      }
+
+      this.snapshot(
+        0,
+        0,
+        `fetch completed — Response received (status 200)`,
+        "",
+      );
+
+      // Create mock Response HeapObject
+      const responseHeapId = generateId("heap", this.heapCounter++);
+      const responseColor = getPointerColor(this.pointerCounter++);
+
+      // Create a placeholder heap entry for the json() function
+      const jsonFnHeapId = generateId("heap", this.heapCounter++);
+      this.heap.push({
+        id: jsonFnHeapId,
+        type: "function",
+        color: getPointerColor(this.pointerCounter++),
+        label: "json()",
+        functionSource: "json()",
+      });
+
+      const responseHeapObj: HeapObject = {
+        id: responseHeapId,
+        type: "object",
+        color: responseColor,
+        label: "Response",
+        properties: [
+          {
+            key: "status",
+            displayValue: "200",
+            valueType: "primitive",
+          },
+          {
+            key: "ok",
+            displayValue: "true",
+            valueType: "primitive",
+          },
+          {
+            key: "url",
+            displayValue: `"${fetch.url}"`,
+            valueType: "primitive",
+          },
+          {
+            key: "json",
+            displayValue: "ⓕ",
+            valueType: "function",
+            heapReferenceId: jsonFnHeapId,
+            pointerColor: getPointerColor(this.pointerCounter - 1),
+          },
+        ],
+      };
+      this.heap.push(responseHeapObj);
+
+      // The runtime Response value — interpreter recognises __isFetchResponse
+      const responseValue: FetchResponse = {
+        __isFetchResponse: true,
+        url: fetch.url,
+        heapObjectId: responseHeapId,
+      };
+
+      // Resolve the fetch promise with the Response
+      const fetchPromise = this.promises.get(fetch.promiseId);
+      if (fetchPromise) {
+        this.resolvePromise(fetchPromise, responseValue);
+      }
+
+      // Remove the Web API entry from display after completion
+      this.webAPIs = this.webAPIs.filter((w) => w.id !== fetch.id);
+    }
   }
 
   // Handle native array method calls
