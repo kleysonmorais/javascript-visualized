@@ -92,6 +92,7 @@ export interface MemoryBlock {
   type: 'global' | 'local';
   color: string;               // border color (matches its Call Stack frame)
   entries: MemoryEntry[];
+  suspended?: boolean;         // true when the owning async frame is suspended
 }
 
 export interface HeapObjectProperty {

@@ -64,6 +64,7 @@ interface FunctionDeclarationNode extends BaseNode {
   id: IdentifierNode;
   params: PatternNode[];
   body: BlockStatementNode;
+  async?: boolean;
 }
 
 interface ExpressionStatementNode extends BaseNode {
@@ -185,6 +186,7 @@ interface FunctionExpressionNode extends BaseNode {
   id: IdentifierNode | null;
   params: PatternNode[];
   body: BlockStatementNode;
+  async?: boolean;
 }
 
 interface ArrowFunctionExpressionNode extends BaseNode {
@@ -192,6 +194,7 @@ interface ArrowFunctionExpressionNode extends BaseNode {
   params: PatternNode[];
   body: BlockStatementNode | ExpressionNode;
   expression: boolean;
+  async?: boolean;
 }
 
 interface TemplateLiteralNode extends BaseNode {
@@ -219,6 +222,29 @@ interface NewExpressionNode extends BaseNode {
   arguments: ExpressionNode[];
 }
 
+interface AwaitExpressionNode extends BaseNode {
+  type: "AwaitExpression";
+  argument: ExpressionNode;
+}
+
+interface TryStatementNode extends BaseNode {
+  type: "TryStatement";
+  block: BlockStatementNode;
+  handler: CatchClauseNode | null;
+  finalizer: BlockStatementNode | null;
+}
+
+interface CatchClauseNode extends BaseNode {
+  type: "CatchClause";
+  param: IdentifierNode | null;
+  body: BlockStatementNode;
+}
+
+interface ThrowStatementNode extends BaseNode {
+  type: "ThrowStatement";
+  argument: ExpressionNode;
+}
+
 type StatementNode =
   | VariableDeclarationNode
   | FunctionDeclarationNode
@@ -227,7 +253,9 @@ type StatementNode =
   | ForStatementNode
   | WhileStatementNode
   | BlockStatementNode
-  | ReturnStatementNode;
+  | ReturnStatementNode
+  | TryStatementNode
+  | ThrowStatementNode;
 
 type ExpressionNode =
   | CallExpressionNode
@@ -245,7 +273,8 @@ type ExpressionNode =
   | ArrowFunctionExpressionNode
   | TemplateLiteralNode
   | ConditionalExpressionNode
-  | NewExpressionNode;
+  | NewExpressionNode
+  | AwaitExpressionNode;
 
 type PatternNode = IdentifierNode;
 
@@ -255,7 +284,28 @@ interface FunctionValue {
   params: string[];
   body: BlockStatementNode | ExpressionNode;
   isArrow: boolean;
+  isAsync: boolean;
   source: string;
+}
+
+// Thrown error signal — used for try/catch and async rejection propagation
+interface ThrownError {
+  __isThrownError: true;
+  reason: unknown;
+}
+
+// Continuation for a suspended async function
+interface AsyncContinuation {
+  functionName: string;
+  frameId: string;
+  frameColor: string;
+  memoryBlockId: string;
+  remainingStatements: StatementNode[];
+  localEnv: Record<string, unknown>;
+  awaitResultVarName: string | null; // variable to assign the await result to (null = expression stmt)
+  returnPromiseId: string;           // the implicit promise the async fn resolves/rejects
+  capturedEnvStack: Record<string, unknown>[]; // full env stack snapshot for closures
+  isRejection: boolean;              // if true, resume with a thrown error
 }
 
 // Runtime value stored in variables when a Promise is created/returned
@@ -342,6 +392,9 @@ export class Interpreter {
   private pendingMicrotasks: PendingMicrotask[] = [];
   private microtaskCounter: number = 0;
   private reactionCounter: number = 0;
+
+  // Async/await engine state
+  private asyncContinuations: Map<string, AsyncContinuation> = new Map();
 
   // Global memory block kept accessible during async phase for closure support
   private globalMemoryBlock: MemoryBlock | null = null;
@@ -1177,6 +1230,12 @@ export class Interpreter {
       case "ReturnStatement":
         this.visitReturnStatement(node as ReturnStatementNode);
         break;
+      case "TryStatement":
+        this.visitTryStatement(node as TryStatementNode);
+        break;
+      case "ThrowStatement":
+        this.visitThrowStatement(node as ThrowStatementNode);
+        break;
       default:
         // Unsupported statement - skip gracefully
         console.warn(`Unsupported statement type: ${node.type}`);
@@ -1326,10 +1385,11 @@ export class Interpreter {
       });
     }
 
+    const asyncPrefix = node.async ? "async " : "";
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Declaring function ${name}`,
+      `Declaring ${asyncPrefix}function ${name}`,
       code,
     );
   }
@@ -1499,6 +1559,10 @@ export class Interpreter {
         );
       case "NewExpression":
         return this.evaluateNewExpression(node as NewExpressionNode);
+      case "AwaitExpression":
+        // Reached only when await is evaluated outside visitAsyncFunctionBody
+        // (e.g. nested inside a non-await-split expression). Evaluate the argument.
+        return this.evaluateExpression((node as AwaitExpressionNode).argument);
       default:
         console.warn(`Unsupported expression type: ${node.type}`);
         return undefined;
@@ -2156,6 +2220,11 @@ export class Interpreter {
       value: evaluatedArgs[index],
     }));
 
+    // Route async functions to the async engine
+    if (funcValue.isAsync) {
+      return this.callAsyncFunction(funcValue, funcName, params, node);
+    }
+
     const code = extractSource(this.sourceCode, node);
     const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
 
@@ -2417,6 +2486,35 @@ export class Interpreter {
   }
 
   private scheduleMicrotask(reaction: PromiseReaction, value: unknown): void {
+    // Check if this reaction is an async-resume marker
+    const asyncResumeId = (reaction as unknown as Record<string, unknown>)["__asyncResumeId"] as string | undefined;
+    if (asyncResumeId) {
+      const isRejection = !!(reaction as unknown as Record<string, unknown>)["__isRejection"];
+      const continuation = this.asyncContinuations.get(asyncResumeId);
+      if (continuation) {
+        continuation.isRejection = isRejection;
+      }
+      const microtask: PendingMicrotask = {
+        id: asyncResumeId,
+        callbackNode: null as unknown,
+        callbackSource: reaction.callbackSource,
+        sourcePromiseId: reaction.id,
+        resolveValue: value,
+        capturedEnvStack: this.envStack.map((env) => ({ ...env })),
+      };
+      this.pendingMicrotasks.push(microtask);
+      // Add to visualization queue if not already present
+      if (!this.microtaskQueue.some((q) => q.id === asyncResumeId)) {
+        this.microtaskQueue.push({
+          id: asyncResumeId,
+          callbackLabel: reaction.callbackSource,
+          sourceType: "promise",
+          sourceId: reaction.id,
+        });
+      }
+      return;
+    }
+
     const microtaskId = `microtask-${this.microtaskCounter++}`;
 
     const microtask: PendingMicrotask = {
@@ -2924,8 +3022,19 @@ export class Interpreter {
     return resultWrapper;
   }
 
-  // Execute a single microtask (a .then/.catch/.finally callback)
+  // Execute a single microtask (a .then/.catch/.finally callback or async resume)
   private executeMicrotask(microtask: PendingMicrotask): void {
+    // Check if this is an async-resume microtask
+    if (microtask.callbackNode === null && this.asyncContinuations.has(microtask.id)) {
+      const continuation = this.asyncContinuations.get(microtask.id)!;
+      this.resumeAsyncFunction(
+        microtask.id,
+        microtask.resolveValue,
+        continuation.isRejection,
+      );
+      return;
+    }
+
     const callbackNode = microtask.callbackNode as
       | FunctionExpressionNode
       | ArrowFunctionExpressionNode;
@@ -3068,6 +3177,7 @@ export class Interpreter {
       params,
       body: node.body as BlockStatementNode | ExpressionNode,
       isArrow,
+      isAsync: node.async === true,
       source,
     };
   }
@@ -3083,7 +3193,681 @@ export class Interpreter {
       params,
       body: node.body,
       isArrow: false,
+      isAsync: node.async === true,
       source,
     };
+  }
+
+  // === Async/Await Engine ===
+
+  private makeThrownError(reason: unknown): ThrownError {
+    return { __isThrownError: true, reason };
+  }
+
+  private isThrownError(value: unknown): value is ThrownError {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "__isThrownError" in value &&
+      (value as ThrownError).__isThrownError === true
+    );
+  }
+
+  /**
+   * Call an async function. Creates an implicit pending Promise, pushes an
+   * async frame, and executes the body. The first `await` encountered suspends
+   * execution and saves a continuation; resumption is scheduled as a microtask.
+   */
+  private callAsyncFunction(
+    funcValue: FunctionValue,
+    funcName: string,
+    params: Array<{ name: string; value: unknown }>,
+    callNode: CallExpressionNode,
+  ): PromiseWrapper {
+    const code = extractSource(this.sourceCode, callNode);
+
+    // 1. Create the implicit return Promise
+    const { promise: returnPromise, wrapper: returnWrapper } =
+      this.createInternalPromise();
+
+    // 2. Push async CallStackFrame
+    const frameId = generateId("frame", this.frameCounter);
+    const color = getFrameColor(this.frameCounter++);
+
+    const frame: CallStackFrame = {
+      id: frameId,
+      name: funcName,
+      type: "async",
+      line: this.getLine(callNode),
+      column: this.getColumn(callNode),
+      scope: {
+        name: funcName,
+        type: "function",
+        variables: params.map((p) => ({
+          name: p.name,
+          value: p.value,
+          kind: "param" as VariableKind,
+        })),
+        parentScope:
+          this.callStack.length > 0
+            ? this.callStack[this.callStack.length - 1].name
+            : undefined,
+      },
+      color,
+      isAsync: true,
+      status: "executing",
+    };
+
+    const paramEntries: MemoryEntry[] = params.map((p) => {
+      const resolved = this.resolveValueForMemory(p.value);
+      return {
+        name: p.name,
+        kind: "param" as const,
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+      };
+    });
+
+    const memoryBlock: MemoryBlock = {
+      frameId,
+      label: `Local: ${funcName}`,
+      type: "local",
+      color,
+      entries: paramEntries,
+      suspended: false,
+    };
+
+    this.callStack.push(frame);
+    this.memoryBlocks.push(memoryBlock);
+
+    const localEnv: Record<string, unknown> = {};
+    for (const p of params) localEnv[p.name] = p.value;
+    this.envStack.push(localEnv);
+
+    this.scopes.push({
+      name: funcName,
+      type: "function",
+      variables: params.map((p) => ({
+        name: p.name,
+        value: p.value,
+        kind: "param" as VariableKind,
+      })),
+      parentScope:
+        this.scopes.length > 0
+          ? this.scopes[this.scopes.length - 1].name
+          : undefined,
+    });
+
+    this.snapshot(
+      this.getLine(callNode),
+      this.getColumn(callNode),
+      `Calling async ${funcName}() — returns Promise (pending)`,
+      code,
+    );
+
+    // 3. Execute body — visitAsyncFunctionBody handles await suspension
+    const body = funcValue.body as BlockStatementNode;
+    const result = this.visitAsyncFunctionBody(
+      body.body as StatementNode[],
+      funcName,
+      frameId,
+      color,
+      returnPromise.id,
+    );
+
+    // 4. If the function completed without suspension (no await hit), settle the promise
+    if (result !== "suspended") {
+      const returnVal = result === "completed-with-return" ? this.returnValue : undefined;
+      this.hasReturned = false;
+      this.returnValue = undefined;
+
+      this.popFrame();
+
+      if (this.isThrownError(returnVal)) {
+        this.rejectPromise(returnPromise, (returnVal as ThrownError).reason);
+        this.snapshot(
+          this.getLine(callNode),
+          this.getColumn(callNode),
+          `async ${funcName} threw — Promise rejected with ${displayValue((returnVal as ThrownError).reason)}`,
+          code,
+        );
+      } else {
+        this.resolvePromise(returnPromise, returnVal);
+        this.snapshot(
+          this.getLine(callNode),
+          this.getColumn(callNode),
+          `async ${funcName} completed — Promise resolved with ${displayValue(returnVal)}`,
+          code,
+        );
+      }
+    }
+    // If "suspended": the frame stays on the stack; resumption will pop it
+
+    return returnWrapper;
+  }
+
+  /**
+   * Execute statements of an async function body. Returns:
+   *   "suspended"           — hit an await, continuation saved, frame stays
+   *   "completed-with-return" — hit a return statement (this.returnValue is set)
+   *   "completed"           — fell off the end normally
+   */
+  private visitAsyncFunctionBody(
+    statements: StatementNode[],
+    funcName: string,
+    frameId: string,
+    frameColor: string,
+    returnPromiseId: string,
+  ): "suspended" | "completed-with-return" | "completed" {
+    for (let i = 0; i < statements.length; i++) {
+      if (this.stepIndex >= MAX_STEPS) return "completed";
+
+      const stmt = statements[i];
+
+      // Check for await somewhere in this statement
+      const awaitInfo = this.findAwaitInStatement(stmt);
+
+      if (awaitInfo) {
+        // Execute everything up to the await; get the awaited value
+        const { awaitedValue, resultVarName } = this.processStatementUpToAwait(stmt);
+
+        const awaitCode = extractSource(this.sourceCode, stmt);
+
+        // Wrap non-promises with Promise.resolve
+        let awaitedPromiseId: string | null = null;
+        if (this.isPromiseWrapper(awaitedValue)) {
+          awaitedPromiseId = (awaitedValue as PromiseWrapper).promiseId;
+        } else {
+          // Wrap the value in a resolved promise
+          const { promise: wrappedP } = this.createInternalPromise();
+          this.resolvePromise(wrappedP, awaitedValue);
+          awaitedPromiseId = wrappedP.id;
+        }
+
+        const awaitedPromise = this.promises.get(awaitedPromiseId)!;
+
+        this.snapshot(
+          this.getLine(stmt),
+          this.getColumn(stmt),
+          `await — checking if Promise is settled`,
+          awaitCode,
+        );
+
+        // Suspend the async frame
+        const frame = this.callStack.find((f) => f.id === frameId);
+        if (frame) frame.status = "suspended";
+        const block = this.memoryBlocks.find((b) => b.frameId === frameId);
+        if (block) block.suspended = true;
+
+        this.snapshot(
+          this.getLine(stmt),
+          this.getColumn(stmt),
+          `async ${funcName} suspended at await — yielding execution`,
+          awaitCode,
+        );
+
+        // Save continuation (remaining statements after this one)
+        const remainingStatements = statements.slice(i + 1);
+        const capturedEnvStack = this.envStack.map((env) => ({ ...env }));
+        const localEnv = { ...this.getCurrentEnv() };
+
+        const continuation: AsyncContinuation = {
+          functionName: funcName,
+          frameId,
+          frameColor,
+          memoryBlockId: frameId, // same id used for lookup
+          remainingStatements,
+          localEnv,
+          awaitResultVarName: resultVarName,
+          returnPromiseId,
+          capturedEnvStack,
+          isRejection: false,
+        };
+
+        // Register the continuation as a microtask reaction on the awaited promise
+        this.scheduleAsyncContinuation(continuation, awaitedPromise);
+
+        // Pop env/scopes but KEEP frame and memoryBlock (suspended)
+        this.envStack.pop();
+        this.scopes.pop();
+
+        return "suspended";
+      }
+
+      // No await — execute normally
+      this.visitStatement(stmt);
+
+      if (this.hasReturned) {
+        return "completed-with-return";
+      }
+
+      if (this.stepIndex >= MAX_STEPS) return "completed";
+    }
+
+    return "completed";
+  }
+
+  /**
+   * Schedule a microtask that resumes an async function when the awaited
+   * promise settles.
+   */
+  private scheduleAsyncContinuation(
+    continuation: AsyncContinuation,
+    awaitedPromise: InternalPromise,
+  ): void {
+    // Create a synthetic microtask id
+    const microtaskId = `async-resume-${this.microtaskCounter++}`;
+
+    // We store the continuation in a map keyed by microtaskId so executeMicrotask can find it
+    this.asyncContinuations.set(microtaskId, continuation);
+
+    const queueItem: QueueItem = {
+      id: microtaskId,
+      callbackLabel: `resume ${continuation.functionName}`,
+      sourceType: "promise",
+      sourceId: awaitedPromise.id,
+    };
+
+    if (awaitedPromise.state === "fulfilled") {
+      // Already settled — schedule immediately
+      const pendingMicrotask: PendingMicrotask = {
+        id: microtaskId,
+        callbackNode: null as unknown,
+        callbackSource: `resume ${continuation.functionName}`,
+        sourcePromiseId: awaitedPromise.id,
+        resolveValue: awaitedPromise.result,
+        capturedEnvStack: continuation.capturedEnvStack,
+      };
+      this.pendingMicrotasks.push(pendingMicrotask);
+      this.microtaskQueue.push(queueItem);
+    } else if (awaitedPromise.state === "rejected") {
+      // Already rejected — resume with thrown error
+      const pendingMicrotask: PendingMicrotask = {
+        id: microtaskId,
+        callbackNode: null as unknown,
+        callbackSource: `resume ${continuation.functionName}`,
+        sourcePromiseId: awaitedPromise.id,
+        resolveValue: awaitedPromise.result,
+        capturedEnvStack: continuation.capturedEnvStack,
+      };
+      continuation.isRejection = true;
+      this.pendingMicrotasks.push(pendingMicrotask);
+      this.microtaskQueue.push(queueItem);
+    } else {
+      // Pending — add a synthetic reaction so we get notified when it settles
+      const fulfillReaction: PromiseReaction = {
+        id: `reaction-${this.reactionCounter++}`,
+        type: "fulfill",
+        callbackNode: null as unknown,
+        callbackSource: `resume ${continuation.functionName}`,
+        resultPromiseId: continuation.returnPromiseId,
+      };
+      // Override: we use a special marker to route through async resume instead
+      (fulfillReaction as unknown as Record<string, unknown>)["__asyncResumeId"] = microtaskId;
+
+      const rejectReaction: PromiseReaction = {
+        id: `reaction-${this.reactionCounter++}`,
+        type: "reject",
+        callbackNode: null as unknown,
+        callbackSource: `resume ${continuation.functionName} (rejection)`,
+        resultPromiseId: continuation.returnPromiseId,
+      };
+      (rejectReaction as unknown as Record<string, unknown>)["__asyncResumeId"] = microtaskId;
+      (rejectReaction as unknown as Record<string, unknown>)["__isRejection"] = true;
+
+      awaitedPromise.fulfillReactions.push(fulfillReaction);
+      awaitedPromise.rejectReactions.push(rejectReaction);
+      this.syncPromiseHeap(awaitedPromise);
+
+      // Also keep a queue item so the UI shows the pending microtask
+      this.microtaskQueue.push(queueItem);
+    }
+  }
+
+  /**
+   * Resume a previously suspended async function.
+   * Called from executeMicrotask when it detects an async-resume microtask.
+   */
+  private resumeAsyncFunction(
+    microtaskId: string,
+    resolvedValue: unknown,
+    isRejection: boolean,
+  ): void {
+    const continuation = this.asyncContinuations.get(microtaskId);
+    if (!continuation) return;
+    this.asyncContinuations.delete(microtaskId);
+
+    // Restore the frame status
+    const frame = this.callStack.find((f) => f.id === continuation.frameId);
+    if (frame) {
+      frame.status = "executing";
+    }
+    const block = this.memoryBlocks.find(
+      (b) => b.frameId === continuation.frameId,
+    );
+    if (block) {
+      block.suspended = false;
+    }
+
+    // Restore env stack
+    this.envStack.push(continuation.localEnv);
+    this.scopes.push({
+      name: continuation.functionName,
+      type: "function",
+      variables: [],
+    });
+
+    const resumeValue = isRejection
+      ? this.makeThrownError(resolvedValue)
+      : resolvedValue;
+
+    this.snapshot(
+      0,
+      0,
+      `async ${continuation.functionName} resumed — await resolved with ${displayValue(resolvedValue)}`,
+      "",
+    );
+
+    // If the await result goes into a variable, assign it now
+    if (continuation.awaitResultVarName && !isRejection) {
+      const varName = continuation.awaitResultVarName;
+      this.setVariable(varName, resolvedValue);
+
+      // Update memory — either update existing entry or add it
+      const existingFrameId = this.findMemoryEntryFrameId(varName);
+      if (existingFrameId) {
+        const resolved = this.resolveValueForMemory(resolvedValue);
+        this.updateMemoryEntry(existingFrameId, varName, {
+          displayValue: resolved.displayValue,
+          valueType: resolved.valueType,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+        });
+      }
+      // Note: if not found, the variable will be declared during continuation execution
+    }
+
+    // Continue executing the remaining statements
+    const returnPromise = this.promises.get(continuation.returnPromiseId);
+
+    if (isRejection && continuation.remainingStatements.length === 0) {
+      // Nothing left to execute and we have a rejection — reject the promise
+      this.hasReturned = false;
+      this.returnValue = undefined;
+      this.envStack.pop();
+      this.scopes.pop();
+      this.popFrame();
+      if (returnPromise) {
+        this.rejectPromise(returnPromise, resolvedValue);
+        this.snapshot(
+          0,
+          0,
+          `async ${continuation.functionName} — await rejected, Promise rejected with ${displayValue(resolvedValue)}`,
+          "",
+        );
+      }
+      return;
+    }
+
+    void resumeValue; // used conceptually above; suppress lint
+
+    const result = this.visitAsyncFunctionBody(
+      continuation.remainingStatements,
+      continuation.functionName,
+      continuation.frameId,
+      continuation.frameColor,
+      continuation.returnPromiseId,
+    );
+
+    if (result !== "suspended") {
+      const returnVal =
+        result === "completed-with-return" ? this.returnValue : undefined;
+      this.hasReturned = false;
+      this.returnValue = undefined;
+
+      this.envStack.pop();
+      this.scopes.pop();
+      this.popFrame();
+
+      if (returnPromise) {
+        if (this.isThrownError(returnVal)) {
+          this.rejectPromise(returnPromise, (returnVal as ThrownError).reason);
+          this.snapshot(
+            0,
+            0,
+            `async ${continuation.functionName} threw — Promise rejected`,
+            "",
+          );
+        } else {
+          this.resolvePromise(returnPromise, returnVal);
+          this.snapshot(
+            0,
+            0,
+            `async ${continuation.functionName} completed — Promise resolved with ${displayValue(returnVal)}`,
+            "",
+          );
+        }
+      }
+    }
+  }
+
+  /**
+   * Check if a statement contains an AwaitExpression at the top level.
+   * Returns the await node or null.
+   */
+  private findAwaitInStatement(
+    stmt: StatementNode,
+  ): AwaitExpressionNode | null {
+    if (stmt.type === "VariableDeclaration") {
+      const decl = stmt as VariableDeclarationNode;
+      for (const d of decl.declarations) {
+        if (d.init && d.init.type === "AwaitExpression") {
+          return d.init as AwaitExpressionNode;
+        }
+      }
+    }
+    if (stmt.type === "ExpressionStatement") {
+      const expr = (stmt as ExpressionStatementNode).expression;
+      if (expr.type === "AwaitExpression") return expr as AwaitExpressionNode;
+      if (expr.type === "AssignmentExpression") {
+        const right = (expr as AssignmentExpressionNode).right;
+        if (right.type === "AwaitExpression") return right as AwaitExpressionNode;
+      }
+    }
+    if (stmt.type === "ReturnStatement") {
+      const ret = stmt as ReturnStatementNode;
+      if (ret.argument && ret.argument.type === "AwaitExpression") {
+        return ret.argument as AwaitExpressionNode;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * For a statement that contains a top-level await, evaluate everything
+   * except the await itself and return the awaited expression's value plus
+   * the name of the variable it would be assigned to (if any).
+   */
+  private processStatementUpToAwait(stmt: StatementNode): {
+    awaitedValue: unknown;
+    resultVarName: string | null;
+  } {
+    if (stmt.type === "VariableDeclaration") {
+      const decl = stmt as VariableDeclarationNode;
+      const d = decl.declarations[0];
+      const awaitNode = d.init as AwaitExpressionNode;
+      const awaitedValue = this.evaluateExpression(
+        awaitNode.argument,
+      );
+      // Declare the variable as undefined for now (will be assigned on resume)
+      const varName = d.id.name;
+      this.setVariable(varName, undefined, true);
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: decl.kind as VariableKind,
+        valueType: "primitive",
+        displayValue: "undefined",
+      };
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      const currentScope = this.scopes[this.scopes.length - 1];
+      if (currentScope) {
+        currentScope.variables.push({ name: varName, value: undefined, kind: decl.kind as VariableKind });
+      }
+      const currentFrame = this.callStack[this.callStack.length - 1];
+      if (currentFrame) {
+        currentFrame.scope.variables.push({ name: varName, value: undefined, kind: decl.kind as VariableKind });
+      }
+      return { awaitedValue, resultVarName: varName };
+    }
+
+    if (stmt.type === "ExpressionStatement") {
+      const expr = (stmt as ExpressionStatementNode).expression;
+      if (expr.type === "AwaitExpression") {
+        const awaitedValue = this.evaluateExpression(
+          (expr as AwaitExpressionNode).argument,
+        );
+        return { awaitedValue, resultVarName: null };
+      }
+      if (expr.type === "AssignmentExpression") {
+        const assignNode = expr as AssignmentExpressionNode;
+        const awaitNode = assignNode.right as AwaitExpressionNode;
+        const awaitedValue = this.evaluateExpression(awaitNode.argument);
+        const varName =
+          assignNode.left.type === "Identifier"
+            ? (assignNode.left as IdentifierNode).name
+            : null;
+        return { awaitedValue, resultVarName: varName };
+      }
+    }
+
+    if (stmt.type === "ReturnStatement") {
+      const ret = stmt as ReturnStatementNode;
+      const awaitNode = ret.argument as AwaitExpressionNode;
+      const awaitedValue = this.evaluateExpression(awaitNode.argument);
+      return { awaitedValue, resultVarName: "__return__" };
+    }
+
+    return { awaitedValue: undefined, resultVarName: null };
+  }
+
+  // === try/catch/finally ===
+
+  private visitTryStatement(node: TryStatementNode): void {
+    const savedHasReturned = this.hasReturned;
+    const savedReturnValue = this.returnValue;
+    let thrownError: ThrownError | null = null;
+
+    try {
+      this.hasReturned = false;
+      this.returnValue = undefined;
+
+      // Execute try block
+      for (const stmt of node.block.body) {
+        this.visitStatement(stmt);
+        if (this.hasReturned || this.stepIndex >= MAX_STEPS) break;
+        // If a thrown error was propagated via returnValue
+        if (this.isThrownError(this.returnValue)) {
+          thrownError = this.returnValue as ThrownError;
+          this.hasReturned = false;
+          this.returnValue = undefined;
+          break;
+        }
+      }
+    } catch (_e) {
+      // Unexpected JS-level error — treat as thrown
+      thrownError = this.makeThrownError(_e);
+    }
+
+    if (thrownError && node.handler) {
+      const catchClause = node.handler;
+      const catchCode = extractSource(this.sourceCode, catchClause.body);
+
+      this.snapshot(
+        this.getLine(catchClause.body),
+        this.getColumn(catchClause.body),
+        `Error caught: ${displayValue(thrownError.reason)} — entering catch block`,
+        catchCode,
+      );
+
+      // Push error variable into current scope if param exists
+      if (catchClause.param) {
+        const errName = catchClause.param.name;
+        this.setVariable(errName, thrownError.reason, true);
+        const entry: MemoryEntry = {
+          name: errName,
+          kind: "let" as VariableKind,
+          valueType: "primitive",
+          displayValue: displayValue(thrownError.reason),
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        const currentScope = this.scopes[this.scopes.length - 1];
+        if (currentScope) {
+          currentScope.variables.push({
+            name: errName,
+            value: thrownError.reason,
+            kind: "let" as VariableKind,
+          });
+        }
+      }
+
+      // Execute catch block
+      this.hasReturned = false;
+      for (const stmt of catchClause.body.body) {
+        this.visitStatement(stmt);
+        if (this.hasReturned || this.stepIndex >= MAX_STEPS) break;
+      }
+      thrownError = null; // caught
+    }
+
+    // Run finally block always
+    if (node.finalizer) {
+      const finallyCode = extractSource(this.sourceCode, node.finalizer);
+      this.snapshot(
+        this.getLine(node.finalizer),
+        this.getColumn(node.finalizer),
+        "Entering finally block",
+        finallyCode,
+      );
+      const savedAgain = this.hasReturned;
+      const savedRetAgain = this.returnValue;
+      this.hasReturned = false;
+      for (const stmt of node.finalizer.body) {
+        this.visitStatement(stmt);
+        if (this.hasReturned || this.stepIndex >= MAX_STEPS) break;
+      }
+      // Restore return state unless finally itself returned
+      if (!this.hasReturned) {
+        this.hasReturned = savedAgain;
+        this.returnValue = savedRetAgain;
+      }
+    }
+
+    // Re-propagate if not caught
+    if (thrownError) {
+      this.returnValue = thrownError;
+      this.hasReturned = true;
+      return;
+    }
+
+    // If no error was thrown but previous return state should be restored
+    if (!this.hasReturned) {
+      this.hasReturned = savedHasReturned;
+      this.returnValue = savedReturnValue;
+    }
+  }
+
+  private visitThrowStatement(node: ThrowStatementNode): void {
+    const value = this.evaluateExpression(node.argument);
+    const code = extractSource(this.sourceCode, node);
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `throw ${displayValue(value)}`,
+      code,
+    );
+    this.returnValue = this.makeThrownError(value);
+    this.hasReturned = true;
   }
 }
