@@ -1,4 +1,4 @@
-import { Check, Clock, X } from "lucide-react";
+import { Check, Clock, X, Pause, Play, Square } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import type { ClosureVariable, HeapObject, HeapObjectProperty } from "@/types";
@@ -19,6 +19,45 @@ function isPromiseObject(obj: HeapObject): boolean {
   if (obj.label === "Promise") return true;
   if (obj.properties?.some((p) => p.key.startsWith("[["))) return true;
   return false;
+}
+
+/** Check if a HeapObject is a Generator */
+function isGeneratorObject(obj: HeapObject): boolean {
+  if (obj.generatorState !== undefined) return true;
+  if (obj.label?.startsWith("Generator (")) return true;
+  return false;
+}
+
+/** Get generator state color and icon */
+function getGeneratorStateStyle(state: string): {
+  color: string;
+  icon: React.ReactNode;
+} {
+  switch (state) {
+    case '"suspended"':
+    case "suspended":
+      return {
+        color: THEME.colors.status.pending, // amber
+        icon: <Pause size={10} style={{ marginLeft: 4 }} />,
+      };
+    case '"executing"':
+    case "executing":
+      return {
+        color: THEME.colors.status.running, // green
+        icon: <Play size={10} style={{ marginLeft: 4 }} />,
+      };
+    case '"closed"':
+    case "closed":
+      return {
+        color: THEME.colors.text.muted, // gray
+        icon: <Square size={10} style={{ marginLeft: 4 }} />,
+      };
+    default:
+      return {
+        color: THEME.colors.text.secondary,
+        icon: null,
+      };
+  }
 }
 
 /** Get promise state color and icon */
@@ -79,9 +118,14 @@ function isInternalSlot(key: string): boolean {
 
 function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
   if (prop.valueType === "function") {
+    // Check if it's a generator function (ⓕ*)
+    const isGenerator = prop.displayValue?.includes("*") || prop.displayValue === "ⓕ*";
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
         <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
+        {isGenerator && (
+          <span style={{ color: THEME.colors.syntax.keyword }}>*</span>
+        )}
         {prop.pointerColor && (
           <span
             style={{ color: prop.pointerColor, fontSize: 9, marginLeft: 3 }}
@@ -368,6 +412,153 @@ function PromiseHeapCard({
   );
 }
 
+/** Render a Generator HeapObject with special state styling */
+function GeneratorHeapCard({
+  obj,
+  isHighlighted,
+}: {
+  obj: HeapObject;
+  isHighlighted: boolean;
+}) {
+  const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+
+  // Extract generator state
+  const stateProp = obj.properties?.find((p) => p.key === "[[GeneratorState]]");
+  const stateValue = stateProp?.displayValue ?? obj.generatorState ?? "unknown";
+  const stateStyle = getGeneratorStateStyle(stateValue);
+
+  // Extract generator function reference
+  const funcProp = obj.properties?.find((p) => p.key === "[[GeneratorFunction]]");
+
+  // Use dashed border for suspended generators
+  const isSuspended = obj.generatorState === "suspended" || stateValue.includes("suspended");
+  const borderStyle = isSuspended ? "dashed" : "solid";
+
+  return (
+    <div
+      style={{
+        backgroundColor: THEME.colors.bg.tertiary,
+        borderRadius: THEME.radius.sm,
+        padding: "8px 10px",
+        border: `1px ${borderStyle} ${isHighlighted ? obj.color : `${obj.color}44`}`,
+        boxShadow: isHighlighted ? `0 0 12px ${obj.color}50` : "none",
+        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
+        cursor: "pointer",
+        opacity: isSuspended ? 0.85 : 1,
+      }}
+      onMouseEnter={() => setHoveredHeapId(obj.id)}
+      onMouseLeave={() => setHoveredHeapId(null)}
+    >
+      {/* Generator header */}
+      <div className="flex items-center gap-2 mb-2">
+        <span style={{ color: obj.color, fontSize: 12 }}>●</span>
+        <span
+          style={{
+            fontFamily: THEME.fonts.code,
+            fontSize: 11,
+            fontWeight: 600,
+            color: THEME.colors.text.primary,
+          }}
+        >
+          {obj.label}
+        </span>
+      </div>
+
+      {/* Generator state */}
+      <div
+        className="flex items-center justify-between gap-2"
+        style={{ padding: "2px 0" }}
+      >
+        <span
+          style={{
+            fontFamily: THEME.fonts.code,
+            fontSize: 10,
+            color: THEME.colors.syntax.keyword,
+            fontStyle: "italic",
+          }}
+        >
+          [[GeneratorState]]
+        </span>
+        <span
+          className="flex items-center"
+          style={{
+            fontFamily: THEME.fonts.code,
+            fontSize: 11,
+            color: stateStyle.color,
+          }}
+        >
+          {stateValue}
+          {stateStyle.icon}
+        </span>
+      </div>
+
+      {/* Generator function reference */}
+      {funcProp && (
+        <div
+          className="flex items-center justify-between gap-2"
+          style={{ padding: "2px 0" }}
+        >
+          <span
+            style={{
+              fontFamily: THEME.fonts.code,
+              fontSize: 10,
+              color: THEME.colors.syntax.keyword,
+              fontStyle: "italic",
+            }}
+          >
+            [[GeneratorFunction]]
+          </span>
+          <span
+            style={{
+              fontFamily: THEME.fonts.code,
+              fontSize: 11,
+            }}
+          >
+            <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
+            <span style={{ color: THEME.colors.syntax.keyword }}>*</span>
+            {funcProp.displayValue.replace(/^ⓕ\*?\s*/, " ")}
+            {funcProp.pointerColor && (
+              <span style={{ color: funcProp.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+            )}
+          </span>
+        </div>
+      )}
+
+      {/* Last yield value if present */}
+      {obj.lastYieldedValue && (
+        <div
+          className="flex items-center justify-between gap-2"
+          style={{ 
+            padding: "2px 0",
+            marginTop: 4,
+            borderTop: `1px solid ${THEME.colors.text.muted}22`,
+          }}
+        >
+          <span
+            style={{
+              fontFamily: THEME.fonts.code,
+              fontSize: 10,
+              color: THEME.colors.text.muted,
+              fontStyle: "italic",
+            }}
+          >
+            last yield
+          </span>
+          <span
+            style={{
+              fontFamily: THEME.fonts.code,
+              fontSize: 11,
+              color: primitiveColor(obj.lastYieldedValue),
+            }}
+          >
+            {obj.lastYieldedValue}
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 interface HeapCardProps {
   obj: HeapObject;
   isHighlighted: boolean;
@@ -419,6 +610,23 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
                   }}
                 >
                   async
+                </span>
+              )}
+              {(obj.functionSource ?? obj.label).includes("function*") && (
+                <span
+                  style={{
+                    fontSize: 9,
+                    fontFamily: THEME.fonts.code,
+                    color: THEME.colors.syntax.keyword,
+                    backgroundColor: `${THEME.colors.syntax.keyword}22`,
+                    padding: "1px 5px",
+                    borderRadius: 4,
+                    marginRight: 6,
+                    display: "inline-block",
+                    marginBottom: 2,
+                  }}
+                >
+                  generator*
                 </span>
               )}
               <pre
@@ -495,9 +703,10 @@ interface HeapSectionProps {
 export function HeapSection({ heap }: HeapSectionProps) {
   const hoveredPointerId = useVisualizerStore((s) => s.hoveredPointerId);
 
-  // Separate Promise objects from other heap objects for grouping
+  // Separate Promise objects, Generator objects, and other heap objects for grouping
   const promiseObjects = heap.filter(isPromiseObject);
-  const otherObjects = heap.filter((obj) => !isPromiseObject(obj));
+  const generatorObjects = heap.filter(isGeneratorObject);
+  const otherObjects = heap.filter((obj) => !isPromiseObject(obj) && !isGeneratorObject(obj));
 
   return (
     <div
@@ -541,8 +750,39 @@ export function HeapSection({ heap }: HeapSectionProps) {
             />
           ))}
 
+          {/* Generator objects grouped together */}
+          {generatorObjects.length > 0 && (otherObjects.length > 0 || promiseObjects.length > 0) && (
+            <div
+              style={{
+                borderTop: `1px dashed ${THEME.colors.text.muted}33`,
+                marginTop: 4,
+                paddingTop: 8,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 9,
+                  color: THEME.colors.text.muted,
+                  fontFamily: THEME.fonts.code,
+                  marginBottom: 6,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}
+              >
+                Generators
+              </div>
+            </div>
+          )}
+          {generatorObjects.map((obj) => (
+            <GeneratorHeapCard
+              key={obj.id}
+              obj={obj}
+              isHighlighted={hoveredPointerId === obj.id}
+            />
+          ))}
+
           {/* Promise objects grouped together */}
-          {promiseObjects.length > 0 && otherObjects.length > 0 && (
+          {promiseObjects.length > 0 && (otherObjects.length > 0 || generatorObjects.length > 0) && (
             <div
               style={{
                 borderTop: `1px dashed ${THEME.colors.text.muted}33`,

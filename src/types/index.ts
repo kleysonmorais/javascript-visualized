@@ -126,6 +126,8 @@ export interface HeapObject {
   properties?: HeapObjectProperty[];
   functionSource?: string;     // source for functions
   closureScope?: ClosureScopeEntry[]; // captured variables from enclosing scope(s)
+  generatorState?: 'suspended' | 'executing' | 'closed';  // for generator objects
+  lastYieldedValue?: string;   // display value of last yield
 }
 
 export interface ExecutionStep {

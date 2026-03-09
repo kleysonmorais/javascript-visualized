@@ -67,6 +67,7 @@ interface FunctionDeclarationNode extends BaseNode {
   params: PatternNode[];
   body: BlockStatementNode;
   async?: boolean;
+  generator?: boolean;
 }
 
 interface ExpressionStatementNode extends BaseNode {
@@ -189,6 +190,7 @@ interface FunctionExpressionNode extends BaseNode {
   params: PatternNode[];
   body: BlockStatementNode;
   async?: boolean;
+  generator?: boolean;
 }
 
 interface ArrowFunctionExpressionNode extends BaseNode {
@@ -227,6 +229,20 @@ interface NewExpressionNode extends BaseNode {
 interface AwaitExpressionNode extends BaseNode {
   type: "AwaitExpression";
   argument: ExpressionNode;
+}
+
+interface YieldExpressionNode extends BaseNode {
+  type: "YieldExpression";
+  argument: ExpressionNode | null;
+  delegate: boolean; // true for `yield*`
+}
+
+interface ForOfStatementNode extends BaseNode {
+  type: "ForOfStatement";
+  left: VariableDeclarationNode | IdentifierNode;
+  right: ExpressionNode;
+  body: StatementNode;
+  await: boolean;
 }
 
 interface TryStatementNode extends BaseNode {
@@ -283,6 +299,7 @@ type StatementNode =
   | ExpressionStatementNode
   | IfStatementNode
   | ForStatementNode
+  | ForOfStatementNode
   | WhileStatementNode
   | BlockStatementNode
   | ReturnStatementNode
@@ -309,7 +326,8 @@ type ExpressionNode =
   | TemplateLiteralNode
   | ConditionalExpressionNode
   | NewExpressionNode
-  | AwaitExpressionNode;
+  | AwaitExpressionNode
+  | YieldExpressionNode;
 
 type PatternNode = IdentifierNode;
 
@@ -330,6 +348,7 @@ interface FunctionValue {
   body: BlockStatementNode | ExpressionNode;
   isArrow: boolean;
   isAsync: boolean;
+  isGenerator: boolean;
   source: string;
   // Closure: live references to enclosing envs (non-global) at time of creation
   capturedEnvMeta?: CapturedEnvMeta[];
@@ -377,6 +396,28 @@ interface AsyncContinuation {
   returnPromiseId: string;           // the implicit promise the async fn resolves/rejects
   capturedEnvStack: Record<string, unknown>[]; // full env stack snapshot for closures
   isRejection: boolean;              // if true, resume with a thrown error
+}
+
+// Runtime value stored in variables when a generator is invoked
+interface GeneratorWrapper {
+  __isGenerator: true;
+  generatorId: string;       // links to the generator HeapObject
+  functionValue: FunctionValue;
+  heapObjectId: string;
+  functionHeapId: string;    // heapId of the generator function
+}
+
+// Continuation for a suspended generator
+interface GeneratorContinuation {
+  generatorId: string;         // links to the generator HeapObject
+  frameId: string;
+  frameColor: string;
+  remainingStatements: StatementNode[];
+  localEnv: Record<string, unknown>;
+  capturedEnvStack: Record<string, unknown>[];
+  yieldResultVarName: string | null; // if yield is in assignment: const x = yield 1
+  executionPosition: number;   // track position in body for resumption
+  nextCallCount: number;       // track number of next() calls for safety
 }
 
 // Runtime value stored in variables when a Promise is created/returned
@@ -486,6 +527,11 @@ export class Interpreter {
 
   // Async/await engine state
   private asyncContinuations: Map<string, AsyncContinuation> = new Map();
+
+  // Generator engine state
+  private generatorContinuations: Map<string, GeneratorContinuation> = new Map();
+  private generatorCounter: number = 0;
+  private static readonly MAX_GENERATOR_NEXT_CALLS = 100; // safety limit per generator
 
   // Global memory block kept accessible during async phase for closure support
   private globalMemoryBlock: MemoryBlock | null = null;
@@ -1450,6 +1496,15 @@ export class Interpreter {
     );
   }
 
+  private isGeneratorWrapper(value: unknown): value is GeneratorWrapper {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "__isGenerator" in value &&
+      (value as GeneratorWrapper).__isGenerator === true
+    );
+  }
+
   private getLine(node: BaseNode): number {
     return node.loc?.start.line ?? 1;
   }
@@ -1485,6 +1540,9 @@ export class Interpreter {
         break;
       case "ForStatement":
         this.visitForStatement(node as ForStatementNode);
+        break;
+      case "ForOfStatement":
+        this.visitForOfStatement(node as ForOfStatementNode);
         break;
       case "WhileStatement":
         this.visitWhileStatement(node as WhileStatementNode);
@@ -1621,6 +1679,7 @@ export class Interpreter {
   private visitFunctionDeclaration(node: FunctionDeclarationNode): void {
     const name = node.id.name;
     const code = extractSource(this.sourceCode, node);
+    const isGenerator = node.generator === true;
 
     // Create function value
     const funcValue = this.createFunctionValueFromDeclaration(node);
@@ -1629,10 +1688,13 @@ export class Interpreter {
     this.setVariable(name, funcValue, true);
     this.recordVarKind(name, 'function');
 
+    // Display value differs for generators
+    const funcDisplayValue = isGenerator ? "ⓕ*" : "ⓕ";
+
     // Create heap object
     const heapObj = this.addHeapObject(
       "function",
-      "ⓕ",
+      funcDisplayValue,
       undefined,
       funcValue.source,
     );
@@ -1650,7 +1712,7 @@ export class Interpreter {
       name,
       kind: "function",
       valueType: "function",
-      displayValue: "ⓕ",
+      displayValue: funcDisplayValue,
       heapReferenceId: heapObj.id,
       pointerColor: heapObj.color,
     };
@@ -1678,10 +1740,11 @@ export class Interpreter {
     }
 
     const asyncPrefix = node.async ? "async " : "";
+    const generatorPrefix = isGenerator ? "generator function* " : "function ";
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Declaring ${asyncPrefix}function ${name}`,
+      `Declaring ${asyncPrefix}${generatorPrefix}${name}`,
       code,
     );
   }
@@ -1784,6 +1847,7 @@ export class Interpreter {
         body: m.body,
         isArrow: false,
         isAsync: false,
+        isGenerator: false,
         source: extractSource(this.sourceCode, node),
         capturedEnvMeta: this.captureEnclosingScopes(),
       };
@@ -2029,6 +2093,12 @@ export class Interpreter {
           }
         }
         return awaitArgValue;
+      }
+      case "YieldExpression": {
+        // YieldExpression is normally handled in executeGeneratorBody's findYieldInStatement
+        // This case handles nested yield or yield in expressions
+        const yieldNode = node as YieldExpressionNode;
+        return yieldNode.argument ? this.evaluateExpression(yieldNode.argument) : undefined;
       }
       case "ThisExpression":
         return this.lookupVariable("this");
@@ -2397,6 +2467,14 @@ export class Interpreter {
             propName,
             node,
           );
+        }
+      }
+
+      // Handle generator.next() / generator.return() / generator.throw()
+      if (["next", "return", "throw"].includes(propName)) {
+        const objValue = this.evaluateExpression(memberCallee.object);
+        if (this.isGeneratorWrapper(objValue)) {
+          return this.handleGeneratorMethodCall(objValue, propName, node);
         }
       }
 
@@ -2961,6 +3039,11 @@ export class Interpreter {
       return this.callAsyncFunction(funcValue, funcName, params, node);
     }
 
+    // Route generator functions to create a generator object (no execution yet)
+    if (funcValue.isGenerator) {
+      return this.createGeneratorObject(funcValue, funcName, params, node);
+    }
+
     const code = extractSource(this.sourceCode, node);
     const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
 
@@ -3073,6 +3156,7 @@ export class Interpreter {
             body: method.body,
             isArrow: false,
             isAsync: false,
+            isGenerator: false,
             source: `${methodName}() { ... }`,
             capturedEnvMeta: undefined,
           };
@@ -4377,6 +4461,7 @@ export class Interpreter {
     const params = node.params.map((p) => (p as IdentifierNode).name);
     const source = extractSource(this.sourceCode, node);
     const isArrow = node.type === "ArrowFunctionExpression";
+    const isGenerator = node.type === "FunctionExpression" && (node as FunctionExpressionNode).generator === true;
 
     return {
       __isFunction: true,
@@ -4384,6 +4469,7 @@ export class Interpreter {
       body: node.body as BlockStatementNode | ExpressionNode,
       isArrow,
       isAsync: node.async === true,
+      isGenerator,
       source,
       capturedEnvMeta: this.captureEnclosingScopes(),
     };
@@ -4401,6 +4487,7 @@ export class Interpreter {
       body: node.body,
       isArrow: false,
       isAsync: node.async === true,
+      isGenerator: node.generator === true,
       source,
       capturedEnvMeta: this.captureEnclosingScopes(),
     };
@@ -5242,5 +5329,753 @@ export class Interpreter {
       code,
     );
     throw new ContinueSignal();
+  }
+
+  // === Generator Methods ===
+
+  /**
+   * Create a generator object when a generator function is invoked.
+   * Does NOT execute the generator body - just creates the generator object.
+   */
+  private createGeneratorObject(
+    funcValue: FunctionValue,
+    funcName: string,
+    params: Array<{ name: string; value: unknown }>,
+    callNode: CallExpressionNode,
+  ): GeneratorWrapper {
+    const code = extractSource(this.sourceCode, callNode);
+    const generatorId = `gen-${this.generatorCounter++}`;
+    
+    // Get the function's heap object ID for reference
+    const functionHeapId = this.objectHeapMap.get(funcValue) ?? "";
+    const functionHeap = functionHeapId ? this.heap.find(h => h.id === functionHeapId) : undefined;
+
+    // Create generator HeapObject with properties
+    const genHeapObj = this.addHeapObject(
+      "object",
+      `Generator (${funcName})`,
+      [
+        { key: "[[GeneratorState]]", displayValue: '"suspended"', valueType: "primitive" },
+        { 
+          key: "[[GeneratorFunction]]", 
+          displayValue: `ⓕ* ${funcName}`, 
+          valueType: "function",
+          heapReferenceId: functionHeapId || undefined,
+          pointerColor: functionHeap?.color,
+        },
+        { key: "next", displayValue: "ⓕ", valueType: "function" },
+        { key: "return", displayValue: "ⓕ", valueType: "function" },
+        { key: "throw", displayValue: "ⓕ", valueType: "function" },
+      ],
+    );
+    genHeapObj.generatorState = "suspended";
+
+    // Create the continuation for this generator
+    const frameId = generateId("gen-frame", this.frameCounter++);
+    const frameColor = getFrameColor(this.frameCounter);
+    const localEnv: Record<string, unknown> = {};
+    for (const p of params) localEnv[p.name] = p.value;
+
+    const continuation: GeneratorContinuation = {
+      generatorId,
+      frameId,
+      frameColor,
+      remainingStatements: (funcValue.body as BlockStatementNode).body as StatementNode[],
+      localEnv,
+      capturedEnvStack: funcValue.capturedEnvMeta?.map(m => m.env) ?? [],
+      yieldResultVarName: null,
+      executionPosition: 0,
+      nextCallCount: 0,
+    };
+
+    this.generatorContinuations.set(generatorId, continuation);
+
+    // Create the generator wrapper runtime value
+    const wrapper: GeneratorWrapper = {
+      __isGenerator: true,
+      generatorId,
+      functionValue: funcValue,
+      heapObjectId: genHeapObj.id,
+      functionHeapId,
+    };
+
+    // Map the wrapper to its heap object
+    this.objectHeapMap.set(wrapper, genHeapObj.id);
+
+    const argsDisplay = params.map(p => displayValue(p.value)).join(", ");
+    this.snapshot(
+      this.getLine(callNode),
+      this.getColumn(callNode),
+      `${funcName}(${argsDisplay}) — generator object created (suspended)`,
+      code,
+    );
+
+    return wrapper;
+  }
+
+  /**
+   * Handle generator.next(), generator.return(), generator.throw() calls.
+   */
+  private handleGeneratorMethodCall(
+    wrapper: GeneratorWrapper,
+    method: string,
+    node: CallExpressionNode,
+  ): unknown {
+    const code = extractSource(this.sourceCode, node);
+    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+
+    if (!genHeap) {
+      console.warn(`Generator heap object not found: ${wrapper.heapObjectId}`);
+      return { value: undefined, done: true };
+    }
+
+    // Check if generator is already closed
+    if (genHeap.generatorState === "closed") {
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `gen.${method}() — generator already closed`,
+        code,
+      );
+      return { value: undefined, done: true };
+    }
+
+    // Get the argument value if provided
+    const argValue = node.arguments.length > 0
+      ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+      : undefined;
+
+    if (method === "return") {
+      return this.executeGeneratorReturn(wrapper, argValue, node);
+    }
+
+    if (method === "throw") {
+      return this.executeGeneratorThrow(wrapper, argValue, node);
+    }
+
+    // method === "next"
+    return this.executeGeneratorNext(wrapper, argValue, node);
+  }
+
+  /**
+   * Execute generator.next(value) - run the generator body until yield or completion.
+   */
+  private executeGeneratorNext(
+    wrapper: GeneratorWrapper,
+    inputValue: unknown,
+    node: CallExpressionNode,
+  ): unknown {
+    const code = extractSource(this.sourceCode, node);
+    const continuation = this.generatorContinuations.get(wrapper.generatorId);
+    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+
+    if (!continuation || !genHeap) {
+      return { value: undefined, done: true };
+    }
+
+    // Safety check for infinite loops
+    continuation.nextCallCount++;
+    if (continuation.nextCallCount > Interpreter.MAX_GENERATOR_NEXT_CALLS) {
+      genHeap.generatorState = "closed";
+      this.updateGeneratorHeapState(genHeap, "closed");
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        "Generator closed — max iterations reached",
+        code,
+      );
+      return { value: undefined, done: true };
+    }
+
+    const funcValue = wrapper.functionValue;
+    const funcName = funcValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
+
+    // Update generator state to executing
+    genHeap.generatorState = "executing";
+    this.updateGeneratorHeapState(genHeap, "executing");
+
+    // Push the generator frame
+    const frame: CallStackFrame = {
+      id: continuation.frameId,
+      name: funcName,
+      type: "generator",
+      line: this.getLine(node),
+      column: this.getColumn(node),
+      scope: {
+        name: funcName,
+        type: "function",
+        variables: Object.entries(continuation.localEnv).map(([name, value]) => ({
+          name,
+          value,
+          kind: "let" as VariableKind,
+        })),
+      },
+      color: continuation.frameColor,
+      isGenerator: true,
+      status: "executing",
+    };
+
+    // Create memory entries from local environment
+    const memEntries: MemoryEntry[] = Object.entries(continuation.localEnv).map(([name, value]) => {
+      const resolved = this.resolveValueForMemory(value);
+      return {
+        name,
+        kind: "let" as const,
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+      };
+    });
+
+    const memoryBlock: MemoryBlock = {
+      frameId: continuation.frameId,
+      label: `Local: ${funcName}`,
+      type: "local",
+      color: continuation.frameColor,
+      entries: memEntries,
+      suspended: false,
+    };
+
+    // Check if frame already exists (resumed generator)
+    const existingFrameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+    if (existingFrameIndex >= 0) {
+      this.callStack[existingFrameIndex] = frame;
+      const existingBlockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      if (existingBlockIndex >= 0) {
+        this.memoryBlocks[existingBlockIndex] = memoryBlock;
+      }
+    } else {
+      this.callStack.push(frame);
+      this.memoryBlocks.push(memoryBlock);
+    }
+
+    // Push local env
+    this.envStack.push(continuation.localEnv);
+    this.scopes.push({
+      name: funcName,
+      type: "function",
+      variables: Object.entries(continuation.localEnv).map(([name, value]) => ({
+        name,
+        value,
+        kind: "let" as VariableKind,
+      })),
+    });
+
+    // If resuming from a yield and input was provided, assign it
+    if (continuation.yieldResultVarName && inputValue !== undefined) {
+      continuation.localEnv[continuation.yieldResultVarName] = inputValue;
+      this.setVariable(continuation.yieldResultVarName, inputValue);
+      continuation.yieldResultVarName = null;
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `gen.next(${inputValue !== undefined ? displayValue(inputValue) : ""}) — resuming generator`,
+      code,
+    );
+
+    // Execute the remaining statements until yield or completion
+    const result = this.executeGeneratorBody(
+      continuation.remainingStatements,
+      funcName,
+      continuation,
+      wrapper,
+    );
+
+    return result;
+  }
+
+  /**
+   * Execute generator body until yield or completion.
+   */
+  private executeGeneratorBody(
+    statements: StatementNode[],
+    _funcName: string,
+    continuation: GeneratorContinuation,
+    wrapper: GeneratorWrapper,
+  ): { value: unknown; done: boolean } {
+    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    if (!genHeap) {
+      return { value: undefined, done: true };
+    }
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    for (let i = 0; i < statements.length; i++) {
+      if (this.stepIndex >= MAX_STEPS) {
+        break;
+      }
+
+      const stmt = statements[i];
+
+      // Check for yield in this statement
+      const yieldInfo = this.findYieldInStatement(stmt);
+
+      if (yieldInfo) {
+        // Process statement up to yield and get yielded value
+        const { yieldedValue, resultVarName } = this.processStatementUpToYield(stmt);
+
+        // Update continuation for resumption
+        continuation.remainingStatements = statements.slice(i + 1);
+        continuation.yieldResultVarName = resultVarName;
+        continuation.localEnv = { ...this.getCurrentEnv() };
+
+        // Suspend the generator
+        genHeap.generatorState = "suspended";
+        genHeap.lastYieldedValue = displayValue(yieldedValue);
+        this.updateGeneratorHeapState(genHeap, "suspended", displayValue(yieldedValue));
+
+        // Update frame and memory block as suspended
+        const frame = this.callStack.find(f => f.id === continuation.frameId);
+        if (frame) frame.status = "suspended";
+        const block = this.memoryBlocks.find(b => b.frameId === continuation.frameId);
+        if (block) block.suspended = true;
+
+        const yieldCode = extractSource(this.sourceCode, stmt);
+        this.snapshot(
+          this.getLine(stmt),
+          this.getColumn(stmt),
+          `yield ${displayValue(yieldedValue)} — generator suspended, returned { value: ${displayValue(yieldedValue)}, done: false }`,
+          yieldCode,
+        );
+
+        // Pop env/scope but keep frame and memory block (suspended)
+        this.envStack.pop();
+        this.scopes.pop();
+
+        return { value: yieldedValue, done: false };
+      }
+
+      // No yield — execute normally
+      this.visitStatement(stmt);
+
+      // Check for return
+      if (this.hasReturned) {
+        const returnVal = this.returnValue;
+        this.hasReturned = false;
+        this.returnValue = undefined;
+
+        // Generator completed
+        return this.completeGenerator(wrapper, genHeap, continuation, returnVal);
+      }
+
+      if (this.stepIndex >= MAX_STEPS) break;
+    }
+
+    // Reached end of generator body — complete with undefined
+    return this.completeGenerator(wrapper, genHeap, continuation, undefined);
+  }
+
+  /**
+   * Complete a generator and clean up.
+   */
+  private completeGenerator(
+    wrapper: GeneratorWrapper,
+    genHeap: HeapObject,
+    _continuation: GeneratorContinuation,
+    returnValue: unknown,
+  ): { value: unknown; done: boolean } {
+    genHeap.generatorState = "closed";
+    this.updateGeneratorHeapState(genHeap, "closed");
+
+    // Remove the generator frame and memory
+    this.popFrame();
+
+    // Clean up continuation
+    this.generatorContinuations.delete(wrapper.generatorId);
+
+    const funcName = wrapper.functionValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
+    this.snapshot(
+      0,
+      0,
+      `Generator ${funcName} completed — returned { value: ${displayValue(returnValue)}, done: true }`,
+      "",
+    );
+
+    return { value: returnValue, done: true };
+  }
+
+  /**
+   * Execute generator.return(value) - force close the generator.
+   */
+  private executeGeneratorReturn(
+    wrapper: GeneratorWrapper,
+    value: unknown,
+    node: CallExpressionNode,
+  ): { value: unknown; done: boolean } {
+    const code = extractSource(this.sourceCode, node);
+    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const continuation = this.generatorContinuations.get(wrapper.generatorId);
+
+    if (genHeap) {
+      genHeap.generatorState = "closed";
+      this.updateGeneratorHeapState(genHeap, "closed");
+    }
+
+    // Remove frame and memory if they exist
+    if (continuation) {
+      const frameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+      if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
+      const blockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
+      this.generatorContinuations.delete(wrapper.generatorId);
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `gen.return(${displayValue(value)}) — generator closed`,
+      code,
+    );
+
+    return { value, done: true };
+  }
+
+  /**
+   * Execute generator.throw(error) - throw error into generator.
+   */
+  private executeGeneratorThrow(
+    wrapper: GeneratorWrapper,
+    error: unknown,
+    node: CallExpressionNode,
+  ): { value: unknown; done: boolean } {
+    const code = extractSource(this.sourceCode, node);
+    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const continuation = this.generatorContinuations.get(wrapper.generatorId);
+
+    // For now, just close the generator and propagate error
+    // TODO: implement try/catch within generator body
+    if (genHeap) {
+      genHeap.generatorState = "closed";
+      this.updateGeneratorHeapState(genHeap, "closed");
+    }
+
+    if (continuation) {
+      const frameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+      if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
+      const blockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
+      this.generatorContinuations.delete(wrapper.generatorId);
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `gen.throw(${displayValue(error)}) — generator closed with error`,
+      code,
+    );
+
+    return { value: undefined, done: true };
+  }
+
+  /**
+   * Update generator heap object's [[GeneratorState]] property.
+   */
+  private updateGeneratorHeapState(
+    genHeap: HeapObject,
+    state: "suspended" | "executing" | "closed",
+    lastYieldValue?: string,
+  ): void {
+    if (!genHeap.properties) return;
+
+    const stateStrMap: Record<string, string> = {
+      suspended: '"suspended"',
+      executing: '"executing"',
+      closed: '"closed"',
+    };
+
+    const stateProp = genHeap.properties.find(p => p.key === "[[GeneratorState]]");
+    if (stateProp) {
+      stateProp.displayValue = stateStrMap[state];
+    }
+
+    if (lastYieldValue !== undefined) {
+      genHeap.lastYieldedValue = lastYieldValue;
+    }
+  }
+
+  /**
+   * Check if a statement contains a YieldExpression at the top level.
+   */
+  private findYieldInStatement(stmt: StatementNode): YieldExpressionNode | null {
+    if (stmt.type === "VariableDeclaration") {
+      const decl = stmt as VariableDeclarationNode;
+      for (const d of decl.declarations) {
+        if (d.init && d.init.type === "YieldExpression") {
+          return d.init as YieldExpressionNode;
+        }
+      }
+    }
+    if (stmt.type === "ExpressionStatement") {
+      const expr = (stmt as ExpressionStatementNode).expression;
+      if (expr.type === "YieldExpression") return expr as YieldExpressionNode;
+      if (expr.type === "AssignmentExpression") {
+        const right = (expr as AssignmentExpressionNode).right;
+        if (right.type === "YieldExpression") return right as YieldExpressionNode;
+      }
+    }
+    if (stmt.type === "ReturnStatement") {
+      const ret = stmt as ReturnStatementNode;
+      if (ret.argument && ret.argument.type === "YieldExpression") {
+        return ret.argument as YieldExpressionNode;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Process a statement containing yield, returning the yielded value and variable name.
+   */
+  private processStatementUpToYield(stmt: StatementNode): {
+    yieldedValue: unknown;
+    resultVarName: string | null;
+  } {
+    if (stmt.type === "VariableDeclaration") {
+      const decl = stmt as VariableDeclarationNode;
+      const d = decl.declarations[0];
+      const yieldNode = d.init as YieldExpressionNode;
+      const yieldedValue = yieldNode.argument
+        ? this.evaluateExpression(yieldNode.argument)
+        : undefined;
+      const varName = d.id.name;
+
+      // Declare the variable as undefined (will be assigned on resume with next(value))
+      this.setVariable(varName, undefined, true);
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: decl.kind as VariableKind,
+        valueType: "primitive",
+        displayValue: "undefined",
+      };
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+
+      return { yieldedValue, resultVarName: varName };
+    }
+
+    if (stmt.type === "ExpressionStatement") {
+      const expr = (stmt as ExpressionStatementNode).expression;
+      if (expr.type === "YieldExpression") {
+        const yieldNode = expr as YieldExpressionNode;
+        const yieldedValue = yieldNode.argument
+          ? this.evaluateExpression(yieldNode.argument)
+          : undefined;
+        return { yieldedValue, resultVarName: null };
+      }
+      if (expr.type === "AssignmentExpression") {
+        const assign = expr as AssignmentExpressionNode;
+        const right = assign.right as YieldExpressionNode;
+        const yieldedValue = right.argument
+          ? this.evaluateExpression(right.argument)
+          : undefined;
+        const varName = (assign.left as IdentifierNode).name;
+        return { yieldedValue, resultVarName: varName };
+      }
+    }
+
+    // Default case
+    return { yieldedValue: undefined, resultVarName: null };
+  }
+
+  /**
+   * Visit for...of statement - iterates over an iterable (including generators).
+   */
+  private visitForOfStatement(node: ForOfStatementNode): void {
+    const code = extractSource(this.sourceCode, node);
+    const iterableValue = this.evaluateExpression(node.right);
+
+    // Determine the loop variable name
+    let varName: string;
+    let varKind: VariableKind = "let";
+    if (node.left.type === "VariableDeclaration") {
+      const decl = node.left as VariableDeclarationNode;
+      varName = decl.declarations[0].id.name;
+      varKind = decl.kind as VariableKind;
+    } else {
+      varName = (node.left as IdentifierNode).name;
+    }
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `for...of — iterating over ${this.isGeneratorWrapper(iterableValue) ? "generator" : "iterable"}`,
+      code,
+    );
+
+    let iterations = 0;
+
+    // Handle generator iteration
+    if (this.isGeneratorWrapper(iterableValue)) {
+      while (iterations < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS) {
+        // Call next() on the generator
+        const result = this.executeGeneratorNext(
+          iterableValue,
+          undefined,
+          // Create a synthetic call node for the internal next() call
+          { type: "CallExpression", callee: node.right, arguments: [], start: node.start, end: node.end } as CallExpressionNode,
+        ) as { value: unknown; done: boolean };
+
+        if (result.done) {
+          break;
+        }
+
+        // Declare/assign the loop variable
+        if (iterations === 0 && node.left.type === "VariableDeclaration") {
+          this.setVariable(varName, result.value, true);
+          this.recordVarKind(varName, varKind);
+        } else {
+          this.setVariable(varName, result.value);
+        }
+
+        const resolved = this.resolveValueForMemory(result.value);
+        const entry: MemoryEntry = {
+          name: varName,
+          kind: varKind,
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+        };
+
+        if (iterations === 0) {
+          this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        } else {
+          this.updateMemoryEntry(this.getCurrentFrameId(), varName, {
+            displayValue: resolved.displayValue,
+            valueType: resolved.valueType,
+            heapReferenceId: resolved.heapReferenceId,
+            pointerColor: resolved.pointerColor,
+          });
+        }
+
+        this.snapshot(
+          this.getLine(node),
+          this.getColumn(node),
+          `for...of — received ${displayValue(result.value)} from generator`,
+          code,
+        );
+
+        // Execute loop body
+        try {
+          this.visitStatement(node.body);
+        } catch (e) {
+          if (e instanceof BreakSignal) break;
+          if (e instanceof ContinueSignal) {
+            iterations++;
+            continue;
+          }
+          throw e;
+        }
+
+        if (this.hasReturned) return;
+        iterations++;
+      }
+    } else if (Array.isArray(iterableValue)) {
+      // Handle array iteration
+      for (let i = 0; i < iterableValue.length && iterations < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS; i++) {
+        const value = iterableValue[i];
+
+        if (i === 0 && node.left.type === "VariableDeclaration") {
+          this.setVariable(varName, value, true);
+          this.recordVarKind(varName, varKind);
+        } else {
+          this.setVariable(varName, value);
+        }
+
+        const resolved = this.resolveValueForMemory(value);
+        const entry: MemoryEntry = {
+          name: varName,
+          kind: varKind,
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+        };
+
+        if (i === 0) {
+          this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        } else {
+          this.updateMemoryEntry(this.getCurrentFrameId(), varName, {
+            displayValue: resolved.displayValue,
+            valueType: resolved.valueType,
+            heapReferenceId: resolved.heapReferenceId,
+            pointerColor: resolved.pointerColor,
+          });
+        }
+
+        this.snapshot(
+          this.getLine(node),
+          this.getColumn(node),
+          `for...of iteration ${i + 1} — ${varName} = ${resolved.displayValue}`,
+          code,
+        );
+
+        try {
+          this.visitStatement(node.body);
+        } catch (e) {
+          if (e instanceof BreakSignal) break;
+          if (e instanceof ContinueSignal) {
+            iterations++;
+            continue;
+          }
+          throw e;
+        }
+
+        if (this.hasReturned) return;
+        iterations++;
+      }
+    } else if (typeof iterableValue === "string") {
+      // Handle string iteration
+      for (let i = 0; i < iterableValue.length && iterations < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS; i++) {
+        const char = iterableValue[i];
+
+        if (i === 0 && node.left.type === "VariableDeclaration") {
+          this.setVariable(varName, char, true);
+          this.recordVarKind(varName, varKind);
+        } else {
+          this.setVariable(varName, char);
+        }
+
+        const resolved = this.resolveValueForMemory(char);
+        const entry: MemoryEntry = {
+          name: varName,
+          kind: varKind,
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+        };
+
+        if (i === 0) {
+          this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        } else {
+          this.updateMemoryEntry(this.getCurrentFrameId(), varName, {
+            displayValue: resolved.displayValue,
+            valueType: resolved.valueType,
+          });
+        }
+
+        this.snapshot(
+          this.getLine(node),
+          this.getColumn(node),
+          `for...of iteration ${i + 1} — ${varName} = ${resolved.displayValue}`,
+          code,
+        );
+
+        try {
+          this.visitStatement(node.body);
+        } catch (e) {
+          if (e instanceof BreakSignal) break;
+          if (e instanceof ContinueSignal) {
+            iterations++;
+            continue;
+          }
+          throw e;
+        }
+
+        if (this.hasReturned) return;
+        iterations++;
+      }
+    }
   }
 }
