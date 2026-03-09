@@ -425,7 +425,21 @@ export class Interpreter {
     // Phase 1: Synchronous execution
     this.pushGlobalFrame();
     this.visitProgram(ast as ProgramNode);
-    this.popFrame();
+
+    // Remove the global frame from the BOTTOM of the call stack without
+    // disturbing any suspended async frames that may sit above it.
+    // We do NOT use popFrame() here because that removes from the TOP.
+    const globalFrameIndex = this.callStack.findIndex((f) => f.type === "global");
+    if (globalFrameIndex !== -1) {
+      const globalFrame = this.callStack[globalFrameIndex];
+      this.callStack.splice(globalFrameIndex, 1);
+      // Remove global memory block (will be re-attached below for async phase)
+      const blockIndex = this.memoryBlocks.findIndex((b) => b.frameId === globalFrame.id);
+      if (blockIndex !== -1) this.memoryBlocks.splice(blockIndex, 1);
+      // Pop global env + scope (they are at the bottom of their stacks)
+      this.envStack.shift();
+      this.scopes.shift();
+    }
 
     // Re-attach global memory block for async phase so callbacks can
     // read and update global variables in the UI
@@ -1600,10 +1614,25 @@ export class Interpreter {
         );
       case "NewExpression":
         return this.evaluateNewExpression(node as NewExpressionNode);
-      case "AwaitExpression":
+      case "AwaitExpression": {
         // Reached only when await is evaluated outside visitAsyncFunctionBody
-        // (e.g. nested inside a non-await-split expression). Evaluate the argument.
-        return this.evaluateExpression((node as AwaitExpressionNode).argument);
+        // (e.g. inside a try block). Evaluate the argument and propagate rejection.
+        const awaitArgValue = this.evaluateExpression((node as AwaitExpressionNode).argument);
+        if (this.isPromiseWrapper(awaitArgValue)) {
+          const p = this.promises.get((awaitArgValue as PromiseWrapper).promiseId);
+          if (p && p.state === "rejected") {
+            // Signal as a thrown error — do NOT set hasReturned so that
+            // visitTryStatement can intercept it via isThrownError(returnValue)
+            this.returnValue = this.makeThrownError(p.result);
+            return undefined;
+          }
+          // Fulfilled — return the resolved value
+          if (p && p.state === "fulfilled") {
+            return p.result;
+          }
+        }
+        return awaitArgValue;
+      }
       default:
         console.warn(`Unsupported expression type: ${node.type}`);
         return undefined;
@@ -2543,6 +2572,19 @@ export class Interpreter {
     // Handle array length property
     if (Array.isArray(obj) && propName === "length") {
       return obj.length;
+    }
+
+    // Handle FetchResponse runtime value — map to its logical properties
+    if (
+      typeof obj === "object" &&
+      obj !== null &&
+      "__isFetchResponse" in (obj as Record<string, unknown>)
+    ) {
+      const fetchResp = obj as unknown as FetchResponse;
+      if (propName === "ok") return true;
+      if (propName === "status") return 200;
+      if (propName === "url") return fetchResp.url;
+      // "json" is handled in evaluateCallExpression
     }
 
     return obj[propName];
@@ -3611,6 +3653,9 @@ export class Interpreter {
     frameColor: string,
     returnPromiseId: string,
   ): "suspended" | "completed-with-return" | "completed" {
+    // Pre-check: if hasReturned was set before the loop (e.g. by `return await`), honour it
+    if (this.hasReturned) return "completed-with-return";
+
     for (let i = 0; i < statements.length; i++) {
       if (this.stepIndex >= MAX_STEPS) return "completed";
 
@@ -3690,6 +3735,13 @@ export class Interpreter {
       this.visitStatement(stmt);
 
       if (this.hasReturned) {
+        return "completed-with-return";
+      }
+
+      // Propagate thrown errors (e.g. from rejected await inside a try block
+      // that wasn't caught, or from the AwaitExpression fallback path)
+      if (this.isThrownError(this.returnValue)) {
+        this.hasReturned = true;
         return "completed-with-return";
       }
 
@@ -3823,20 +3875,27 @@ export class Interpreter {
     // If the await result goes into a variable, assign it now
     if (continuation.awaitResultVarName && !isRejection) {
       const varName = continuation.awaitResultVarName;
-      this.setVariable(varName, resolvedValue);
 
-      // Update memory — either update existing entry or add it
-      const existingFrameId = this.findMemoryEntryFrameId(varName);
-      if (existingFrameId) {
-        const resolved = this.resolveValueForMemory(resolvedValue);
-        this.updateMemoryEntry(existingFrameId, varName, {
-          displayValue: resolved.displayValue,
-          valueType: resolved.valueType,
-          heapReferenceId: resolved.heapReferenceId,
-          pointerColor: resolved.pointerColor,
-        });
+      if (varName === "__return__") {
+        // `return await <expr>` — the async function should return with resolvedValue
+        this.hasReturned = true;
+        this.returnValue = resolvedValue;
+      } else {
+        this.setVariable(varName, resolvedValue);
+
+        // Update memory — either update existing entry or add it
+        const existingFrameId = this.findMemoryEntryFrameId(varName);
+        if (existingFrameId) {
+          const resolved = this.resolveValueForMemory(resolvedValue);
+          this.updateMemoryEntry(existingFrameId, varName, {
+            displayValue: resolved.displayValue,
+            valueType: resolved.valueType,
+            heapReferenceId: resolved.heapReferenceId,
+            pointerColor: resolved.pointerColor,
+          });
+        }
+        // Note: if not found, the variable will be declared during continuation execution
       }
-      // Note: if not found, the variable will be declared during continuation execution
     }
 
     // Continue executing the remaining statements
@@ -3846,8 +3905,6 @@ export class Interpreter {
       // Nothing left to execute and we have a rejection — reject the promise
       this.hasReturned = false;
       this.returnValue = undefined;
-      this.envStack.pop();
-      this.scopes.pop();
       this.popFrame();
       if (returnPromise) {
         this.rejectPromise(returnPromise, resolvedValue);
@@ -3877,8 +3934,6 @@ export class Interpreter {
       this.hasReturned = false;
       this.returnValue = undefined;
 
-      this.envStack.pop();
-      this.scopes.pop();
       this.popFrame();
 
       if (returnPromise) {
