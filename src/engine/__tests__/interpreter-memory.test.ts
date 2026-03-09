@@ -161,8 +161,7 @@ describe("Interpreter — Memory Tracking", () => {
       expect(heapObj!.type).toBe("array");
     });
 
-    // Skip: Interpreter creates new heap objects on assignment instead of sharing references
-    it.skip("reference copy shares same heapReferenceId", () => {
+    it("reference copy shares same heapReferenceId", () => {
       const step = lastStep(`
         const a = { x: 1 };
         const b = a;
@@ -172,8 +171,7 @@ describe("Interpreter — Memory Tracking", () => {
       expect(entryA!.heapReferenceId).toBe(entryB!.heapReferenceId);
     });
 
-    // Skip: Interpreter creates new heap objects on assignment, so pointer colors differ
-    it.skip("reference copy shares same pointer color", () => {
+    it("reference copy shares same pointer color", () => {
       const step = lastStep(`
         const a = { x: 1 };
         const b = a;

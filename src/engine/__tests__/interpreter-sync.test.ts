@@ -288,8 +288,7 @@ describe("Interpreter — Synchronous Execution", () => {
       expect(output).toContain("3");
     });
 
-    // Skip: BreakStatement is not yet implemented in the interpreter
-    it.skip("handles for loop with break", () => {
+    it("handles for loop with break", () => {
       const output = consoleOutput(`
         let result = 0;
         for (let i = 0; i < 100; i++) {

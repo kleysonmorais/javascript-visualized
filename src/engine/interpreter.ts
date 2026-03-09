@@ -245,6 +245,14 @@ interface ThrowStatementNode extends BaseNode {
   argument: ExpressionNode;
 }
 
+interface BreakStatementNode extends BaseNode {
+  type: "BreakStatement";
+}
+
+interface ContinueStatementNode extends BaseNode {
+  type: "ContinueStatement";
+}
+
 type StatementNode =
   | VariableDeclarationNode
   | FunctionDeclarationNode
@@ -255,7 +263,9 @@ type StatementNode =
   | BlockStatementNode
   | ReturnStatementNode
   | TryStatementNode
-  | ThrowStatementNode;
+  | ThrowStatementNode
+  | BreakStatementNode
+  | ContinueStatementNode;
 
 type ExpressionNode =
   | CallExpressionNode
@@ -293,6 +303,10 @@ interface ThrownError {
   __isThrownError: true;
   reason: unknown;
 }
+
+// Flow control signals — used internally for break/continue, never caught by user try/catch
+class BreakSignal {}
+class ContinueSignal {}
 
 // Continuation for a suspended async function
 interface AsyncContinuation {
@@ -418,6 +432,9 @@ export class Interpreter {
 
   // Global memory block kept accessible during async phase for closure support
   private globalMemoryBlock: MemoryBlock | null = null;
+
+  // Maps runtime object/function references to their heap object IDs for reference sharing
+  private objectHeapMap: WeakMap<object, string> = new WeakMap();
 
   execute(ast: acorn.Node, sourceCode: string): ExecutionStep[] {
     this.sourceCode = sourceCode;
@@ -1106,12 +1123,27 @@ export class Interpreter {
     if (valueType === "function") {
       // Check if it's a wrapped function we created
       if (this.isFunctionValue(value)) {
+        // Reuse existing heap entry if this exact function object was already tracked
+        const existingId = this.objectHeapMap.get(value);
+        if (existingId) {
+          const existing = this.heap.find((h) => h.id === existingId);
+          if (existing) {
+            return {
+              value,
+              displayValue: "ⓕ",
+              valueType: "function",
+              heapReferenceId: existing.id,
+              pointerColor: existing.color,
+            };
+          }
+        }
         const heapObj = this.addHeapObject(
           "function",
           "ⓕ",
           undefined,
           value.source,
         );
+        this.objectHeapMap.set(value, heapObj.id);
         return {
           value,
           displayValue: "ⓕ",
@@ -1127,8 +1159,22 @@ export class Interpreter {
       };
     }
 
-    // Object or array
+    // Object or array — check map first to share references
     if (Array.isArray(value)) {
+      const existingId = this.objectHeapMap.get(value);
+      if (existingId) {
+        const existing = this.heap.find((h) => h.id === existingId);
+        if (existing) {
+          return {
+            value,
+            displayValue: "[Pointer]",
+            valueType: "object",
+            heapReferenceId: existing.id,
+            pointerColor: existing.color,
+          };
+        }
+      }
+
       const properties: HeapObjectProperty[] = value.map((item, index) => {
         const itemResolved = this.resolveValueForMemoryWithoutHeap(item);
         return {
@@ -1142,6 +1188,7 @@ export class Interpreter {
 
       const label = generateObjectLabel(value);
       const heapObj = this.addHeapObject("array", label, properties);
+      this.objectHeapMap.set(value, heapObj.id);
 
       return {
         value,
@@ -1153,6 +1200,20 @@ export class Interpreter {
     }
 
     if (typeof value === "object" && value !== null) {
+      const existingId = this.objectHeapMap.get(value);
+      if (existingId) {
+        const existing = this.heap.find((h) => h.id === existingId);
+        if (existing) {
+          return {
+            value,
+            displayValue: "[Pointer]",
+            valueType: "object",
+            heapReferenceId: existing.id,
+            pointerColor: existing.color,
+          };
+        }
+      }
+
       const properties: HeapObjectProperty[] = Object.entries(
         value as Record<string, unknown>,
       ).map(([key, val]) => {
@@ -1168,6 +1229,7 @@ export class Interpreter {
 
       const label = generateObjectLabel(value);
       const heapObj = this.addHeapObject("object", label, properties);
+      this.objectHeapMap.set(value, heapObj.id);
 
       return {
         value,
@@ -1291,6 +1353,12 @@ export class Interpreter {
       case "ThrowStatement":
         this.visitThrowStatement(node as ThrowStatementNode);
         break;
+      case "BreakStatement":
+        this.visitBreakStatement(node as BreakStatementNode);
+        break;
+      case "ContinueStatement":
+        this.visitContinueStatement(node as ContinueStatementNode);
+        break;
       default:
         // Unsupported statement - skip gracefully
         console.warn(`Unsupported statement type: ${node.type}`);
@@ -1325,6 +1393,7 @@ export class Interpreter {
             undefined,
             funcValue.source,
           );
+          this.objectHeapMap.set(funcValue, heapObj.id);
 
           resolved = {
             value: funcValue,
@@ -1407,6 +1476,7 @@ export class Interpreter {
       undefined,
       funcValue.source,
     );
+    this.objectHeapMap.set(funcValue, heapObj.id);
 
     // Add to current frame's memory
     const entry: MemoryEntry = {
@@ -1501,14 +1571,31 @@ export class Interpreter {
       );
 
       // Execute body
-      this.visitStatement(node.body as StatementNode);
+      let didBreak = false;
+      let didContinue = false;
+      try {
+        this.visitStatement(node.body as StatementNode);
+      } catch (e) {
+        if (e instanceof BreakSignal) { didBreak = true; }
+        else if (e instanceof ContinueSignal) { didContinue = true; }
+        else throw e;
+      }
+
+      if (didBreak) break;
 
       // Check for return
       if (this.hasReturned) break;
 
-      // Update
-      if (node.update) {
-        this.evaluateExpression(node.update);
+      if (!didContinue) {
+        // Update
+        if (node.update) {
+          this.evaluateExpression(node.update);
+        }
+      } else {
+        // Still run the update for continue (matches JS semantics)
+        if (node.update) {
+          this.evaluateExpression(node.update);
+        }
       }
     }
 
@@ -1535,7 +1622,16 @@ export class Interpreter {
       );
 
       // Execute body
-      this.visitStatement(node.body as StatementNode);
+      let didBreak = false;
+      try {
+        this.visitStatement(node.body as StatementNode);
+      } catch (e) {
+        if (e instanceof BreakSignal) { didBreak = true; }
+        else if (e instanceof ContinueSignal) { /* continue to next iteration */ }
+        else throw e;
+      }
+
+      if (didBreak) break;
 
       // Check for return
       if (this.hasReturned) break;
@@ -4081,6 +4177,8 @@ export class Interpreter {
         }
       }
     } catch (_e) {
+      // Flow control signals must propagate through try/catch
+      if (_e instanceof BreakSignal || _e instanceof ContinueSignal) throw _e;
       // Unexpected JS-level error — treat as thrown
       thrownError = this.makeThrownError(_e);
     }
@@ -4174,5 +4272,27 @@ export class Interpreter {
     );
     this.returnValue = this.makeThrownError(value);
     this.hasReturned = true;
+  }
+
+  private visitBreakStatement(node: BreakStatementNode): void {
+    const code = extractSource(this.sourceCode, node);
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      "break — exiting loop",
+      code,
+    );
+    throw new BreakSignal();
+  }
+
+  private visitContinueStatement(node: ContinueStatementNode): void {
+    const code = extractSource(this.sourceCode, node);
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      "continue — next iteration",
+      code,
+    );
+    throw new ContinueSignal();
   }
 }
