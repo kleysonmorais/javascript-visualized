@@ -205,6 +205,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
           {block.entries.map((entry) => {
             const isPointerHighlighted =
               entry.heapReferenceId === hoveredHeapId;
+            const isThis = entry.name === "this";
             return (
               <div
                 key={entry.name}
@@ -214,7 +215,10 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                   style={{
                     fontSize: 12,
                     fontFamily: THEME.fonts.code,
-                    color: THEME.colors.text.secondary,
+                    color: isThis
+                      ? THEME.colors.syntax.keyword
+                      : THEME.colors.text.secondary,
+                    fontWeight: isThis ? 700 : undefined,
                     flexShrink: 0,
                   }}
                 >

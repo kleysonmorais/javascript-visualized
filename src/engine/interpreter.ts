@@ -255,6 +255,28 @@ interface ContinueStatementNode extends BaseNode {
   type: "ContinueStatement";
 }
 
+// Class AST nodes
+interface ClassDeclarationNode extends BaseNode {
+  type: "ClassDeclaration";
+  id: IdentifierNode;
+  superClass: ExpressionNode | null;
+  body: ClassBodyNode;
+}
+
+interface ClassBodyNode extends BaseNode {
+  type: "ClassBody";
+  body: MethodDefinitionNode[];
+}
+
+interface MethodDefinitionNode extends BaseNode {
+  type: "MethodDefinition";
+  key: IdentifierNode | LiteralNode;
+  value: FunctionExpressionNode;
+  kind: "constructor" | "method" | "get" | "set";
+  static: boolean;
+  computed: boolean;
+}
+
 type StatementNode =
   | VariableDeclarationNode
   | FunctionDeclarationNode
@@ -267,7 +289,8 @@ type StatementNode =
   | TryStatementNode
   | ThrowStatementNode
   | BreakStatementNode
-  | ContinueStatementNode;
+  | ContinueStatementNode
+  | ClassDeclarationNode;
 
 type ExpressionNode =
   | CallExpressionNode
@@ -310,6 +333,26 @@ interface FunctionValue {
   source: string;
   // Closure: live references to enclosing envs (non-global) at time of creation
   capturedEnvMeta?: CapturedEnvMeta[];
+}
+
+// Internal type for class values stored in environment
+interface ClassMethod {
+  name: string;
+  params: string[];
+  body: BlockStatementNode;
+  isStatic: boolean;
+  isConstructor: boolean;
+}
+
+interface ClassValue {
+  __isClass: true;
+  name: string;
+  superClassName: string | null;
+  constructor: ClassMethod | null;
+  methods: ClassMethod[];       // instance methods
+  staticMethods: ClassMethod[]; // static methods
+  staticProps: Record<string, unknown>; // static property values
+  heapObjectId: string;         // the class's own HeapObject id
 }
 
 // Thrown error signal — used for try/catch and async rejection propagation
@@ -452,6 +495,9 @@ export class Interpreter {
 
   // Closure display tracking: heapObjectId → CapturedEnvMeta[] for [[Scope]] refresh
   private closureLiveEnvMap: Map<string, CapturedEnvMeta[]> = new Map();
+
+  // Class registry: class name → ClassValue (for new ClassName() lookup)
+  private classRegistry: Map<string, ClassValue> = new Map();
 
   // Tracks kinds of variables in each env layer: env object reference → variable kinds
   private envKindsMap: Map<Record<string, unknown>, Record<string, VariableKind | 'param' | 'function'>> = new Map();
@@ -1129,6 +1175,20 @@ export class Interpreter {
   }
 
   private resolveValueForMemory(value: unknown): ResolvedValue {
+    // Handle ClassValue FIRST — plain object, must intercept before generic object path
+    if (this.isClassValue(value)) {
+      const heapObj = this.heap.find((h) => h.id === value.heapObjectId);
+      if (heapObj) {
+        return {
+          value,
+          displayValue: "ⓕ",
+          valueType: "function",
+          heapReferenceId: heapObj.id,
+          pointerColor: heapObj.color,
+        };
+      }
+    }
+
     // Handle FunctionValue FIRST — it's a plain object so getValueType returns "object"
     // We must intercept it before the generic object path.
     if (this.isFunctionValue(value)) {
@@ -1372,6 +1432,15 @@ export class Interpreter {
     );
   }
 
+  private isClassValue(value: unknown): value is ClassValue {
+    return (
+      typeof value === "object" &&
+      value !== null &&
+      "__isClass" in value &&
+      (value as ClassValue).__isClass === true
+    );
+  }
+
   private isBuiltinFn(value: unknown): value is BuiltinFn {
     return (
       typeof value === "object" &&
@@ -1437,6 +1506,9 @@ export class Interpreter {
         break;
       case "ContinueStatement":
         this.visitContinueStatement(node as ContinueStatementNode);
+        break;
+      case "ClassDeclaration":
+        this.visitClassDeclaration(node as ClassDeclarationNode);
         break;
       default:
         // Unsupported statement - skip gracefully
@@ -1610,6 +1682,140 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       `Declaring ${asyncPrefix}function ${name}`,
+      code,
+    );
+  }
+
+  private visitClassDeclaration(node: ClassDeclarationNode): void {
+    const name = node.id.name;
+    const code = extractSource(this.sourceCode, node);
+    const superClassName = node.superClass
+      ? node.superClass.type === "Identifier"
+        ? (node.superClass as IdentifierNode).name
+        : null
+      : null;
+
+    // Extract constructor and instance/static methods from class body
+    let constructorMethod: ClassMethod | null = null;
+    const instanceMethods: ClassMethod[] = [];
+    const staticMethods: ClassMethod[] = [];
+    const staticProps: Record<string, unknown> = {};
+
+    for (const member of node.body.body) {
+      const methodName =
+        member.key.type === "Identifier"
+          ? (member.key as IdentifierNode).name
+          : String((member.key as LiteralNode).value);
+      const params = member.value.params.map((p) => (p as IdentifierNode).name);
+      const body = member.value.body as BlockStatementNode;
+
+      const cm: ClassMethod = {
+        name: methodName,
+        params,
+        body,
+        isStatic: member.static,
+        isConstructor: member.kind === "constructor",
+      };
+
+      if (member.kind === "constructor") {
+        constructorMethod = cm;
+      } else if (member.static) {
+        staticMethods.push(cm);
+      } else {
+        instanceMethods.push(cm);
+      }
+    }
+
+    // Build HeapObject properties list for the class
+    const classProps: HeapObjectProperty[] = [];
+    if (constructorMethod) {
+      classProps.push({ key: "constructor", displayValue: "ⓕ", valueType: "function" });
+    }
+    for (const m of instanceMethods) {
+      classProps.push({ key: `prototype.${m.name}`, displayValue: "ⓕ", valueType: "function" });
+    }
+    for (const m of staticMethods) {
+      classProps.push({ key: `static ${m.name}`, displayValue: "ⓕ", valueType: "function" });
+    }
+
+    // Create class HeapObject
+    const heapObj = this.addHeapObject("function", `class ${name}`, classProps, code);
+
+    // Add [[Prototype]] link if extends
+    if (superClassName) {
+      const superClass = this.classRegistry.get(superClassName);
+      if (superClass) {
+        const superHeap = this.heap.find((h) => h.id === superClass.heapObjectId);
+        heapObj.properties = heapObj.properties ?? [];
+        heapObj.properties.push({
+          key: "[[Prototype]]",
+          displayValue: superClassName,
+          valueType: "object",
+          heapReferenceId: superHeap?.id,
+          pointerColor: superHeap?.color,
+        });
+      }
+    }
+
+    const classVal: ClassValue = {
+      __isClass: true,
+      name,
+      superClassName,
+      constructor: constructorMethod,
+      methods: instanceMethods,
+      staticMethods,
+      staticProps,
+      heapObjectId: heapObj.id,
+    };
+
+    // Store in environment and registry
+    this.setVariable(name, classVal, true);
+    this.recordVarKind(name, "function");
+    this.classRegistry.set(name, classVal);
+
+    // Evaluate static property initialisers (class fields with static keyword are
+    // represented as class body members of kind "init" in some parsers, but acorn
+    // uses ClassProperty — not yet handled; static *methods* are stored above)
+    // For static methods, register them as callable on the class value
+    for (const m of staticMethods) {
+      const fnVal: FunctionValue = {
+        __isFunction: true,
+        params: m.params,
+        body: m.body,
+        isArrow: false,
+        isAsync: false,
+        source: extractSource(this.sourceCode, node),
+        capturedEnvMeta: this.captureEnclosingScopes(),
+      };
+      staticProps[m.name] = fnVal;
+    }
+
+    // Add class to memory as a function entry
+    const entry: MemoryEntry = {
+      name,
+      kind: "function",
+      valueType: "function",
+      displayValue: "ⓕ",
+      heapReferenceId: heapObj.id,
+      pointerColor: heapObj.color,
+    };
+    this.addMemoryEntry(this.getCurrentFrameId(), entry);
+
+    // Update scope
+    const currentScope = this.scopes[this.scopes.length - 1];
+    if (currentScope) {
+      currentScope.variables.push({ name, value: classVal, kind: "const" as VariableKind });
+    }
+    const currentFrame = this.callStack[this.callStack.length - 1];
+    if (currentFrame) {
+      currentFrame.scope.variables.push({ name, value: classVal, kind: "const" as VariableKind });
+    }
+
+    const extendsStr = superClassName ? ` extends ${superClassName}` : "";
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Declaring class ${name}${extendsStr}`,
       code,
     );
   }
@@ -1824,6 +2030,8 @@ export class Interpreter {
         }
         return awaitArgValue;
       }
+      case "ThisExpression":
+        return this.lookupVariable("this");
       default:
         console.warn(`Unsupported expression type: ${node.type}`);
         return undefined;
@@ -1992,11 +2200,20 @@ export class Interpreter {
         propName = (memberNode.property as IdentifierNode).name;
       }
 
-      if (obj && typeof obj === "object") {
+      // Resolve object — handle `this` specially (ThisExpression in AST)
+      const isThisExpr = (memberNode.object as BaseNode).type === "ThisExpression";
+      let resolvedObj: Record<string, unknown> | null = null;
+      if (isThisExpr) {
+        resolvedObj = (this.lookupVariable("this") as Record<string, unknown>) ?? obj;
+      } else {
+        resolvedObj = obj;
+      }
+
+      if (resolvedObj && typeof resolvedObj === "object") {
         let finalValue = rightValue;
 
         if (node.operator !== "=") {
-          const currentValue = obj[propName];
+          const currentValue = resolvedObj[propName];
           finalValue = this.applyAssignmentOperator(
             node.operator,
             currentValue,
@@ -2004,14 +2221,27 @@ export class Interpreter {
           );
         }
 
-        obj[propName] = finalValue;
+        resolvedObj[propName] = finalValue;
+
+        // If this was a `this.prop` assignment, sync the heap object
+        if (isThisExpr) {
+          const heapId = this.objectHeapMap.get(resolvedObj);
+          const heapObj = heapId ? this.heap.find((h) => h.id === heapId) : undefined;
+          if (heapObj) this.syncInstanceHeapObject(heapObj, resolvedObj);
+        }
       }
+
+      const objLabel = isThisExpr
+        ? "this"
+        : memberNode.object.type === "Identifier"
+          ? (memberNode.object as IdentifierNode).name
+          : "object";
 
       const code = extractSource(this.sourceCode, node);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Assigning ${memberNode.object.type === "Identifier" ? (memberNode.object as IdentifierNode).name : "object"}.${propName} = ${displayValue(rightValue)}`,
+        `Assigning ${objLabel}.${propName} = ${displayValue(rightValue)}`,
         code,
       );
 
@@ -2140,6 +2370,18 @@ export class Interpreter {
         "Promise"
     ) {
       return this.handlePromiseStaticCall(node);
+    }
+
+    // Check for static class method call: ClassName.staticMethod()
+    if (node.callee.type === "MemberExpression") {
+      const memberCallee = node.callee as MemberExpressionNode;
+      if (memberCallee.object.type === "Identifier") {
+        const objVal = this.lookupVariable((memberCallee.object as IdentifierNode).name);
+        if (this.isClassValue(objVal)) {
+          const methodName = (memberCallee.property as IdentifierNode).name;
+          return this.callStaticMethod(objVal, methodName, node);
+        }
+      }
     }
 
     // Check for promise.then() / promise.catch() / promise.finally()
@@ -2641,20 +2883,37 @@ export class Interpreter {
   private handleFunctionCall(node: CallExpressionNode): unknown {
     let funcName: string;
     let funcValue: unknown;
+    let receiver: Record<string, unknown> | null = null; // `this` for method calls
 
     if (node.callee.type === "Identifier") {
       funcName = (node.callee as IdentifierNode).name;
       funcValue = this.lookupVariable(funcName);
+
+      // Check if this is a static method call on a class: ClassName.method()
+      // (handled below in MemberExpression branch when callee is member)
     } else if (node.callee.type === "MemberExpression") {
-      // Method call - simplified handling
+      // Method call
       const memberExpr = node.callee as MemberExpressionNode;
-      const propName = (memberExpr.property as IdentifierNode).name;
+      const propName = memberExpr.computed
+        ? String(this.evaluateExpression(memberExpr.property as ExpressionNode))
+        : (memberExpr.property as IdentifierNode).name;
       funcName = propName;
-      const obj = this.evaluateExpression(memberExpr.object) as Record<
-        string,
-        unknown
-      >;
-      funcValue = obj?.[propName];
+      const obj = this.evaluateExpression(memberExpr.object) as Record<string, unknown>;
+
+      // Look up method: first check own properties, then search class prototype chain
+      if (obj && typeof obj === "object") {
+        funcValue = obj[propName];
+        // If not found directly, look in class method registry
+        if (funcValue === undefined || funcValue === null) {
+          funcValue = this.findMethodOnClass(obj, propName);
+        }
+        receiver = obj;
+      } else if (this.isClassValue(obj as unknown)) {
+        // Static method call: ClassName.method()
+        const cv = obj as unknown as ClassValue;
+        funcValue = cv.staticProps[propName];
+        // funcName stays as propName; no receiver for static
+      }
     } else if (
       node.callee.type === "FunctionExpression" ||
       node.callee.type === "ArrowFunctionExpression"
@@ -2672,6 +2931,13 @@ export class Interpreter {
     // Handle builtin resolve/reject calls
     if (this.isBuiltinFn(funcValue)) {
       return this.handleBuiltinCall(node, funcValue);
+    }
+
+    // Check for class value — static method call like ClassName.method()
+    if (this.isClassValue(funcValue)) {
+      // Already handled above — shouldn't reach here
+      console.warn(`${funcName} is a class, not a function`);
+      return undefined;
     }
 
     if (!this.isFunctionValue(funcValue)) {
@@ -2699,23 +2965,36 @@ export class Interpreter {
     const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
 
     // Inject captured closure envs into envStack so lookupVariable finds them.
-    // We insert them just above the global env (index 1) so the chain is:
-    //   [global, ...capturedEnvs, newLocalFrame]
-    // This means the new local frame (pushed by pushFrame) sees them during lookup.
     const capturedMeta = funcValue.capturedEnvMeta;
     const injectedCount = capturedMeta ? capturedMeta.length : 0;
     if (capturedMeta && capturedMeta.length > 0) {
-      // Insert captured envs at position 1 (after global at 0)
       this.envStack.splice(1, 0, ...capturedMeta.map((m) => m.env));
     }
 
     // Push frame
     this.pushFrame(funcName, this.getLine(node), this.getColumn(node), params);
 
+    // If called as a method on an instance, inject `this` into the local env + memory
+    if (receiver !== null) {
+      this.getCurrentEnv()["this"] = receiver;
+      const instanceHeapId = this.objectHeapMap.get(receiver);
+      const instanceHeap = instanceHeapId ? this.heap.find((h) => h.id === instanceHeapId) : undefined;
+      const thisEntry: MemoryEntry = {
+        name: "this",
+        kind: "param",
+        valueType: "object",
+        displayValue: "[Pointer]",
+        heapReferenceId: instanceHeap?.id,
+        pointerColor: instanceHeap?.color,
+      };
+      const currentBlock = this.memoryBlocks[this.memoryBlocks.length - 1];
+      if (currentBlock) currentBlock.entries.unshift(thisEntry);
+    }
+
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Calling ${funcName}(${argsDisplay})`,
+      receiver !== null ? `Calling ${funcName}(${argsDisplay}) on instance` : `Calling ${funcName}(${argsDisplay})`,
       code,
     );
 
@@ -2727,13 +3006,11 @@ export class Interpreter {
       funcValue.isArrow &&
       !("body" in funcValue.body && funcValue.body.type === "BlockStatement")
     ) {
-      // Arrow function with expression body
       this.returnValue = this.evaluateExpression(
         funcValue.body as ExpressionNode,
       );
       this.hasReturned = true;
     } else {
-      // Block body
       this.visitBlockStatement(funcValue.body as BlockStatementNode);
     }
 
@@ -2745,10 +3022,8 @@ export class Interpreter {
     const currentEnv = this.getCurrentEnv();
     const hasClosure = this.isEnvCapturedByClosure(currentEnv);
 
-    // Pop frame (removes local env from envStack top)
     this.popFrame();
 
-    // Remove injected captured envs from envStack
     if (injectedCount > 0) {
       this.envStack.splice(1, injectedCount);
     }
@@ -2768,6 +3043,113 @@ export class Interpreter {
   }
 
   /**
+   * Find a method FunctionValue by searching the class prototype chain for an instance.
+   * Called when obj[propName] is undefined but the object may be a class instance.
+   */
+  private findMethodOnClass(
+    obj: Record<string, unknown>,
+    methodName: string,
+  ): FunctionValue | undefined {
+    // Find which class this object belongs to by checking objectHeapMap
+    const heapId = this.objectHeapMap.get(obj);
+    if (!heapId) return undefined;
+
+    // Find the class that owns this instance heap object
+    for (const [, classVal] of this.classRegistry) {
+      // Check instance methods
+      const method = classVal.methods.find((m) => m.name === methodName);
+      if (method) {
+        // Check if this instance was created from this class or its subclass
+        // by verifying the [[Prototype]] chain in the heap
+        const instanceHeap = this.heap.find((h) => h.id === heapId);
+        const protoRef = instanceHeap?.properties?.find((p) => p.key === "[[Prototype]]");
+        if (
+          protoRef?.heapReferenceId === classVal.heapObjectId ||
+          this.isInstanceOf(heapId, classVal)
+        ) {
+          return {
+            __isFunction: true,
+            params: method.params,
+            body: method.body,
+            isArrow: false,
+            isAsync: false,
+            source: `${methodName}() { ... }`,
+            capturedEnvMeta: undefined,
+          };
+        }
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Call a static method on a class value.
+   */
+  private callStaticMethod(
+    classVal: ClassValue,
+    methodName: string,
+    node: CallExpressionNode,
+  ): unknown {
+    const fnVal = classVal.staticProps[methodName];
+    if (!this.isFunctionValue(fnVal)) {
+      console.warn(`${classVal.name}.${methodName} is not a static method`);
+      return undefined;
+    }
+
+    const code = extractSource(this.sourceCode, node);
+    const evaluatedArgs = node.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
+    const params = fnVal.params.map((name: string, i: number) => ({ name, value: evaluatedArgs[i] }));
+    const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
+
+    this.pushFrame(
+      `${classVal.name}.${methodName}`,
+      this.getLine(node),
+      this.getColumn(node),
+      params,
+    );
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Calling ${classVal.name}.${methodName}(${argsDisplay})`,
+      code,
+    );
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+    this.visitBlockStatement(fnVal.body as BlockStatementNode);
+
+    const returnVal = this.returnValue;
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `${classVal.name}.${methodName} returned ${displayValue(returnVal)}`,
+      code,
+    );
+
+    return returnVal;
+  }
+
+  /**
+   * Returns true if the heap object (by id) is an instance of the given class
+   * or any subclass of it (walks the [[Prototype]] chain).
+   */
+  private isInstanceOf(heapId: string, classVal: ClassValue): boolean {
+    const heap = this.heap.find((h) => h.id === heapId);
+    if (!heap) return false;
+    const protoRef = heap.properties?.find((p) => p.key === "[[Prototype]]");
+    if (!protoRef?.heapReferenceId) return false;
+    if (protoRef.heapReferenceId === classVal.heapObjectId) return true;
+    // Recurse up the chain
+    return this.isInstanceOf(protoRef.heapReferenceId, classVal);
+  }
+
+  /**
    * Returns true if any closure has captured the given env (for return description).
    */
   private isEnvCapturedByClosure(env: Record<string, unknown>): boolean {
@@ -2775,7 +3157,15 @@ export class Interpreter {
   }
 
   private evaluateMemberExpression(node: MemberExpressionNode): unknown {
-    const obj = this.evaluateExpression(node.object) as Record<string, unknown>;
+    // Special: `this` is a ThisExpression node (not Identifier) in the AST
+    let obj: unknown;
+    if ((node.object as BaseNode).type === "ThisExpression") {
+      obj = this.lookupVariable("this");
+    } else {
+      obj = this.evaluateExpression(node.object);
+    }
+
+    const objRecord = obj as Record<string, unknown>;
 
     if (obj === null || obj === undefined) {
       return undefined;
@@ -2809,7 +3199,13 @@ export class Interpreter {
       // "json" is handled in evaluateCallExpression
     }
 
-    return obj[propName];
+    // For class instances: if property not found directly, search prototype chain methods
+    if (typeof obj === "object" && obj !== null && !(propName in objRecord)) {
+      const method = this.findMethodOnClass(objRecord, propName);
+      if (method) return method;
+    }
+
+    return objRecord[propName];
   }
 
   private evaluateObjectExpression(
@@ -3056,7 +3452,7 @@ export class Interpreter {
     this.microtaskQueue.push(queueItem);
   }
 
-  // Handle new Promise(executor)
+  // Handle new Promise(executor) or new UserClass(args)
   private evaluateNewExpression(node: NewExpressionNode): unknown {
     const callee = node.callee;
     if (
@@ -3066,7 +3462,16 @@ export class Interpreter {
       return this.handleNewPromise(node);
     }
 
-    // Fallback: try to call as a regular constructor (unsupported — return undefined)
+    // Check for user-defined class
+    if (callee.type === "Identifier") {
+      const className = (callee as IdentifierNode).name;
+      const classVal = this.lookupVariable(className);
+      if (this.isClassValue(classVal)) {
+        return this.handleNewClass(classVal, node);
+      }
+    }
+
+    // Fallback: unsupported
     const code = extractSource(this.sourceCode, node);
     this.snapshot(
       this.getLine(node),
@@ -3075,6 +3480,293 @@ export class Interpreter {
       code,
     );
     return undefined;
+  }
+
+  /**
+   * Execute `new ClassName(args)`. Creates instance HeapObject, runs constructor
+   * (incl. parent constructor via super()), returns an instance wrapper.
+   */
+  private handleNewClass(
+    classVal: ClassValue,
+    node: NewExpressionNode,
+  ): Record<string, unknown> {
+    const code = extractSource(this.sourceCode, node);
+    const args = node.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
+
+    // 1. Create the instance heap object
+    const instanceHeapObj = this.addHeapObject("object", `${classVal.name} instance`, []);
+    // Mark as a class instance so the heap card renders correctly
+    (instanceHeapObj as HeapObject & { __className?: string }).__className = classVal.name;
+
+    // Add [[Prototype]] property
+    const classHeap = this.heap.find((h) => h.id === classVal.heapObjectId);
+    instanceHeapObj.properties = [
+      {
+        key: "[[Prototype]]",
+        displayValue: `${classVal.name}.prototype`,
+        valueType: "object",
+        heapReferenceId: classHeap?.id,
+        pointerColor: classHeap?.color,
+      },
+    ];
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `new ${classVal.name}(${args.map((a) => displayValue(a)).join(", ")}) — creating instance`,
+      code,
+    );
+
+    // 2. Runtime "this" object — a plain JS object whose properties we'll populate
+    //    We track it via objectHeapMap so resolveValueForMemory finds the right heap entry
+    const thisObj: Record<string, unknown> = {};
+    this.objectHeapMap.set(thisObj, instanceHeapObj.id);
+
+    // 3. Run constructors (parent first via super chain)
+    this.runConstructorChain(classVal, thisObj, args, instanceHeapObj, node);
+
+    return thisObj;
+  }
+
+  /**
+   * Run constructor chain: if class extends a parent, run parent constructor first,
+   * then run own constructor. "thisObj" is mutated in-place.
+   */
+  private runConstructorChain(
+    classVal: ClassValue,
+    thisObj: Record<string, unknown>,
+    args: unknown[],
+    instanceHeapObj: HeapObject,
+    callNode: NewExpressionNode,
+  ): void {
+    const code = extractSource(this.sourceCode, callNode);
+
+    if (!classVal.constructor) {
+      // No constructor — if extends, call parent constructor with same args
+      if (classVal.superClassName) {
+        const parentClass = this.classRegistry.get(classVal.superClassName);
+        if (parentClass) {
+          this.runConstructorChain(parentClass, thisObj, args, instanceHeapObj, callNode);
+        }
+      }
+      return;
+    }
+
+    // Build params for this constructor
+    const ctor = classVal.constructor;
+    const params = ctor.params.map((name, i) => ({ name, value: args[i] }));
+
+    // Push constructor frame
+    this.pushFrame(
+      `${classVal.name}.constructor`,
+      callNode.loc?.start.line ?? 0,
+      callNode.loc?.start.column ?? 0,
+      params,
+    );
+
+    // Inject `this` as a special memory entry at top of the current frame
+    const resolved = this.resolveValueForMemory(thisObj);
+    const thisEntry: MemoryEntry = {
+      name: "this",
+      kind: "param",
+      valueType: "object",
+      displayValue: "[Pointer]",
+      heapReferenceId: instanceHeapObj.id,
+      pointerColor: instanceHeapObj.color,
+    };
+    const currentBlock = this.memoryBlocks[this.memoryBlocks.length - 1];
+    if (currentBlock) {
+      // Insert `this` at position 0 (before params)
+      currentBlock.entries.unshift(thisEntry);
+    }
+    void resolved;
+
+    // Store `this` in env so constructor body can read it
+    this.getCurrentEnv()["this"] = thisObj;
+
+    this.snapshot(
+      callNode.loc?.start.line ?? 0,
+      callNode.loc?.start.column ?? 0,
+      `Executing ${classVal.name}.constructor`,
+      code,
+    );
+
+    // Execute constructor body, handling super() calls
+    this.hasReturned = false;
+    this.returnValue = undefined;
+    this.executeConstructorBody(ctor.body, classVal, thisObj, instanceHeapObj, callNode);
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+
+    this.snapshot(
+      callNode.loc?.start.line ?? 0,
+      callNode.loc?.start.column ?? 0,
+      `${classVal.name} constructor completed — instance created`,
+      code,
+    );
+  }
+
+  /**
+   * Execute constructor body, intercepting `this.x = ...` assignments and
+   * `super(args)` calls, then syncing the instance HeapObject.
+   */
+  private executeConstructorBody(
+    body: BlockStatementNode,
+    classVal: ClassValue,
+    thisObj: Record<string, unknown>,
+    instanceHeapObj: HeapObject,
+    callNode: NewExpressionNode,
+  ): void {
+    for (const stmt of body.body) {
+      if (this.hasReturned || this.stepIndex >= MAX_STEPS) break;
+
+      // Detect super() call: ExpressionStatement → CallExpression with callee=super
+      if (
+        stmt.type === "ExpressionStatement" &&
+        (stmt as ExpressionStatementNode).expression.type === "CallExpression"
+      ) {
+        const callExpr = (stmt as ExpressionStatementNode).expression as CallExpressionNode;
+        if (
+          (callExpr.callee as BaseNode).type === "Super" ||
+          (callExpr.callee.type === "Identifier" &&
+            (callExpr.callee as IdentifierNode).name === "super")
+        ) {
+          this.handleSuperCall(callExpr, classVal, thisObj, instanceHeapObj, callNode);
+          continue;
+        }
+      }
+
+      // Detect `this.prop = value` assignment
+      if (
+        stmt.type === "ExpressionStatement" &&
+        (stmt as ExpressionStatementNode).expression.type === "AssignmentExpression"
+      ) {
+        const assign = (stmt as ExpressionStatementNode).expression as AssignmentExpressionNode;
+        if (
+          assign.left.type === "MemberExpression" &&
+          (
+            (assign.left as MemberExpressionNode).object.type === "Identifier"
+              ? ((assign.left as MemberExpressionNode).object as IdentifierNode).name === "this"
+              : ((assign.left as MemberExpressionNode).object as BaseNode).type === "ThisExpression"
+          )
+        ) {
+          const memberNode = assign.left as MemberExpressionNode;
+          const propName = (memberNode.property as IdentifierNode).name;
+          const val = this.evaluateExpression(assign.right);
+          thisObj[propName] = val;
+          this.syncInstanceHeapObject(instanceHeapObj, thisObj);
+          const stmtCode = extractSource(this.sourceCode, stmt);
+          this.snapshot(
+            this.getLine(stmt),
+            this.getColumn(stmt),
+            `Setting this.${propName} = ${displayValue(val)}`,
+            stmtCode,
+          );
+          continue;
+        }
+      }
+
+      this.visitStatement(stmt);
+      // After each statement, sync heap in case body used `this` assignments
+      this.syncInstanceHeapObject(instanceHeapObj, thisObj);
+    }
+  }
+
+  /**
+   * Handle super(args) inside a subclass constructor.
+   * Calls the parent class constructor with the same `this` object.
+   */
+  private handleSuperCall(
+    callExpr: CallExpressionNode,
+    classVal: ClassValue,
+    thisObj: Record<string, unknown>,
+    instanceHeapObj: HeapObject,
+    callNode: NewExpressionNode,
+  ): void {
+    const code = extractSource(this.sourceCode, callExpr);
+    const superArgs = callExpr.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
+    const parentClassName = classVal.superClassName;
+    if (!parentClassName) return;
+
+    const parentClass = this.classRegistry.get(parentClassName);
+    if (!parentClass) return;
+
+    this.snapshot(
+      this.getLine(callExpr),
+      this.getColumn(callExpr),
+      `super(${superArgs.map((a) => displayValue(a)).join(", ")}) — calling parent constructor ${parentClassName}`,
+      code,
+    );
+
+    if (!parentClass.constructor) return;
+
+    const ctor = parentClass.constructor;
+    const params = ctor.params.map((name, i) => ({ name, value: superArgs[i] }));
+
+    this.pushFrame(
+      `${parentClassName}.constructor`,
+      callExpr.loc?.start.line ?? 0,
+      callExpr.loc?.start.column ?? 0,
+      params,
+    );
+
+    // Inject `this` into parent constructor frame
+    const thisEntry: MemoryEntry = {
+      name: "this",
+      kind: "param",
+      valueType: "object",
+      displayValue: "[Pointer]",
+      heapReferenceId: instanceHeapObj.id,
+      pointerColor: instanceHeapObj.color,
+    };
+    const currentBlock = this.memoryBlocks[this.memoryBlocks.length - 1];
+    if (currentBlock) currentBlock.entries.unshift(thisEntry);
+    this.getCurrentEnv()["this"] = thisObj;
+
+    this.snapshot(
+      callExpr.loc?.start.line ?? 0,
+      callExpr.loc?.start.column ?? 0,
+      `Executing ${parentClassName}.constructor`,
+      code,
+    );
+
+    this.hasReturned = false;
+    this.returnValue = undefined;
+    this.executeConstructorBody(ctor.body, parentClass, thisObj, instanceHeapObj, callNode);
+    this.hasReturned = false;
+    this.returnValue = undefined;
+
+    this.popFrame();
+  }
+
+  /**
+   * Sync the instance HeapObject properties from the live thisObj runtime value.
+   * Called after each this.x = assignment so the heap display stays current.
+   */
+  private syncInstanceHeapObject(
+    instanceHeapObj: HeapObject,
+    thisObj: Record<string, unknown>,
+  ): void {
+    // Keep the [[Prototype]] entry (always first) and rebuild the rest
+    const protoEntry = instanceHeapObj.properties?.find((p) => p.key === "[[Prototype]]");
+    const newProps: HeapObjectProperty[] = protoEntry ? [protoEntry] : [];
+
+    for (const [key, val] of Object.entries(thisObj)) {
+      if (key === "this") continue; // skip internal env entry
+      const propResolved = this.resolveValueForMemoryShallow(val);
+      newProps.push({
+        key,
+        displayValue: propResolved.displayValue,
+        valueType: propResolved.valueType,
+        heapReferenceId: propResolved.heapReferenceId,
+        pointerColor: propResolved.pointerColor,
+      });
+    }
+
+    instanceHeapObj.properties = newProps;
+    instanceHeapObj.label = `${instanceHeapObj.label.split(" instance")[0]} instance`;
   }
 
   private handleNewPromise(node: NewExpressionNode): PromiseWrapper {

@@ -72,6 +72,11 @@ function formatReactions(value: string): string {
   return value;
 }
 
+/** Check if a property key is an internal slot like [[Prototype]], [[Scope]], etc. */
+function isInternalSlot(key: string): boolean {
+  return key.startsWith("[[") && key.endsWith("]]");
+}
+
 function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
   if (prop.valueType === "function") {
     return (
@@ -432,22 +437,39 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
             </div>
           ) : obj.properties && obj.properties.length > 0 ? (
             <div style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
-              <span style={{ color: THEME.colors.text.secondary }}>{"{ "}</span>
-              <div style={{ paddingLeft: 10 }}>
-                {obj.properties.map((prop, i) => (
-                  <div key={prop.key} className="flex items-center gap-1">
-                    <span style={{ color: THEME.colors.syntax.variable }}>
-                      {prop.key}
-                    </span>
-                    <span style={{ color: THEME.colors.text.muted }}>:</span>
-                    <PropertyValue prop={prop} />
-                    {i < obj.properties!.length - 1 && (
-                      <span style={{ color: THEME.colors.text.muted }}>,</span>
-                    )}
-                  </div>
-                ))}
+              {/* Show label for instance/class objects */}
+              {obj.label && (obj.label.includes(" instance") || obj.label.startsWith("class ")) && (
+                <div style={{
+                  color: THEME.colors.text.secondary,
+                  fontSize: 10,
+                  marginBottom: 4,
+                  fontStyle: "italic",
+                }}>
+                  {obj.label}
+                </div>
+              )}
+              <div style={{ paddingLeft: 2 }}>
+                {obj.properties.map((prop, i) => {
+                  const internal = isInternalSlot(prop.key);
+                  return (
+                    <div key={prop.key} className="flex items-center gap-1">
+                      <span style={{
+                        color: internal ? THEME.colors.syntax.keyword : THEME.colors.syntax.variable,
+                        fontStyle: internal ? "italic" : undefined,
+                        fontSize: internal ? 10 : 11,
+                        opacity: internal ? 0.85 : 1,
+                      }}>
+                        {prop.key}
+                      </span>
+                      <span style={{ color: THEME.colors.text.muted }}>:</span>
+                      <PropertyValue prop={prop} />
+                      {i < obj.properties!.length - 1 && (
+                        <span style={{ color: THEME.colors.text.muted }}>,</span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <span style={{ color: THEME.colors.text.secondary }}>{" }"}</span>
             </div>
           ) : (
             <span
