@@ -1,4 +1,5 @@
 import { parseCode } from "./parser";
+import type { SourceType } from "./parser";
 import { Interpreter } from "./interpreter";
 import type { ExecutionStep } from "@/types";
 
@@ -27,9 +28,9 @@ export type GenerateStepsResult = ExecutionResult | ExecutionError;
  */
 export function generateSteps(code: string): GenerateStepsResult {
   try {
-    const ast = parseCode(code);
+    const { ast, sourceType } = parseCode(code);
     const interpreter = new Interpreter();
-    const steps = interpreter.execute(ast, code);
+    const steps = interpreter.execute(ast, code, sourceType);
 
     return {
       success: true,
@@ -67,5 +68,6 @@ export function generateSteps(code: string): GenerateStepsResult {
 
 // Re-export types and utilities
 export { parseCode } from "./parser";
+export type { SourceType } from "./parser";
 export { Interpreter } from "./interpreter";
 export type { ParseError } from "./parser";

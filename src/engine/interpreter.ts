@@ -57,7 +57,7 @@ interface VariableDeclarationNode extends BaseNode {
 
 interface VariableDeclaratorNode extends BaseNode {
   type: "VariableDeclarator";
-  id: IdentifierNode;
+  id: PatternNode;
   init: ExpressionNode | null;
 }
 
@@ -109,7 +109,7 @@ interface ReturnStatementNode extends BaseNode {
 interface CallExpressionNode extends BaseNode {
   type: "CallExpression";
   callee: ExpressionNode;
-  arguments: ExpressionNode[];
+  arguments: (ExpressionNode | SpreadElementNode)[];
 }
 
 interface MemberExpressionNode extends BaseNode {
@@ -167,13 +167,13 @@ interface IdentifierNode extends BaseNode {
 
 interface ObjectExpressionNode extends BaseNode {
   type: "ObjectExpression";
-  properties: PropertyNode[];
+  properties: (PropertyNode | SpreadElementNode)[];
 }
 
 interface PropertyNode extends BaseNode {
   type: "Property";
   key: IdentifierNode | LiteralNode;
-  value: ExpressionNode;
+  value: ExpressionNode | PatternNode; // value can be Identifier, AssignmentPattern, ObjectPattern, ArrayPattern in destructuring
   kind: "init" | "get" | "set";
   computed: boolean;
   shorthand: boolean;
@@ -181,7 +181,7 @@ interface PropertyNode extends BaseNode {
 
 interface ArrayExpressionNode extends BaseNode {
   type: "ArrayExpression";
-  elements: (ExpressionNode | null)[];
+  elements: (ExpressionNode | SpreadElementNode | null)[];
 }
 
 interface FunctionExpressionNode extends BaseNode {
@@ -293,6 +293,67 @@ interface MethodDefinitionNode extends BaseNode {
   computed: boolean;
 }
 
+// Destructuring pattern nodes
+interface ObjectPatternNode extends BaseNode {
+  type: "ObjectPattern";
+  properties: (PropertyNode | RestElementNode)[];
+}
+
+interface ArrayPatternNode extends BaseNode {
+  type: "ArrayPattern";
+  elements: (PatternNode | null)[];
+}
+
+interface AssignmentPatternNode extends BaseNode {
+  type: "AssignmentPattern";
+  left: PatternNode;
+  right: ExpressionNode;
+}
+
+interface RestElementNode extends BaseNode {
+  type: "RestElement";
+  argument: PatternNode;
+}
+
+interface SpreadElementNode extends BaseNode {
+  type: "SpreadElement";
+  argument: ExpressionNode;
+}
+
+// Module nodes
+interface ImportDeclarationNode extends BaseNode {
+  type: "ImportDeclaration";
+  specifiers: ImportSpecifierNode[];
+  source: LiteralNode;
+}
+
+interface ImportSpecifierNode extends BaseNode {
+  type:
+    | "ImportSpecifier"
+    | "ImportDefaultSpecifier"
+    | "ImportNamespaceSpecifier";
+  local: IdentifierNode;
+  imported?: IdentifierNode;
+}
+
+interface ExportNamedDeclarationNode extends BaseNode {
+  type: "ExportNamedDeclaration";
+  declaration: StatementNode | null;
+  specifiers: ExportSpecifierNode[];
+  source: LiteralNode | null;
+}
+
+interface ExportDefaultDeclarationNode extends BaseNode {
+  type: "ExportDefaultDeclaration";
+  declaration: ExpressionNode | StatementNode;
+}
+
+interface ExportSpecifierNode extends BaseNode {
+  type: "ExportSpecifier";
+  local: IdentifierNode;
+  exported: IdentifierNode;
+}
+
 type StatementNode =
   | VariableDeclarationNode
   | FunctionDeclarationNode
@@ -307,7 +368,10 @@ type StatementNode =
   | ThrowStatementNode
   | BreakStatementNode
   | ContinueStatementNode
-  | ClassDeclarationNode;
+  | ClassDeclarationNode
+  | ImportDeclarationNode
+  | ExportNamedDeclarationNode
+  | ExportDefaultDeclarationNode;
 
 type ExpressionNode =
   | CallExpressionNode
@@ -329,7 +393,12 @@ type ExpressionNode =
   | AwaitExpressionNode
   | YieldExpressionNode;
 
-type PatternNode = IdentifierNode;
+type PatternNode =
+  | IdentifierNode
+  | ObjectPatternNode
+  | ArrayPatternNode
+  | AssignmentPatternNode
+  | RestElementNode;
 
 // Metadata about one captured environment layer (for [[Scope]] display)
 interface CapturedEnvMeta {
@@ -345,6 +414,7 @@ interface CapturedEnvMeta {
 interface FunctionValue {
   __isFunction: true;
   params: string[];
+  paramNodes?: PatternNode[]; // original param nodes for destructuring support
   body: BlockStatementNode | ExpressionNode;
   isArrow: boolean;
   isAsync: boolean;
@@ -516,7 +586,6 @@ export class Interpreter {
 
   // Fetch engine state
   private pendingFetches: PendingFetch[] = [];
-  private fetchCounter: number = 0;
 
   // Promise engine state
   private promises: Map<string, InternalPromise> = new Map();
@@ -555,8 +624,16 @@ export class Interpreter {
   // Tracks function names captured by closure scope: env → function names
   private envCapturedBy: Map<Record<string, unknown>, string[]> = new Map();
 
-  execute(ast: acorn.Node, sourceCode: string): ExecutionStep[] {
+  // Module mode flag
+  private isModuleMode: boolean = false;
+
+  execute(
+    ast: acorn.Node,
+    sourceCode: string,
+    sourceType: "script" | "module" = "script",
+  ): ExecutionStep[] {
     this.sourceCode = sourceCode;
+    this.isModuleMode = sourceType === "module";
 
     // Phase 1: Synchronous execution
     this.pushGlobalFrame();
@@ -944,15 +1021,16 @@ export class Interpreter {
   private pushGlobalFrame(): void {
     const frameId = generateId("frame", this.frameCounter);
     const color = getFrameColor(this.frameCounter++);
+    const isModule = this.isModuleMode;
 
     const frame: CallStackFrame = {
       id: frameId,
-      name: "<global>",
+      name: isModule ? "<module>" : "<global>",
       type: "global",
       line: 1,
       column: 0,
       scope: {
-        name: "Global",
+        name: isModule ? "Module" : "Global",
         type: "global",
         variables: [],
       },
@@ -961,8 +1039,8 @@ export class Interpreter {
 
     const memoryBlock: MemoryBlock = {
       frameId,
-      label: "Global Memory",
-      type: "global",
+      label: isModule ? "Module Scope" : "Global Memory",
+      type: isModule ? "module" : "global",
       color,
       entries: [],
     };
@@ -975,7 +1053,7 @@ export class Interpreter {
     this.envKindsMap.set(this.globalEnv, {});
 
     this.scopes.push({
-      name: "Global",
+      name: isModule ? "Module" : "Global",
       type: "global",
       variables: [],
     });
@@ -985,7 +1063,12 @@ export class Interpreter {
       description: "Executing synchronous code",
     };
 
-    this.snapshot(1, 0, "Starting program execution", "");
+    this.snapshot(
+      1,
+      0,
+      isModule ? "Starting module execution" : "Starting program execution",
+      "",
+    );
   }
 
   private pushFrame(
@@ -1588,117 +1671,821 @@ export class Interpreter {
       case "ClassDeclaration":
         this.visitClassDeclaration(node as ClassDeclarationNode);
         break;
+      case "ImportDeclaration":
+        this.visitImportDeclaration(node as ImportDeclarationNode);
+        break;
+      case "ExportNamedDeclaration":
+        this.visitExportNamedDeclaration(node as ExportNamedDeclarationNode);
+        break;
+      case "ExportDefaultDeclaration":
+        this.visitExportDefaultDeclaration(
+          node as ExportDefaultDeclarationNode,
+        );
+        break;
       default:
         // Unsupported statement - skip gracefully
         console.warn(`Unsupported statement type: ${node.type}`);
     }
   }
 
-  private visitVariableDeclaration(node: VariableDeclarationNode): void {
+  private visitVariableDeclaration(
+    node: VariableDeclarationNode,
+    isExported: boolean = false,
+  ): void {
     const kind = node.kind;
 
     for (const declarator of node.declarations) {
-      const name = declarator.id.name;
       const code = extractSource(this.sourceCode, declarator);
-      let value: unknown = undefined;
-      let resolved: ResolvedValue;
 
-      if (declarator.init) {
-        // Check for function expression or arrow function
-        if (
-          declarator.init.type === "FunctionExpression" ||
-          declarator.init.type === "ArrowFunctionExpression"
-        ) {
-          const funcNode = declarator.init as
-            | FunctionExpressionNode
-            | ArrowFunctionExpressionNode;
-          const funcValue = this.createFunctionValue(funcNode);
-          value = funcValue;
+      // Handle different pattern types
+      if (declarator.id.type === "Identifier") {
+        // Simple variable declaration
+        this.handleSimpleVariableDeclaration(
+          declarator,
+          kind,
+          code,
+          isExported,
+        );
+      } else if (declarator.id.type === "ObjectPattern") {
+        // Object destructuring
+        this.handleObjectDestructuring(
+          declarator.id as ObjectPatternNode,
+          declarator.init,
+          kind,
+          code,
+          isExported,
+        );
+      } else if (declarator.id.type === "ArrayPattern") {
+        // Array destructuring
+        this.handleArrayDestructuring(
+          declarator.id as ArrayPatternNode,
+          declarator.init,
+          kind,
+          code,
+          isExported,
+        );
+      }
+    }
+  }
 
-          // Create heap object for function
-          const heapObj = this.addHeapObject(
-            "function",
-            "ⓕ",
-            undefined,
-            funcValue.source,
-          );
-          this.objectHeapMap.set(funcValue, heapObj.id);
+  private handleSimpleVariableDeclaration(
+    declarator: VariableDeclaratorNode,
+    kind: string,
+    code: string,
+    isExported: boolean = false,
+  ): void {
+    const name = (declarator.id as IdentifierNode).name;
+    let value: unknown = undefined;
+    let resolved: ResolvedValue;
 
-          // Attach closure scope to heap object if inside a nested scope
-          const closureScope = this.buildClosureScopeEntries(
-            funcValue.capturedEnvMeta,
-          );
-          if (closureScope.length > 0) {
-            heapObj.closureScope = closureScope;
-            this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
-          }
+    if (declarator.init) {
+      // Check for function expression or arrow function
+      if (
+        declarator.init.type === "FunctionExpression" ||
+        declarator.init.type === "ArrowFunctionExpression"
+      ) {
+        const funcNode = declarator.init as
+          | FunctionExpressionNode
+          | ArrowFunctionExpressionNode;
+        const funcValue = this.createFunctionValue(funcNode);
+        value = funcValue;
 
-          resolved = {
-            value: funcValue,
-            displayValue: "ⓕ",
-            valueType: "function",
-            heapReferenceId: heapObj.id,
-            pointerColor: heapObj.color,
-          };
-        } else {
-          value = this.evaluateExpression(declarator.init);
-          resolved = this.resolveValueForMemory(value);
+        // Create heap object for function
+        const heapObj = this.addHeapObject(
+          "function",
+          "ⓕ",
+          undefined,
+          funcValue.source,
+        );
+        this.objectHeapMap.set(funcValue, heapObj.id);
+
+        // Attach closure scope to heap object if inside a nested scope
+        const closureScope = this.buildClosureScopeEntries(
+          funcValue.capturedEnvMeta,
+        );
+        if (closureScope.length > 0) {
+          heapObj.closureScope = closureScope;
+          this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
         }
-      } else {
-        value = undefined;
+
         resolved = {
-          value: undefined,
-          displayValue: "undefined",
-          valueType: "primitive",
+          value: funcValue,
+          displayValue: "ⓕ",
+          valueType: "function",
+          heapReferenceId: heapObj.id,
+          pointerColor: heapObj.color,
         };
+      } else {
+        value = this.evaluateExpression(declarator.init);
+        resolved = this.resolveValueForMemory(value);
+      }
+    } else {
+      value = undefined;
+      resolved = {
+        value: undefined,
+        displayValue: "undefined",
+        valueType: "primitive",
+      };
+    }
+
+    // Store in environment
+    this.setVariable(name, value, true);
+    this.recordVarKind(name, kind as VariableKind);
+
+    // Add to current frame's memory
+    const entry: MemoryEntry = {
+      name,
+      kind: kind as VariableKind,
+      valueType: resolved.valueType,
+      displayValue: resolved.displayValue,
+      heapReferenceId: resolved.heapReferenceId,
+      pointerColor: resolved.pointerColor,
+      isExported: isExported || undefined,
+    };
+
+    this.addMemoryEntry(this.getCurrentFrameId(), entry);
+
+    // Update scope variables
+    const currentScope = this.scopes[this.scopes.length - 1];
+    if (currentScope) {
+      currentScope.variables.push({
+        name,
+        value,
+        kind: kind as VariableKind,
+      });
+    }
+
+    // Update stack frame scope
+    const currentFrame = this.callStack[this.callStack.length - 1];
+    if (currentFrame) {
+      currentFrame.scope.variables.push({
+        name,
+        value,
+        kind: kind as VariableKind,
+      });
+    }
+
+    const exportPrefix = isExported ? "export " : "";
+    this.snapshot(
+      this.getLine(declarator),
+      this.getColumn(declarator),
+      `Declaring ${exportPrefix}${kind} ${name} = ${resolved.displayValue}`,
+      code,
+    );
+  }
+
+  private handleObjectDestructuring(
+    pattern: ObjectPatternNode,
+    init: ExpressionNode | null,
+    kind: string,
+    code: string,
+    isExported: boolean = false,
+  ): void {
+    // Evaluate the source object
+    const sourceValue = init ? this.evaluateExpression(init) : undefined;
+    const sourceObj = (sourceValue as Record<string, unknown>) ?? {};
+    const sourceName =
+      init?.type === "Identifier" ? (init as IdentifierNode).name : "object";
+
+    // Process each property in the pattern
+    for (const prop of pattern.properties) {
+      if (prop.type === "RestElement") {
+        // Handle ...rest
+        const restNode = prop as RestElementNode;
+        const restName = (restNode.argument as IdentifierNode).name;
+
+        // Collect remaining properties (not already destructured)
+        const usedKeys = pattern.properties
+          .filter((p) => p.type === "Property")
+          .map((p) => {
+            const propNode = p as PropertyNode;
+            return propNode.key.type === "Identifier"
+              ? (propNode.key as IdentifierNode).name
+              : String((propNode.key as LiteralNode).value);
+          });
+
+        const restObj: Record<string, unknown> = {};
+        for (const key of Object.keys(sourceObj)) {
+          if (!usedKeys.includes(key)) {
+            restObj[key] = sourceObj[key];
+          }
+        }
+
+        // Create heap object for rest
+        const restResolved = this.resolveValueForMemory(restObj);
+        this.setVariable(restName, restObj, true);
+        this.recordVarKind(restName, kind as VariableKind);
+
+        const entry: MemoryEntry = {
+          name: restName,
+          kind: kind as VariableKind,
+          valueType: restResolved.valueType,
+          displayValue: restResolved.displayValue,
+          heapReferenceId: restResolved.heapReferenceId,
+          pointerColor: restResolved.pointerColor,
+          isDestructured: true,
+          isExported: isExported || undefined,
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        this.addToCurrentScope(restName, restObj, kind as VariableKind);
+
+        this.snapshot(
+          this.getLine(prop),
+          this.getColumn(prop),
+          `Destructuring ...${restName} — collecting remaining properties`,
+          code,
+        );
+        continue;
       }
 
+      // Regular property
+      const propNode = prop as PropertyNode;
+      const keyName =
+        propNode.key.type === "Identifier"
+          ? (propNode.key as IdentifierNode).name
+          : String((propNode.key as LiteralNode).value);
+
+      // Get the variable name and possibly default value
+      let varName: string;
+      let defaultValue: unknown = undefined;
+      const valuePattern = propNode.value;
+
+      // Handle rename: { name: firstName }
+      if (valuePattern.type === "Identifier") {
+        varName = (valuePattern as IdentifierNode).name;
+      } else if (valuePattern.type === "AssignmentPattern") {
+        // Handle default: { x = 10 }
+        const assignPattern = valuePattern as AssignmentPatternNode;
+        varName = (assignPattern.left as IdentifierNode).name;
+        defaultValue = this.evaluateExpression(assignPattern.right);
+      } else if (valuePattern.type === "ObjectPattern") {
+        // Nested object destructuring: { address: { city } }
+        const nestedValue = sourceObj[keyName] as
+          | Record<string, unknown>
+          | undefined;
+        this.handleObjectDestructuring(
+          valuePattern as ObjectPatternNode,
+          null,
+          kind,
+          code,
+          isExported,
+        );
+        // Manually set the source for nested destructuring
+        const nestedPattern = valuePattern as ObjectPatternNode;
+        for (const nestedProp of nestedPattern.properties) {
+          if (nestedProp.type === "Property") {
+            const nestedKeyName =
+              (nestedProp as PropertyNode).key.type === "Identifier"
+                ? ((nestedProp as PropertyNode).key as IdentifierNode).name
+                : String(
+                    ((nestedProp as PropertyNode).key as LiteralNode).value,
+                  );
+            const nestedVarName = (
+              (nestedProp as PropertyNode).value as IdentifierNode
+            ).name;
+            const nestedVal = nestedValue?.[nestedKeyName];
+            this.setVariable(nestedVarName, nestedVal, true);
+          }
+        }
+        continue;
+      } else if (valuePattern.type === "ArrayPattern") {
+        // Nested array destructuring
+        const nestedValue = sourceObj[keyName] as unknown[] | undefined;
+        this.handleArrayDestructuringWithSource(
+          valuePattern as ArrayPatternNode,
+          nestedValue ?? [],
+          kind,
+          code,
+          isExported,
+        );
+        continue;
+      } else {
+        varName = keyName; // shorthand: { name } -> name = name
+      }
+
+      // Get the value from source
+      let value = sourceObj[keyName];
+      if (value === undefined && defaultValue !== undefined) {
+        value = defaultValue;
+      }
+
+      // Resolve for memory display
+      const resolved = this.resolveValueForMemory(value);
+
       // Store in environment
-      this.setVariable(name, value, true);
-      this.recordVarKind(name, kind as VariableKind);
+      this.setVariable(varName, value, true);
+      this.recordVarKind(varName, kind as VariableKind);
 
       // Add to current frame's memory
       const entry: MemoryEntry = {
-        name,
+        name: varName,
         kind: kind as VariableKind,
         valueType: resolved.valueType,
         displayValue: resolved.displayValue,
         heapReferenceId: resolved.heapReferenceId,
         pointerColor: resolved.pointerColor,
+        isDestructured: true,
+        isExported: isExported || undefined,
       };
 
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
-
-      // Update scope variables
-      const currentScope = this.scopes[this.scopes.length - 1];
-      if (currentScope) {
-        currentScope.variables.push({
-          name,
-          value,
-          kind: kind as VariableKind,
-        });
-      }
-
-      // Update stack frame scope
-      const currentFrame = this.callStack[this.callStack.length - 1];
-      if (currentFrame) {
-        currentFrame.scope.variables.push({
-          name,
-          value,
-          kind: kind as VariableKind,
-        });
-      }
+      this.addToCurrentScope(varName, value, kind as VariableKind);
 
       this.snapshot(
-        this.getLine(declarator),
-        this.getColumn(declarator),
-        `Declaring ${kind} ${name} = ${resolved.displayValue}`,
+        this.getLine(prop),
+        this.getColumn(prop),
+        `Destructuring ${varName} = ${resolved.displayValue} from ${sourceName}`,
         code,
       );
     }
   }
 
-  private visitFunctionDeclaration(node: FunctionDeclarationNode): void {
+  private handleArrayDestructuring(
+    pattern: ArrayPatternNode,
+    init: ExpressionNode | null,
+    kind: string,
+    code: string,
+    isExported: boolean = false,
+  ): void {
+    // Evaluate the source array
+    const sourceValue = init ? this.evaluateExpression(init) : [];
+    const sourceArr = (sourceValue as unknown[]) ?? [];
+
+    this.handleArrayDestructuringWithSource(
+      pattern,
+      sourceArr,
+      kind,
+      code,
+      isExported,
+    );
+  }
+
+  private handleArrayDestructuringWithSource(
+    pattern: ArrayPatternNode,
+    sourceArr: unknown[],
+    kind: string,
+    code: string,
+    isExported: boolean = false,
+  ): void {
+    // Process each element in the pattern
+    for (let i = 0; i < pattern.elements.length; i++) {
+      const element = pattern.elements[i];
+
+      // Skip holes: const [a, , c] = [1, 2, 3]
+      if (element === null) {
+        continue;
+      }
+
+      if (element.type === "RestElement") {
+        // Handle ...rest
+        const restNode = element as RestElementNode;
+        const restName = (restNode.argument as IdentifierNode).name;
+        const restArr = sourceArr.slice(i);
+
+        const restResolved = this.resolveValueForMemory(restArr);
+        this.setVariable(restName, restArr, true);
+        this.recordVarKind(restName, kind as VariableKind);
+
+        const entry: MemoryEntry = {
+          name: restName,
+          kind: kind as VariableKind,
+          valueType: restResolved.valueType,
+          displayValue: restResolved.displayValue,
+          heapReferenceId: restResolved.heapReferenceId,
+          pointerColor: restResolved.pointerColor,
+          isDestructured: true,
+          isExported: isExported || undefined,
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        this.addToCurrentScope(restName, restArr, kind as VariableKind);
+
+        this.snapshot(
+          this.getLine(element),
+          this.getColumn(element),
+          `Destructuring ...${restName} — collecting remaining elements`,
+          code,
+        );
+        break; // Rest must be last
+      }
+
+      let varName: string;
+      let defaultValue: unknown = undefined;
+
+      if (element.type === "Identifier") {
+        varName = (element as IdentifierNode).name;
+      } else if (element.type === "AssignmentPattern") {
+        const assignPattern = element as AssignmentPatternNode;
+        varName = (assignPattern.left as IdentifierNode).name;
+        defaultValue = this.evaluateExpression(assignPattern.right);
+      } else if (element.type === "ObjectPattern") {
+        // Nested object destructuring in array
+        const nestedValue = sourceArr[i] as Record<string, unknown> | undefined;
+        this.handleObjectDestructuringWithSource(
+          element as ObjectPatternNode,
+          nestedValue ?? {},
+          kind,
+          code,
+          isExported,
+        );
+        continue;
+      } else if (element.type === "ArrayPattern") {
+        // Nested array destructuring
+        const nestedValue = sourceArr[i] as unknown[] | undefined;
+        this.handleArrayDestructuringWithSource(
+          element as ArrayPatternNode,
+          nestedValue ?? [],
+          kind,
+          code,
+          isExported,
+        );
+        continue;
+      } else {
+        continue;
+      }
+
+      // Get the value from source
+      let value = sourceArr[i];
+      if (value === undefined && defaultValue !== undefined) {
+        value = defaultValue;
+      }
+
+      const resolved = this.resolveValueForMemory(value);
+
+      this.setVariable(varName, value, true);
+      this.recordVarKind(varName, kind as VariableKind);
+
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: kind as VariableKind,
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+        isDestructured: true,
+        isExported: isExported || undefined,
+      };
+
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      this.addToCurrentScope(varName, value, kind as VariableKind);
+
+      this.snapshot(
+        this.getLine(element),
+        this.getColumn(element),
+        `Destructuring ${varName} = ${resolved.displayValue}`,
+        code,
+      );
+    }
+  }
+
+  private handleObjectDestructuringWithSource(
+    pattern: ObjectPatternNode,
+    sourceObj: Record<string, unknown>,
+    kind: string,
+    code: string,
+    isExported: boolean = false,
+  ): void {
+    for (const prop of pattern.properties) {
+      if (prop.type === "RestElement") {
+        const restNode = prop as RestElementNode;
+        const restName = (restNode.argument as IdentifierNode).name;
+
+        const usedKeys = pattern.properties
+          .filter((p) => p.type === "Property")
+          .map((p) => {
+            const propNode = p as PropertyNode;
+            return propNode.key.type === "Identifier"
+              ? (propNode.key as IdentifierNode).name
+              : String((propNode.key as LiteralNode).value);
+          });
+
+        const restObj: Record<string, unknown> = {};
+        for (const key of Object.keys(sourceObj)) {
+          if (!usedKeys.includes(key)) {
+            restObj[key] = sourceObj[key];
+          }
+        }
+
+        const restResolved = this.resolveValueForMemory(restObj);
+        this.setVariable(restName, restObj, true);
+        this.recordVarKind(restName, kind as VariableKind);
+
+        const entry: MemoryEntry = {
+          name: restName,
+          kind: kind as VariableKind,
+          valueType: restResolved.valueType,
+          displayValue: restResolved.displayValue,
+          heapReferenceId: restResolved.heapReferenceId,
+          pointerColor: restResolved.pointerColor,
+          isDestructured: true,
+          isExported: isExported || undefined,
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        this.addToCurrentScope(restName, restObj, kind as VariableKind);
+
+        this.snapshot(
+          this.getLine(prop),
+          this.getColumn(prop),
+          `Destructuring ...${restName} — collecting remaining properties`,
+          code,
+        );
+        continue;
+      }
+
+      const propNode = prop as PropertyNode;
+      const keyName =
+        propNode.key.type === "Identifier"
+          ? (propNode.key as IdentifierNode).name
+          : String((propNode.key as LiteralNode).value);
+
+      let varName: string;
+      let defaultValue: unknown = undefined;
+      const valuePattern = propNode.value;
+
+      if (valuePattern.type === "Identifier") {
+        varName = (valuePattern as IdentifierNode).name;
+      } else if (valuePattern.type === "AssignmentPattern") {
+        const assignPattern = valuePattern as AssignmentPatternNode;
+        varName = (assignPattern.left as IdentifierNode).name;
+        defaultValue = this.evaluateExpression(assignPattern.right);
+      } else if (valuePattern.type === "ObjectPattern") {
+        const nestedValue = sourceObj[keyName] as
+          | Record<string, unknown>
+          | undefined;
+        this.handleObjectDestructuringWithSource(
+          valuePattern as ObjectPatternNode,
+          nestedValue ?? {},
+          kind,
+          code,
+          isExported,
+        );
+        continue;
+      } else if (valuePattern.type === "ArrayPattern") {
+        const nestedValue = sourceObj[keyName] as unknown[] | undefined;
+        this.handleArrayDestructuringWithSource(
+          valuePattern as ArrayPatternNode,
+          nestedValue ?? [],
+          kind,
+          code,
+          isExported,
+        );
+        continue;
+      } else {
+        varName = keyName;
+      }
+
+      let value = sourceObj[keyName];
+      if (value === undefined && defaultValue !== undefined) {
+        value = defaultValue;
+      }
+
+      const resolved = this.resolveValueForMemory(value);
+      this.setVariable(varName, value, true);
+      this.recordVarKind(varName, kind as VariableKind);
+
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: kind as VariableKind,
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+        isDestructured: true,
+        isExported: isExported || undefined,
+      };
+
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      this.addToCurrentScope(varName, value, kind as VariableKind);
+
+      this.snapshot(
+        this.getLine(prop),
+        this.getColumn(prop),
+        `Destructuring ${varName} = ${resolved.displayValue}`,
+        code,
+      );
+    }
+  }
+
+  private addToCurrentScope(
+    name: string,
+    value: unknown,
+    kind: VariableKind,
+  ): void {
+    const currentScope = this.scopes[this.scopes.length - 1];
+    if (currentScope) {
+      currentScope.variables.push({ name, value, kind });
+    }
+    const currentFrame = this.callStack[this.callStack.length - 1];
+    if (currentFrame) {
+      currentFrame.scope.variables.push({ name, value, kind });
+    }
+  }
+
+  /**
+   * Handle destructuring patterns in function parameters.
+   * Called after pushFrame to bind destructured variables.
+   */
+  private handleParameterDestructuring(
+    funcValue: FunctionValue,
+    args: unknown[],
+  ): void {
+    const paramNodes = funcValue.paramNodes;
+    if (!paramNodes) return;
+
+    for (let i = 0; i < paramNodes.length; i++) {
+      const paramNode = paramNodes[i];
+      const argValue = args[i];
+
+      if (paramNode.type === "ObjectPattern") {
+        this.destructureObjectParam(paramNode as ObjectPatternNode, argValue);
+      } else if (paramNode.type === "ArrayPattern") {
+        this.destructureArrayParam(paramNode as ArrayPatternNode, argValue);
+      }
+      // Identifier params are already handled by pushFrame
+    }
+  }
+
+  private destructureObjectParam(
+    pattern: ObjectPatternNode,
+    value: unknown,
+  ): void {
+    const sourceObj = (value as Record<string, unknown>) ?? {};
+
+    for (const prop of pattern.properties) {
+      if (prop.type === "RestElement") {
+        const restNode = prop as RestElementNode;
+        const restName = (restNode.argument as IdentifierNode).name;
+
+        const usedKeys = pattern.properties
+          .filter((p) => p.type === "Property")
+          .map((p) => {
+            const propNode = p as PropertyNode;
+            return propNode.key.type === "Identifier"
+              ? (propNode.key as IdentifierNode).name
+              : String((propNode.key as LiteralNode).value);
+          });
+
+        const restObj: Record<string, unknown> = {};
+        for (const key of Object.keys(sourceObj)) {
+          if (!usedKeys.includes(key)) {
+            restObj[key] = sourceObj[key];
+          }
+        }
+
+        const resolved = this.resolveValueForMemory(restObj);
+        this.setVariable(restName, restObj, true);
+        this.recordVarKind(restName, "param");
+
+        const entry: MemoryEntry = {
+          name: restName,
+          kind: "param",
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+          isDestructured: true,
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        this.addToCurrentScope(restName, restObj, "param" as VariableKind);
+        continue;
+      }
+
+      const propNode = prop as PropertyNode;
+      const keyName =
+        propNode.key.type === "Identifier"
+          ? (propNode.key as IdentifierNode).name
+          : String((propNode.key as LiteralNode).value);
+
+      let varName: string;
+      let defaultValue: unknown = undefined;
+      const valuePattern = propNode.value;
+
+      if (valuePattern.type === "Identifier") {
+        varName = (valuePattern as IdentifierNode).name;
+      } else if (valuePattern.type === "AssignmentPattern") {
+        const assignPattern = valuePattern as AssignmentPatternNode;
+        varName = (assignPattern.left as IdentifierNode).name;
+        defaultValue = this.evaluateExpression(assignPattern.right);
+      } else if (valuePattern.type === "ObjectPattern") {
+        this.destructureObjectParam(
+          valuePattern as ObjectPatternNode,
+          sourceObj[keyName],
+        );
+        continue;
+      } else if (valuePattern.type === "ArrayPattern") {
+        this.destructureArrayParam(
+          valuePattern as ArrayPatternNode,
+          sourceObj[keyName] as unknown[],
+        );
+        continue;
+      } else {
+        varName = keyName;
+      }
+
+      let paramValue = sourceObj[keyName];
+      if (paramValue === undefined && defaultValue !== undefined) {
+        paramValue = defaultValue;
+      }
+
+      const resolved = this.resolveValueForMemory(paramValue);
+      this.setVariable(varName, paramValue, true);
+      this.recordVarKind(varName, "param");
+
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: "param",
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+        isDestructured: true,
+      };
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      this.addToCurrentScope(varName, paramValue, "param" as VariableKind);
+    }
+  }
+
+  private destructureArrayParam(
+    pattern: ArrayPatternNode,
+    value: unknown,
+  ): void {
+    const sourceArr = (value as unknown[]) ?? [];
+
+    for (let i = 0; i < pattern.elements.length; i++) {
+      const element = pattern.elements[i];
+      if (element === null) continue;
+
+      if (element.type === "RestElement") {
+        const restNode = element as RestElementNode;
+        const restName = (restNode.argument as IdentifierNode).name;
+        const restArr = sourceArr.slice(i);
+
+        const resolved = this.resolveValueForMemory(restArr);
+        this.setVariable(restName, restArr, true);
+        this.recordVarKind(restName, "param");
+
+        const entry: MemoryEntry = {
+          name: restName,
+          kind: "param",
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+          isDestructured: true,
+        };
+        this.addMemoryEntry(this.getCurrentFrameId(), entry);
+        this.addToCurrentScope(restName, restArr, "param" as VariableKind);
+        break;
+      }
+
+      let varName: string;
+      let defaultValue: unknown = undefined;
+
+      if (element.type === "Identifier") {
+        varName = (element as IdentifierNode).name;
+      } else if (element.type === "AssignmentPattern") {
+        const assignPattern = element as AssignmentPatternNode;
+        varName = (assignPattern.left as IdentifierNode).name;
+        defaultValue = this.evaluateExpression(assignPattern.right);
+      } else if (element.type === "ObjectPattern") {
+        this.destructureObjectParam(element as ObjectPatternNode, sourceArr[i]);
+        continue;
+      } else if (element.type === "ArrayPattern") {
+        this.destructureArrayParam(
+          element as ArrayPatternNode,
+          sourceArr[i] as unknown[],
+        );
+        continue;
+      } else {
+        continue;
+      }
+
+      let paramValue = sourceArr[i];
+      if (paramValue === undefined && defaultValue !== undefined) {
+        paramValue = defaultValue;
+      }
+
+      const resolved = this.resolveValueForMemory(paramValue);
+      this.setVariable(varName, paramValue, true);
+      this.recordVarKind(varName, "param");
+
+      const entry: MemoryEntry = {
+        name: varName,
+        kind: "param",
+        valueType: resolved.valueType,
+        displayValue: resolved.displayValue,
+        heapReferenceId: resolved.heapReferenceId,
+        pointerColor: resolved.pointerColor,
+        isDestructured: true,
+      };
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      this.addToCurrentScope(varName, paramValue, "param" as VariableKind);
+    }
+  }
+
+  private visitFunctionDeclaration(
+    node: FunctionDeclarationNode,
+    isExported: boolean = false,
+  ): void {
     const name = node.id.name;
     const code = extractSource(this.sourceCode, node);
     const isGenerator = node.generator === true;
@@ -1739,6 +2526,7 @@ export class Interpreter {
       displayValue: funcDisplayValue,
       heapReferenceId: heapObj.id,
       pointerColor: heapObj.color,
+      isExported: isExported || undefined,
     };
 
     this.addMemoryEntry(this.getCurrentFrameId(), entry);
@@ -1933,6 +2721,184 @@ export class Interpreter {
       `Declaring class ${name}${extendsStr}`,
       code,
     );
+  }
+
+  // === Module Statement Handlers ===
+
+  private visitImportDeclaration(node: ImportDeclarationNode): void {
+    const source = node.source.value as string;
+    const code = extractSource(this.sourceCode, node);
+
+    // Since we can't actually load modules, we create placeholder entries
+    for (const specifier of node.specifiers) {
+      const localName = specifier.local.name;
+      let importedName = localName;
+
+      if (specifier.type === "ImportDefaultSpecifier") {
+        importedName = "default";
+      } else if (specifier.type === "ImportNamespaceSpecifier") {
+        importedName = "*";
+      } else if (specifier.type === "ImportSpecifier" && specifier.imported) {
+        importedName = specifier.imported.name;
+      }
+
+      // Create a placeholder value
+      const placeholderValue = `[imported: ${importedName}]`;
+
+      // Store in environment
+      this.setVariable(localName, placeholderValue, true);
+      this.recordVarKind(localName, "const");
+
+      // Add to memory as a primitive placeholder
+      const entry: MemoryEntry = {
+        name: localName,
+        kind: "const",
+        valueType: "primitive",
+        displayValue: `"[imported]"`,
+      };
+      this.addMemoryEntry(this.getCurrentFrameId(), entry);
+      this.addToCurrentScope(localName, placeholderValue, "const");
+    }
+
+    const specifierNames = node.specifiers
+      .map((s) => {
+        if (s.type === "ImportDefaultSpecifier") return s.local.name;
+        if (s.type === "ImportNamespaceSpecifier")
+          return `* as ${s.local.name}`;
+        if (
+          s.type === "ImportSpecifier" &&
+          s.imported &&
+          s.imported.name !== s.local.name
+        ) {
+          return `${s.imported.name} as ${s.local.name}`;
+        }
+        return s.local.name;
+      })
+      .join(", ");
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `import { ${specifierNames} } from '${source}' — module import (simulated)`,
+      code,
+    );
+  }
+
+  private visitExportNamedDeclaration(node: ExportNamedDeclarationNode): void {
+    const code = extractSource(this.sourceCode, node);
+
+    // If there's a declaration, handle it with isExported flag
+    if (node.declaration) {
+      if (node.declaration.type === "VariableDeclaration") {
+        this.visitVariableDeclaration(
+          node.declaration as VariableDeclarationNode,
+          true,
+        );
+        return;
+      } else if (node.declaration.type === "FunctionDeclaration") {
+        this.visitFunctionDeclaration(
+          node.declaration as FunctionDeclarationNode,
+          true,
+        );
+        return;
+      } else if (node.declaration.type === "ClassDeclaration") {
+        this.visitClassDeclaration(node.declaration as ClassDeclarationNode);
+        // Mark the class as exported in memory
+        const className = (node.declaration as ClassDeclarationNode).id.name;
+        this.markAsExported(className);
+        return;
+      }
+    }
+
+    // Handle export specifiers: export { a, b }
+    if (node.specifiers.length > 0) {
+      const exportedNames = node.specifiers
+        .map((s) => {
+          // Mark each exported variable
+          this.markAsExported(s.local.name);
+          return s.exported.name !== s.local.name
+            ? `${s.local.name} as ${s.exported.name}`
+            : s.local.name;
+        })
+        .join(", ");
+
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `export { ${exportedNames} }`,
+        code,
+      );
+    }
+  }
+
+  private visitExportDefaultDeclaration(
+    node: ExportDefaultDeclarationNode,
+  ): void {
+    const code = extractSource(this.sourceCode, node);
+
+    if (node.declaration.type === "FunctionDeclaration") {
+      const funcNode = node.declaration as FunctionDeclarationNode;
+      const name = funcNode.id?.name ?? "default";
+      this.visitFunctionDeclaration(funcNode, true);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `export default function ${name}`,
+        code,
+      );
+      return;
+    }
+
+    if (node.declaration.type === "ClassDeclaration") {
+      const classNode = node.declaration as ClassDeclarationNode;
+      const name = classNode.id.name;
+      this.visitClassDeclaration(classNode);
+      this.markAsExported(name);
+      this.snapshot(
+        this.getLine(node),
+        this.getColumn(node),
+        `export default class ${name}`,
+        code,
+      );
+      return;
+    }
+
+    // For expression exports: export default expression
+    const value = this.evaluateExpression(node.declaration as ExpressionNode);
+    const resolved = this.resolveValueForMemory(value);
+
+    // Store as "default" export
+    this.setVariable("default", value, true);
+    this.recordVarKind("default", "const");
+
+    const entry: MemoryEntry = {
+      name: "default",
+      kind: "const",
+      valueType: resolved.valueType,
+      displayValue: resolved.displayValue,
+      heapReferenceId: resolved.heapReferenceId,
+      pointerColor: resolved.pointerColor,
+      isExported: true,
+    };
+    this.addMemoryEntry(this.getCurrentFrameId(), entry);
+
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `export default ${resolved.displayValue}`,
+      code,
+    );
+  }
+
+  private markAsExported(varName: string): void {
+    // Find the memory entry and mark it as exported
+    for (const block of this.memoryBlocks) {
+      const entry = block.entries.find((e) => e.name === varName);
+      if (entry) {
+        entry.isExported = true;
+        break;
+      }
+    }
   }
 
   private visitExpressionStatement(node: ExpressionStatementNode): void {
@@ -3091,10 +4057,22 @@ export class Interpreter {
       return undefined;
     }
 
-    // Evaluate arguments
-    const evaluatedArgs = node.arguments.map((arg) =>
-      this.evaluateExpression(arg as ExpressionNode),
-    );
+    // Evaluate arguments, handling spread
+    const evaluatedArgs: unknown[] = [];
+    for (const arg of node.arguments) {
+      if (arg.type === "SpreadElement") {
+        const spreadValue = this.evaluateExpression(
+          (arg as SpreadElementNode).argument,
+        );
+        if (Array.isArray(spreadValue)) {
+          evaluatedArgs.push(...spreadValue);
+        } else if (spreadValue && typeof spreadValue === "object") {
+          evaluatedArgs.push(...Object.values(spreadValue));
+        }
+      } else {
+        evaluatedArgs.push(this.evaluateExpression(arg as ExpressionNode));
+      }
+    }
 
     // Build params with values
     const params = funcValue.params.map((paramName: string, index: number) => ({
@@ -3124,6 +4102,9 @@ export class Interpreter {
 
     // Push frame
     this.pushFrame(funcName, this.getLine(node), this.getColumn(node), params);
+
+    // Handle destructuring in function parameters
+    this.handleParameterDestructuring(funcValue, evaluatedArgs);
 
     // If called as a method on an instance, inject `this` into the local env + memory
     if (receiver !== null) {
@@ -3377,17 +4358,33 @@ export class Interpreter {
     const obj: Record<string, unknown> = {};
 
     for (const prop of node.properties) {
+      // Handle spread: { ...base, extra: true }
+      if (prop.type === "SpreadElement") {
+        const spreadValue = this.evaluateExpression(
+          (prop as SpreadElementNode).argument,
+        );
+        if (
+          spreadValue &&
+          typeof spreadValue === "object" &&
+          !Array.isArray(spreadValue)
+        ) {
+          Object.assign(obj, spreadValue);
+        }
+        continue;
+      }
+
+      const propNode = prop as PropertyNode;
       let key: string;
 
-      if (prop.key.type === "Identifier") {
-        key = prop.key.name;
-      } else if (prop.key.type === "Literal") {
-        key = String(prop.key.value);
+      if (propNode.key.type === "Identifier") {
+        key = propNode.key.name;
+      } else if (propNode.key.type === "Literal") {
+        key = String(propNode.key.value);
       } else {
         continue;
       }
 
-      const value = this.evaluateExpression(prop.value as ExpressionNode);
+      const value = this.evaluateExpression(propNode.value as ExpressionNode);
       obj[key] = value;
     }
 
@@ -3400,6 +4397,17 @@ export class Interpreter {
     for (const element of node.elements) {
       if (element === null) {
         arr.push(undefined);
+      } else if (element.type === "SpreadElement") {
+        // Handle spread: [1, ...other, 3]
+        const spreadValue = this.evaluateExpression(
+          (element as SpreadElementNode).argument,
+        );
+        if (Array.isArray(spreadValue)) {
+          arr.push(...spreadValue);
+        } else if (spreadValue && typeof spreadValue === "object") {
+          // Spread object values (like Object.values)
+          arr.push(...Object.values(spreadValue));
+        }
       } else {
         arr.push(this.evaluateExpression(element as ExpressionNode));
       }
@@ -4585,7 +5593,16 @@ export class Interpreter {
   private createFunctionValue(
     node: FunctionExpressionNode | ArrowFunctionExpressionNode,
   ): FunctionValue {
-    const params = node.params.map((p) => (p as IdentifierNode).name);
+    // Extract param names (for simple params) and store nodes for destructuring
+    const params: string[] = [];
+    for (const p of node.params) {
+      if (p.type === "Identifier") {
+        params.push((p as IdentifierNode).name);
+      } else {
+        // Placeholder name for pattern params - actual binding happens at call time
+        params.push(`__pattern_${params.length}`);
+      }
+    }
     const source = extractSource(this.sourceCode, node);
     const isArrow = node.type === "ArrowFunctionExpression";
     const isGenerator =
@@ -4595,6 +5612,7 @@ export class Interpreter {
     return {
       __isFunction: true,
       params,
+      paramNodes: node.params as PatternNode[],
       body: node.body as BlockStatementNode | ExpressionNode,
       isArrow,
       isAsync: node.async === true,
@@ -4607,12 +5625,21 @@ export class Interpreter {
   private createFunctionValueFromDeclaration(
     node: FunctionDeclarationNode,
   ): FunctionValue {
-    const params = node.params.map((p) => (p as IdentifierNode).name);
+    // Extract param names (for simple params) and store nodes for destructuring
+    const params: string[] = [];
+    for (const p of node.params) {
+      if (p.type === "Identifier") {
+        params.push((p as IdentifierNode).name);
+      } else {
+        params.push(`__pattern_${params.length}`);
+      }
+    }
     const source = extractSource(this.sourceCode, node);
 
     return {
       __isFunction: true,
       params,
+      paramNodes: node.params as PatternNode[],
       body: node.body,
       isArrow: false,
       isAsync: node.async === true,
@@ -5281,7 +6308,11 @@ export class Interpreter {
       const awaitNode = d.init as AwaitExpressionNode;
       const awaitedValue = this.evaluateExpression(awaitNode.argument);
       // Declare the variable as undefined for now (will be assigned on resume)
-      const varName = d.id.name;
+      // For await, we only support simple identifiers
+      const varName =
+        d.id.type === "Identifier"
+          ? (d.id as IdentifierNode).name
+          : "__await_result__";
       this.setVariable(varName, undefined, true);
       const entry: MemoryEntry = {
         name: varName,
@@ -6031,7 +7062,10 @@ export class Interpreter {
       const yieldedValue = yieldNode.argument
         ? this.evaluateExpression(yieldNode.argument)
         : undefined;
-      const varName = d.id.name;
+      const varName =
+        d.id.type === "Identifier"
+          ? (d.id as IdentifierNode).name
+          : "__yield_result__";
 
       // Declare the variable as undefined (will be assigned on resume with next(value))
       this.setVariable(varName, undefined, true);
@@ -6082,7 +7116,9 @@ export class Interpreter {
     let varKind: VariableKind = "let";
     if (node.left.type === "VariableDeclaration") {
       const decl = node.left as VariableDeclarationNode;
-      varName = decl.declarations[0].id.name;
+      const id = decl.declarations[0].id;
+      varName =
+        id.type === "Identifier" ? (id as IdentifierNode).name : "__item__";
       varKind = decl.kind as VariableKind;
     } else {
       varName = (node.left as IdentifierNode).name;

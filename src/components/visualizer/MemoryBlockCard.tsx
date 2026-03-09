@@ -56,6 +56,7 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
 
   if (entry.valueType === "function") {
+    const isGenerator = entry.displayValue === "ⓕ*";
     return (
       <span
         style={{
@@ -76,6 +77,11 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
         <span style={{ color: THEME.colors.syntax.function, fontWeight: 700 }}>
           ⓕ
         </span>
+        {isGenerator && (
+          <span style={{ color: THEME.colors.syntax.keyword, fontWeight: 700 }}>
+            *
+          </span>
+        )}
         {entry.pointerColor && (
           <PointerBadge
             color={entry.pointerColor}
@@ -141,6 +147,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
 
   const isFrameHighlighted = hoveredFrameId === block.frameId;
   const isSuspended = block.suspended === true;
+  const isModuleScope = block.type === "module";
   const suspendedColor = THEME.colors.status.pending; // amber
 
   return (
@@ -149,13 +156,18 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
         border: `1px solid ${isFrameHighlighted ? block.color : `${block.color}33`}`,
         borderLeftWidth: 3,
         borderLeftColor: isSuspended ? suspendedColor : block.color,
-        borderLeftStyle: isSuspended ? "dashed" : "solid",
+        borderLeftStyle: isSuspended
+          ? "dashed"
+          : isModuleScope
+            ? "dotted"
+            : "solid",
         borderRadius: THEME.radius.sm,
         backgroundColor: THEME.colors.bg.elevated,
         padding: "8px 10px",
         boxShadow: isFrameHighlighted ? `0 0 12px ${block.color}50` : "none",
         opacity: isSuspended ? 0.5 : 1,
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
+        transition:
+          "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredFrameId(block.frameId)}
@@ -220,9 +232,37 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                       : THEME.colors.text.secondary,
                     fontWeight: isThis ? 700 : undefined,
                     flexShrink: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
                   }}
                 >
+                  {/* Destructuring indicator */}
+                  {entry.isDestructured && (
+                    <span
+                      style={{
+                        color: THEME.colors.text.muted,
+                        fontSize: 10,
+                      }}
+                      title="Destructured"
+                    >
+                      {"{ }"}
+                    </span>
+                  )}
                   {entry.name}
+                  {/* Export badge */}
+                  {entry.isExported && (
+                    <span
+                      style={{
+                        color: THEME.colors.syntax.keyword,
+                        fontSize: 10,
+                        marginLeft: 2,
+                      }}
+                      title="Exported"
+                    >
+                      ↗
+                    </span>
+                  )}
                 </span>
                 <EntryValue
                   entry={entry}

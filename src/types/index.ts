@@ -84,12 +84,14 @@ export interface MemoryEntry {
   displayValue: string; // "42", '"hello"', "undefined", "ⓕ", "[Pointer]"
   heapReferenceId?: string; // links to HeapObject.id if valueType is 'function' | 'object'
   pointerColor?: string; // color badge for this pointer (matches HeapObject color)
+  isExported?: boolean; // true if exported from a module
+  isDestructured?: boolean; // true if created via destructuring
 }
 
 export interface MemoryBlock {
   frameId: string; // matches CallStackFrame.id
   label: string; // "Global Memory" or "Local: functionName"
-  type: "global" | "local";
+  type: "global" | "local" | "module"; // add 'module' for ES modules
   color: string; // border color (matches its Call Stack frame)
   entries: MemoryEntry[];
   suspended?: boolean; // true when the owning async frame is suspended
