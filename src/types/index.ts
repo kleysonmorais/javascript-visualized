@@ -103,6 +103,21 @@ export interface HeapObjectProperty {
   pointerColor?: string;
 }
 
+export interface ClosureVariable {
+  name: string;
+  displayValue: string;
+  valueType: MemoryValueType;
+  heapReferenceId?: string;
+  pointerColor?: string;
+  isMutable: boolean;          // true if let/var — can be updated by the closure
+}
+
+export interface ClosureScopeEntry {
+  scopeName: string;           // name of the enclosing scope: "outer", "createCounter"
+  scopeColor: string;          // color of the original scope's MemoryBlock
+  variables: ClosureVariable[];
+}
+
 export interface HeapObject {
   id: string;
   type: 'object' | 'array' | 'function';
@@ -110,6 +125,7 @@ export interface HeapObject {
   label: string;               // short display: "{ name: 'Joe' }"
   properties?: HeapObjectProperty[];
   functionSource?: string;     // source for functions
+  closureScope?: ClosureScopeEntry[]; // captured variables from enclosing scope(s)
 }
 
 export interface ExecutionStep {

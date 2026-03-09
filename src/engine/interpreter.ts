@@ -14,6 +14,8 @@ import type {
   VariableKind,
   MemoryValueType,
   ConsoleMethod,
+  ClosureScopeEntry,
+  ClosureVariable,
 } from "@/types";
 import { getFrameColor, getPointerColor } from "@/constants/theme";
 import {
@@ -288,6 +290,16 @@ type ExpressionNode =
 
 type PatternNode = IdentifierNode;
 
+// Metadata about one captured environment layer (for [[Scope]] display)
+interface CapturedEnvMeta {
+  scopeName: string;
+  scopeColor: string;
+  // kinds for each variable in this layer (for isMutable flag)
+  kinds: Record<string, VariableKind | 'param' | 'function'>;
+  // live reference to the env object — mutations here are visible immediately
+  env: Record<string, unknown>;
+}
+
 // Internal type for function values stored in environment
 interface FunctionValue {
   __isFunction: true;
@@ -296,6 +308,8 @@ interface FunctionValue {
   isArrow: boolean;
   isAsync: boolean;
   source: string;
+  // Closure: live references to enclosing envs (non-global) at time of creation
+  capturedEnvMeta?: CapturedEnvMeta[];
 }
 
 // Thrown error signal — used for try/catch and async rejection propagation
@@ -435,6 +449,15 @@ export class Interpreter {
 
   // Maps runtime object/function references to their heap object IDs for reference sharing
   private objectHeapMap: WeakMap<object, string> = new WeakMap();
+
+  // Closure display tracking: heapObjectId → CapturedEnvMeta[] for [[Scope]] refresh
+  private closureLiveEnvMap: Map<string, CapturedEnvMeta[]> = new Map();
+
+  // Tracks kinds of variables in each env layer: env object reference → variable kinds
+  private envKindsMap: Map<Record<string, unknown>, Record<string, VariableKind | 'param' | 'function'>> = new Map();
+
+  // Tracks function names captured by closure scope: env → function names
+  private envCapturedBy: Map<Record<string, unknown>, string[]> = new Map();
 
   execute(ast: acorn.Node, sourceCode: string): ExecutionStep[] {
     this.sourceCode = sourceCode;
@@ -769,6 +792,9 @@ export class Interpreter {
     description: string,
     code: string,
   ): void {
+    // Refresh closure scope displays from live env references before cloning
+    this.syncClosureScopeDisplays();
+
     if (this.stepIndex >= MAX_STEPS) {
       if (this.stepIndex === MAX_STEPS) {
         this.steps.push({
@@ -844,6 +870,7 @@ export class Interpreter {
     this.callStack.push(frame);
     this.memoryBlocks.push(memoryBlock);
     this.envStack.push(this.globalEnv);
+    this.envKindsMap.set(this.globalEnv, {});
 
     this.scopes.push({
       name: "Global",
@@ -915,10 +942,13 @@ export class Interpreter {
 
     // Create new local environment
     const localEnv: Record<string, unknown> = {};
+    const localKinds: Record<string, VariableKind | 'param' | 'function'> = {};
     for (const p of params) {
       localEnv[p.name] = p.value;
+      localKinds[p.name] = 'param';
     }
     this.envStack.push(localEnv);
+    this.envKindsMap.set(localEnv, localKinds);
 
     this.scopes.push({
       name,
@@ -1048,6 +1078,16 @@ export class Interpreter {
     return id;
   }
 
+  private recordVarKind(name: string, kind: VariableKind | 'param' | 'function'): void {
+    const env = this.getCurrentEnv();
+    const kinds = this.envKindsMap.get(env);
+    if (kinds) {
+      kinds[name] = kind;
+    } else {
+      this.envKindsMap.set(env, { [name]: kind });
+    }
+  }
+
   private lookupVariable(name: string): unknown {
     // Search from current env to global
     for (let i = this.envStack.length - 1; i >= 0; i--) {
@@ -1089,6 +1129,39 @@ export class Interpreter {
   }
 
   private resolveValueForMemory(value: unknown): ResolvedValue {
+    // Handle FunctionValue FIRST — it's a plain object so getValueType returns "object"
+    // We must intercept it before the generic object path.
+    if (this.isFunctionValue(value)) {
+      const existingId = this.objectHeapMap.get(value);
+      if (existingId) {
+        const existing = this.heap.find((h) => h.id === existingId);
+        if (existing) {
+          return {
+            value,
+            displayValue: "ⓕ",
+            valueType: "function",
+            heapReferenceId: existing.id,
+            pointerColor: existing.color,
+          };
+        }
+      }
+      const heapObj = this.addHeapObject("function", "ⓕ", undefined, value.source);
+      this.objectHeapMap.set(value, heapObj.id);
+      // Attach closure scope if this function has captured envs
+      const closureScope = this.buildClosureScopeEntries(value.capturedEnvMeta);
+      if (closureScope.length > 0) {
+        heapObj.closureScope = closureScope;
+        this.closureLiveEnvMap.set(heapObj.id, value.capturedEnvMeta!);
+      }
+      return {
+        value,
+        displayValue: "ⓕ",
+        valueType: "function",
+        heapReferenceId: heapObj.id,
+        pointerColor: heapObj.color,
+      };
+    }
+
     const valueType = getValueType(value);
     const display = displayValue(value);
 
@@ -1144,6 +1217,12 @@ export class Interpreter {
           value.source,
         );
         this.objectHeapMap.set(value, heapObj.id);
+        // Attach closure scope if this function has captured envs
+        const closureScope = this.buildClosureScopeEntries(value.capturedEnvMeta);
+        if (closureScope.length > 0) {
+          heapObj.closureScope = closureScope;
+          this.closureLiveEnvMap.set(heapObj.id, value.capturedEnvMeta!);
+        }
         return {
           value,
           displayValue: "ⓕ",
@@ -1395,6 +1474,13 @@ export class Interpreter {
           );
           this.objectHeapMap.set(funcValue, heapObj.id);
 
+          // Attach closure scope to heap object if inside a nested scope
+          const closureScope = this.buildClosureScopeEntries(funcValue.capturedEnvMeta);
+          if (closureScope.length > 0) {
+            heapObj.closureScope = closureScope;
+            this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
+          }
+
           resolved = {
             value: funcValue,
             displayValue: "ⓕ",
@@ -1417,6 +1503,7 @@ export class Interpreter {
 
       // Store in environment
       this.setVariable(name, value, true);
+      this.recordVarKind(name, kind as VariableKind);
 
       // Add to current frame's memory
       const entry: MemoryEntry = {
@@ -1468,6 +1555,7 @@ export class Interpreter {
 
     // Store in environment
     this.setVariable(name, funcValue, true);
+    this.recordVarKind(name, 'function');
 
     // Create heap object
     const heapObj = this.addHeapObject(
@@ -1477,6 +1565,13 @@ export class Interpreter {
       funcValue.source,
     );
     this.objectHeapMap.set(funcValue, heapObj.id);
+
+    // Attach closure scope to heap object if inside a nested scope
+    const closureScope = this.buildClosureScopeEntries(funcValue.capturedEnvMeta);
+    if (closureScope.length > 0) {
+      heapObj.closureScope = closureScope;
+      this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
+    }
 
     // Add to current frame's memory
     const entry: MemoryEntry = {
@@ -2603,6 +2698,17 @@ export class Interpreter {
     const code = extractSource(this.sourceCode, node);
     const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
 
+    // Inject captured closure envs into envStack so lookupVariable finds them.
+    // We insert them just above the global env (index 1) so the chain is:
+    //   [global, ...capturedEnvs, newLocalFrame]
+    // This means the new local frame (pushed by pushFrame) sees them during lookup.
+    const capturedMeta = funcValue.capturedEnvMeta;
+    const injectedCount = capturedMeta ? capturedMeta.length : 0;
+    if (capturedMeta && capturedMeta.length > 0) {
+      // Insert captured envs at position 1 (after global at 0)
+      this.envStack.splice(1, 0, ...capturedMeta.map((m) => m.env));
+    }
+
     // Push frame
     this.pushFrame(funcName, this.getLine(node), this.getColumn(node), params);
 
@@ -2635,17 +2741,37 @@ export class Interpreter {
     this.hasReturned = false;
     this.returnValue = undefined;
 
-    // Pop frame
+    // Check if any closures captured this frame's env (for the description)
+    const currentEnv = this.getCurrentEnv();
+    const hasClosure = this.isEnvCapturedByClosure(currentEnv);
+
+    // Pop frame (removes local env from envStack top)
     this.popFrame();
+
+    // Remove injected captured envs from envStack
+    if (injectedCount > 0) {
+      this.envStack.splice(1, injectedCount);
+    }
+
+    const returnDescription = hasClosure
+      ? `${funcName} returned — local memory removed, but inner function's [[Scope]] retains captured variables`
+      : `${funcName} returned ${displayValue(returnVal)}`;
 
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `${funcName} returned ${displayValue(returnVal)}`,
+      returnDescription,
       code,
     );
 
     return returnVal;
+  }
+
+  /**
+   * Returns true if any closure has captured the given env (for return description).
+   */
+  private isEnvCapturedByClosure(env: Record<string, unknown>): boolean {
+    return this.envCapturedBy.has(env);
   }
 
   private evaluateMemberExpression(node: MemberExpressionNode): unknown {
@@ -3567,6 +3693,7 @@ export class Interpreter {
       isArrow,
       isAsync: node.async === true,
       source,
+      capturedEnvMeta: this.captureEnclosingScopes(),
     };
   }
 
@@ -3583,7 +3710,136 @@ export class Interpreter {
       isArrow: false,
       isAsync: node.async === true,
       source,
+      capturedEnvMeta: this.captureEnclosingScopes(),
     };
+  }
+
+  /**
+   * Capture metadata for enclosing non-global scopes (for closure display and execution).
+   * Returns an array from outermost to innermost (excluding global).
+   * Also registers each captured env in envCapturedBy for return-description lookup.
+   */
+  private captureEnclosingScopes(): CapturedEnvMeta[] | undefined {
+    // envStack[0] = global, envStack[1..] = local frames
+    // callStack mirrors envStack: callStack[i] corresponds to envStack[i].
+    const result: CapturedEnvMeta[] = [];
+
+    for (let i = 1; i < this.envStack.length; i++) {
+      const env = this.envStack[i];
+      const actualFrame = this.callStack[i];
+      if (!actualFrame) continue;
+
+      const block = this.memoryBlocks.find((b) => b.frameId === actualFrame.id);
+      if (!block) continue;
+
+      const kinds = this.envKindsMap.get(env) ?? {};
+
+      result.push({
+        scopeName: actualFrame.name,
+        scopeColor: actualFrame.color,
+        kinds,
+        env,
+      });
+
+      // Register this env as captured so we can generate the closure return description
+      const existing = this.envCapturedBy.get(env) ?? [];
+      if (!existing.includes(actualFrame.name)) {
+        // We'll store the enclosing scope name (not the inner function name, since
+        // we don't know it yet). findClosureNamesCapturing will use this to confirm
+        // the current frame's env is being captured by some closure.
+        existing.push(actualFrame.name);
+        this.envCapturedBy.set(env, existing);
+      }
+    }
+
+    return result.length > 0 ? result : undefined;
+  }
+
+  /**
+   * Build ClosureScopeEntry[] from CapturedEnvMeta[] for display on HeapObject.
+   */
+  private buildClosureScopeEntries(meta: CapturedEnvMeta[] | undefined): ClosureScopeEntry[] {
+    if (!meta || meta.length === 0) return [];
+
+    return meta.map((m) => {
+      const variables: ClosureVariable[] = Object.keys(m.env).map((varName) => {
+        const val = m.env[varName];
+        const resolved = this.resolveValueForMemoryShallow(val);
+        const kind = m.kinds[varName];
+        return {
+          name: varName,
+          displayValue: resolved.displayValue,
+          valueType: resolved.valueType,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+          isMutable: kind === 'let' || kind === 'var' || kind === 'param',
+        };
+      });
+
+      return {
+        scopeName: m.scopeName,
+        scopeColor: m.scopeColor,
+        variables,
+      };
+    });
+  }
+
+  /**
+   * Resolve a value for display in closure scope without creating new heap objects.
+   */
+  private resolveValueForMemoryShallow(val: unknown): {
+    displayValue: string;
+    valueType: MemoryValueType;
+    heapReferenceId?: string;
+    pointerColor?: string;
+  } {
+    if (this.isFunctionValue(val)) {
+      const existingId = this.objectHeapMap.get(val);
+      const existing = existingId ? this.heap.find((h) => h.id === existingId) : undefined;
+      return {
+        displayValue: "ⓕ",
+        valueType: "function",
+        heapReferenceId: existing?.id,
+        pointerColor: existing?.color,
+      };
+    }
+    if (this.isPromiseWrapper(val)) {
+      const p = this.promises.get((val as { promiseId: string }).promiseId);
+      const heapObj = p ? this.heap.find((h) => h.id === p.heapObjectId) : undefined;
+      return {
+        displayValue: "[Pointer]",
+        valueType: "object",
+        heapReferenceId: heapObj?.id,
+        pointerColor: heapObj?.color,
+      };
+    }
+    if (val !== null && typeof val === "object") {
+      const existingId = this.objectHeapMap.get(val as object);
+      const existing = existingId ? this.heap.find((h) => h.id === existingId) : undefined;
+      return {
+        displayValue: "[Pointer]",
+        valueType: "object",
+        heapReferenceId: existing?.id,
+        pointerColor: existing?.color,
+      };
+    }
+    const dv = displayValue(val);
+    return { displayValue: dv, valueType: "primitive" };
+  }
+
+  /**
+   * Refresh all HeapObject.closureScope entries from their live env references.
+   * Called before each snapshot so the displayed values are always current.
+   */
+  private syncClosureScopeDisplays(): void {
+    for (const [heapId, meta] of this.closureLiveEnvMap) {
+      const heapObj = this.heap.find((h) => h.id === heapId);
+      if (!heapObj) continue;
+      const entries = this.buildClosureScopeEntries(meta);
+      if (entries.length > 0) {
+        heapObj.closureScope = entries;
+      }
+    }
   }
 
   // === Async/Await Engine ===

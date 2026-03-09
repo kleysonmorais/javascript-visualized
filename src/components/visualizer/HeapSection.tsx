@@ -1,7 +1,7 @@
 import { Check, Clock, X } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
-import type { HeapObject, HeapObjectProperty } from "@/types";
+import type { ClosureVariable, HeapObject, HeapObjectProperty } from "@/types";
 
 function primitiveColor(displayValue: string): string {
   if (displayValue === "undefined" || displayValue === "null")
@@ -111,6 +111,109 @@ function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
     >
       {prop.displayValue}
     </span>
+  );
+}
+
+/** Render a single variable in [[Scope]] */
+function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
+  const renderValue = () => {
+    if (variable.valueType === "function") {
+      return (
+        <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
+          <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
+          {variable.pointerColor && (
+            <span style={{ color: variable.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+          )}
+        </span>
+      );
+    }
+    if (variable.valueType === "object") {
+      return (
+        <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
+          <span style={{ color: THEME.colors.text.secondary }}>[Ptr]</span>
+          {variable.pointerColor && (
+            <span style={{ color: variable.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+          )}
+        </span>
+      );
+    }
+    return (
+      <span style={{
+        fontFamily: THEME.fonts.code,
+        fontSize: 11,
+        color: primitiveColor(variable.displayValue),
+      }}>
+        {variable.displayValue}
+      </span>
+    );
+  };
+
+  return (
+    <div className="flex items-center justify-between gap-2" style={{ padding: "1px 0" }}>
+      <span style={{
+        fontFamily: THEME.fonts.code,
+        fontSize: 10,
+        color: variable.isMutable ? THEME.colors.syntax.variable : THEME.colors.text.secondary,
+        fontStyle: variable.isMutable ? "normal" : "italic",
+        opacity: 0.9,
+      }}>
+        {variable.name}
+        {variable.isMutable && (
+          <span style={{ color: THEME.colors.text.muted, fontSize: 8, marginLeft: 3 }}>~</span>
+        )}
+      </span>
+      {renderValue()}
+    </div>
+  );
+}
+
+/** Render [[Scope]] section inside a function HeapCard */
+function ClosureScopeSection({ obj }: { obj: HeapObject }) {
+  if (!obj.closureScope || obj.closureScope.length === 0) return null;
+
+  return (
+    <div style={{
+      marginTop: 6,
+      border: `1px dashed ${THEME.colors.text.muted}44`,
+      borderRadius: 4,
+      padding: "5px 7px",
+    }}>
+      {/* [[Scope]] header */}
+      <div style={{
+        fontFamily: THEME.fonts.code,
+        fontSize: 9,
+        fontWeight: 600,
+        color: THEME.colors.syntax.keyword,
+        fontStyle: "italic",
+        marginBottom: 4,
+        letterSpacing: "0.03em",
+      }}>
+        {"[[Scope]]"}
+      </div>
+
+      {obj.closureScope.map((scopeEntry) => (
+        <div key={scopeEntry.scopeName} style={{ marginBottom: 4 }}>
+          {/* Scope origin header */}
+          <div className="flex items-center gap-1" style={{ marginBottom: 2 }}>
+            <span style={{ color: scopeEntry.scopeColor, fontSize: 8 }}>●</span>
+            <span style={{
+              fontFamily: THEME.fonts.code,
+              fontSize: 9,
+              color: THEME.colors.text.muted,
+              fontStyle: "italic",
+            }}>
+              from {scopeEntry.scopeName}:
+            </span>
+          </div>
+          {/* Variables */}
+          <div style={{ paddingLeft: 10 }}>
+            {scopeEntry.variables.map((variable) => (
+              <ClosureVarRow key={variable.name} variable={variable} />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -325,6 +428,7 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
               >
                 {obj.functionSource ?? obj.label}
               </pre>
+              <ClosureScopeSection obj={obj} />
             </div>
           ) : obj.properties && obj.properties.length > 0 ? (
             <div style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
