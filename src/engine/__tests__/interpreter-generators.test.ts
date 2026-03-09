@@ -1,39 +1,44 @@
-import { run, lastStep, consoleOutput, getMemoryEntry, getHeapObject } from './helpers';
+import {
+  run,
+  lastStep,
+  consoleOutput,
+  getMemoryEntry,
+  getHeapObject,
+} from "./helpers";
 
-describe('Interpreter — Generators', () => {
-
-  it('function* stored as ⓕ* in memory', () => {
-    const step = lastStep('function* gen() { yield 1; }');
-    const entry = getMemoryEntry(step, 'gen');
+describe("Interpreter — Generators", () => {
+  it("function* stored as ⓕ* in memory", () => {
+    const step = lastStep("function* gen() { yield 1; }");
+    const entry = getMemoryEntry(step, "gen");
     expect(entry).toBeDefined();
-    expect(entry!.valueType).toBe('function');
-    expect(entry!.displayValue).toContain('ⓕ');
+    expect(entry!.valueType).toBe("function");
+    expect(entry!.displayValue).toContain("ⓕ");
   });
 
-  it('calling generator creates generator object', () => {
+  it("calling generator creates generator object", () => {
     const step = lastStep(`
       function* gen() { yield 1; }
       const g = gen();
     `);
-    const entry = getMemoryEntry(step, 'g');
+    const entry = getMemoryEntry(step, "g");
     expect(entry).toBeDefined();
-    expect(entry!.valueType).toBe('object');
+    expect(entry!.valueType).toBe("object");
     const heap = getHeapObject(step, entry!.heapReferenceId!);
     expect(heap).toBeDefined();
-    expect(heap!.generatorState).toBe('suspended');
+    expect(heap!.generatorState).toBe("suspended");
   });
 
-  it('next() returns yielded value', () => {
+  it("next() returns yielded value", () => {
     const output = consoleOutput(`
       function* gen() { yield 42; }
       const g = gen();
       const result = g.next();
       console.log(result.value);
     `);
-    expect(output).toContain('42');
+    expect(output).toContain("42");
   });
 
-  it('next() returns done:true after generator completes', () => {
+  it("next() returns done:true after generator completes", () => {
     const output = consoleOutput(`
       function* gen() { yield 1; }
       const g = gen();
@@ -41,10 +46,10 @@ describe('Interpreter — Generators', () => {
       const result = g.next();
       console.log(result.done);
     `);
-    expect(output).toContain('true');
+    expect(output).toContain("true");
   });
 
-  it('generator local memory persists across yields', () => {
+  it("generator local memory persists across yields", () => {
     // Note: Yield inside loops requires state machine transformation
     // Using sequential yields for this test
     const output = consoleOutput(`
@@ -62,12 +67,12 @@ describe('Interpreter — Generators', () => {
       console.log(c.next().value);
       console.log(c.next().value);
     `);
-    expect(output[0]).toContain('1');
-    expect(output[1]).toContain('2');
-    expect(output[2]).toContain('3');
+    expect(output[0]).toContain("1");
+    expect(output[1]).toContain("2");
+    expect(output[2]).toContain("3");
   });
 
-  it('for...of iterates generator', () => {
+  it("for...of iterates generator", () => {
     // Note: Yield inside loops requires state machine transformation
     // Using sequential yields for this test
     const output = consoleOutput(`
@@ -80,12 +85,12 @@ describe('Interpreter — Generators', () => {
         console.log(val);
       }
     `);
-    expect(output[0]).toContain('0');
-    expect(output[1]).toContain('1');
-    expect(output[2]).toContain('2');
+    expect(output[0]).toContain("0");
+    expect(output[1]).toContain("1");
+    expect(output[2]).toContain("2");
   });
 
-  it('generator with return value', () => {
+  it("generator with return value", () => {
     const output = consoleOutput(`
       function* gen() {
         yield 1;
@@ -96,12 +101,12 @@ describe('Interpreter — Generators', () => {
       console.log(g.next().value);
       console.log(g.next().done);
     `);
-    expect(output[0]).toContain('1');
-    expect(output[1]).toContain('done');
-    expect(output[2]).toContain('true');
+    expect(output[0]).toContain("1");
+    expect(output[1]).toContain("done");
+    expect(output[2]).toContain("true");
   });
 
-  it('generator state transitions correctly', () => {
+  it("generator state transitions correctly", () => {
     const lastS = lastStep(`
       function* gen() { yield 1; yield 2; }
       const g = gen();
@@ -109,20 +114,22 @@ describe('Interpreter — Generators', () => {
       g.next();
       g.next();
     `);
-    const entry = getMemoryEntry(lastS, 'g');
+    const entry = getMemoryEntry(lastS, "g");
     const heap = getHeapObject(lastS, entry!.heapReferenceId!);
-    expect(heap!.generatorState).toBe('closed');
+    expect(heap!.generatorState).toBe("closed");
   });
 
-  it('generator function declaration stored correctly', () => {
-    const steps = run('function* myGen() { yield 1; yield 2; }');
-    const declarationStep = steps.find(s => 
-      s.description.includes('generator function') && s.description.includes('myGen')
+  it("generator function declaration stored correctly", () => {
+    const steps = run("function* myGen() { yield 1; yield 2; }");
+    const declarationStep = steps.find(
+      (s) =>
+        s.description.includes("generator function") &&
+        s.description.includes("myGen"),
     );
     expect(declarationStep).toBeDefined();
   });
 
-  it('generator invocation does not execute body', () => {
+  it("generator invocation does not execute body", () => {
     const output = consoleOutput(`
       function* gen() {
         console.log("inside generator");
@@ -133,10 +140,10 @@ describe('Interpreter — Generators', () => {
     `);
     // "inside generator" should not be logged yet since we haven't called next()
     expect(output.length).toBe(1);
-    expect(output[0]).toContain('after creation');
+    expect(output[0]).toContain("after creation");
   });
 
-  it('generator respects next() input value', () => {
+  it("generator respects next() input value", () => {
     const output = consoleOutput(`
       function* gen() {
         const x = yield 1;
@@ -146,11 +153,11 @@ describe('Interpreter — Generators', () => {
       console.log(g.next().value);
       console.log(g.next(10).value);
     `);
-    expect(output[0]).toContain('1');
-    expect(output[1]).toContain('20');
+    expect(output[0]).toContain("1");
+    expect(output[1]).toContain("20");
   });
 
-  it('gen.return() closes the generator', () => {
+  it("gen.return() closes the generator", () => {
     const output = consoleOutput(`
       function* gen() {
         yield 1;
@@ -162,53 +169,57 @@ describe('Interpreter — Generators', () => {
       console.log(g.return("returned early").value);
       console.log(g.next().done);
     `);
-    expect(output[0]).toContain('1');
-    expect(output[1]).toContain('returned early');
-    expect(output[2]).toContain('true');
+    expect(output[0]).toContain("1");
+    expect(output[1]).toContain("returned early");
+    expect(output[2]).toContain("true");
   });
 
-  it('for...of on array works', () => {
+  it("for...of on array works", () => {
     const output = consoleOutput(`
       const arr = [10, 20, 30];
       for (const x of arr) {
         console.log(x);
       }
     `);
-    expect(output[0]).toContain('10');
-    expect(output[1]).toContain('20');
-    expect(output[2]).toContain('30');
+    expect(output[0]).toContain("10");
+    expect(output[1]).toContain("20");
+    expect(output[2]).toContain("30");
   });
 
-  it('for...of on string works', () => {
+  it("for...of on string works", () => {
     const output = consoleOutput(`
       for (const ch of "abc") {
         console.log(ch);
       }
     `);
-    expect(output[0]).toContain('a');
-    expect(output[1]).toContain('b');
-    expect(output[2]).toContain('c');
+    expect(output[0]).toContain("a");
+    expect(output[1]).toContain("b");
+    expect(output[2]).toContain("c");
   });
 
-  it('generator heap object has correct properties', () => {
+  it("generator heap object has correct properties", () => {
     const step = lastStep(`
       function* gen() { yield 1; }
       const g = gen();
     `);
-    const entry = getMemoryEntry(step, 'g');
+    const entry = getMemoryEntry(step, "g");
     const heap = getHeapObject(step, entry!.heapReferenceId!);
     expect(heap).toBeDefined();
-    expect(heap!.label).toContain('Generator');
+    expect(heap!.label).toContain("Generator");
     expect(heap!.properties).toBeDefined();
-    const stateProperty = heap!.properties?.find(p => p.key === '[[GeneratorState]]');
+    const stateProperty = heap!.properties?.find(
+      (p) => p.key === "[[GeneratorState]]",
+    );
     expect(stateProperty).toBeDefined();
-    const funcProperty = heap!.properties?.find(p => p.key === '[[GeneratorFunction]]');
+    const funcProperty = heap!.properties?.find(
+      (p) => p.key === "[[GeneratorFunction]]",
+    );
     expect(funcProperty).toBeDefined();
-    const nextProperty = heap!.properties?.find(p => p.key === 'next');
+    const nextProperty = heap!.properties?.find((p) => p.key === "next");
     expect(nextProperty).toBeDefined();
   });
 
-  it('multiple generators work independently', () => {
+  it("multiple generators work independently", () => {
     // Note: Yield inside loops requires state machine transformation
     // Using sequential yields for this test
     const output = consoleOutput(`
@@ -223,10 +234,9 @@ describe('Interpreter — Generators', () => {
       console.log(g1.next().value);
       console.log(g2.next().value);
     `);
-    expect(output[0]).toContain('1');
-    expect(output[1]).toContain('100');
-    expect(output[2]).toContain('2');
-    expect(output[3]).toContain('101');
+    expect(output[0]).toContain("1");
+    expect(output[1]).toContain("100");
+    expect(output[2]).toContain("2");
+    expect(output[3]).toContain("101");
   });
-
 });

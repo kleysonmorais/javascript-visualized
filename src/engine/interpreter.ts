@@ -336,7 +336,7 @@ interface CapturedEnvMeta {
   scopeName: string;
   scopeColor: string;
   // kinds for each variable in this layer (for isMutable flag)
-  kinds: Record<string, VariableKind | 'param' | 'function'>;
+  kinds: Record<string, VariableKind | "param" | "function">;
   // live reference to the env object — mutations here are visible immediately
   env: Record<string, unknown>;
 }
@@ -368,10 +368,10 @@ interface ClassValue {
   name: string;
   superClassName: string | null;
   constructor: ClassMethod | null;
-  methods: ClassMethod[];       // instance methods
+  methods: ClassMethod[]; // instance methods
   staticMethods: ClassMethod[]; // static methods
   staticProps: Record<string, unknown>; // static property values
-  heapObjectId: string;         // the class's own HeapObject id
+  heapObjectId: string; // the class's own HeapObject id
 }
 
 // Thrown error signal — used for try/catch and async rejection propagation
@@ -393,31 +393,31 @@ interface AsyncContinuation {
   remainingStatements: StatementNode[];
   localEnv: Record<string, unknown>;
   awaitResultVarName: string | null; // variable to assign the await result to (null = expression stmt)
-  returnPromiseId: string;           // the implicit promise the async fn resolves/rejects
+  returnPromiseId: string; // the implicit promise the async fn resolves/rejects
   capturedEnvStack: Record<string, unknown>[]; // full env stack snapshot for closures
-  isRejection: boolean;              // if true, resume with a thrown error
+  isRejection: boolean; // if true, resume with a thrown error
 }
 
 // Runtime value stored in variables when a generator is invoked
 interface GeneratorWrapper {
   __isGenerator: true;
-  generatorId: string;       // links to the generator HeapObject
+  generatorId: string; // links to the generator HeapObject
   functionValue: FunctionValue;
   heapObjectId: string;
-  functionHeapId: string;    // heapId of the generator function
+  functionHeapId: string; // heapId of the generator function
 }
 
 // Continuation for a suspended generator
 interface GeneratorContinuation {
-  generatorId: string;         // links to the generator HeapObject
+  generatorId: string; // links to the generator HeapObject
   frameId: string;
   frameColor: string;
   remainingStatements: StatementNode[];
   localEnv: Record<string, unknown>;
   capturedEnvStack: Record<string, unknown>[];
   yieldResultVarName: string | null; // if yield is in assignment: const x = yield 1
-  executionPosition: number;   // track position in body for resumption
-  nextCallCount: number;       // track number of next() calls for safety
+  executionPosition: number; // track position in body for resumption
+  nextCallCount: number; // track number of next() calls for safety
 }
 
 // Runtime value stored in variables when a Promise is created/returned
@@ -529,7 +529,8 @@ export class Interpreter {
   private asyncContinuations: Map<string, AsyncContinuation> = new Map();
 
   // Generator engine state
-  private generatorContinuations: Map<string, GeneratorContinuation> = new Map();
+  private generatorContinuations: Map<string, GeneratorContinuation> =
+    new Map();
   private generatorCounter: number = 0;
   private static readonly MAX_GENERATOR_NEXT_CALLS = 100; // safety limit per generator
 
@@ -546,7 +547,10 @@ export class Interpreter {
   private classRegistry: Map<string, ClassValue> = new Map();
 
   // Tracks kinds of variables in each env layer: env object reference → variable kinds
-  private envKindsMap: Map<Record<string, unknown>, Record<string, VariableKind | 'param' | 'function'>> = new Map();
+  private envKindsMap: Map<
+    Record<string, unknown>,
+    Record<string, VariableKind | "param" | "function">
+  > = new Map();
 
   // Tracks function names captured by closure scope: env → function names
   private envCapturedBy: Map<Record<string, unknown>, string[]> = new Map();
@@ -561,12 +565,16 @@ export class Interpreter {
     // Remove the global frame from the BOTTOM of the call stack without
     // disturbing any suspended async frames that may sit above it.
     // We do NOT use popFrame() here because that removes from the TOP.
-    const globalFrameIndex = this.callStack.findIndex((f) => f.type === "global");
+    const globalFrameIndex = this.callStack.findIndex(
+      (f) => f.type === "global",
+    );
     if (globalFrameIndex !== -1) {
       const globalFrame = this.callStack[globalFrameIndex];
       this.callStack.splice(globalFrameIndex, 1);
       // Remove global memory block (will be re-attached below for async phase)
-      const blockIndex = this.memoryBlocks.findIndex((b) => b.frameId === globalFrame.id);
+      const blockIndex = this.memoryBlocks.findIndex(
+        (b) => b.frameId === globalFrame.id,
+      );
       if (blockIndex !== -1) this.memoryBlocks.splice(blockIndex, 1);
       // Pop global env + scope (they are at the bottom of their stacks)
       this.envStack.shift();
@@ -619,7 +627,9 @@ export class Interpreter {
 
     while (iteration < MAX_ASYNC_ITERATIONS && this.stepIndex < MAX_STEPS) {
       // Process any pending fetches — they resolve Promises (→ microtasks) before timers run
-      const unprocessedFetches = this.pendingFetches.filter((f) => !f.processed);
+      const unprocessedFetches = this.pendingFetches.filter(
+        (f) => !f.processed,
+      );
       if (unprocessedFetches.length > 0) {
         this.eventLoop = {
           phase: "checking-tasks",
@@ -1034,10 +1044,10 @@ export class Interpreter {
 
     // Create new local environment
     const localEnv: Record<string, unknown> = {};
-    const localKinds: Record<string, VariableKind | 'param' | 'function'> = {};
+    const localKinds: Record<string, VariableKind | "param" | "function"> = {};
     for (const p of params) {
       localEnv[p.name] = p.value;
-      localKinds[p.name] = 'param';
+      localKinds[p.name] = "param";
     }
     this.envStack.push(localEnv);
     this.envKindsMap.set(localEnv, localKinds);
@@ -1170,7 +1180,10 @@ export class Interpreter {
     return id;
   }
 
-  private recordVarKind(name: string, kind: VariableKind | 'param' | 'function'): void {
+  private recordVarKind(
+    name: string,
+    kind: VariableKind | "param" | "function",
+  ): void {
     const env = this.getCurrentEnv();
     const kinds = this.envKindsMap.get(env);
     if (kinds) {
@@ -1251,7 +1264,12 @@ export class Interpreter {
           };
         }
       }
-      const heapObj = this.addHeapObject("function", "ⓕ", undefined, value.source);
+      const heapObj = this.addHeapObject(
+        "function",
+        "ⓕ",
+        undefined,
+        value.source,
+      );
       this.objectHeapMap.set(value, heapObj.id);
       // Attach closure scope if this function has captured envs
       const closureScope = this.buildClosureScopeEntries(value.capturedEnvMeta);
@@ -1324,7 +1342,9 @@ export class Interpreter {
         );
         this.objectHeapMap.set(value, heapObj.id);
         // Attach closure scope if this function has captured envs
-        const closureScope = this.buildClosureScopeEntries(value.capturedEnvMeta);
+        const closureScope = this.buildClosureScopeEntries(
+          value.capturedEnvMeta,
+        );
         if (closureScope.length > 0) {
           heapObj.closureScope = closureScope;
           this.closureLiveEnvMap.set(heapObj.id, value.capturedEnvMeta!);
@@ -1605,7 +1625,9 @@ export class Interpreter {
           this.objectHeapMap.set(funcValue, heapObj.id);
 
           // Attach closure scope to heap object if inside a nested scope
-          const closureScope = this.buildClosureScopeEntries(funcValue.capturedEnvMeta);
+          const closureScope = this.buildClosureScopeEntries(
+            funcValue.capturedEnvMeta,
+          );
           if (closureScope.length > 0) {
             heapObj.closureScope = closureScope;
             this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
@@ -1686,7 +1708,7 @@ export class Interpreter {
 
     // Store in environment
     this.setVariable(name, funcValue, true);
-    this.recordVarKind(name, 'function');
+    this.recordVarKind(name, "function");
 
     // Display value differs for generators
     const funcDisplayValue = isGenerator ? "ⓕ*" : "ⓕ";
@@ -1701,7 +1723,9 @@ export class Interpreter {
     this.objectHeapMap.set(funcValue, heapObj.id);
 
     // Attach closure scope to heap object if inside a nested scope
-    const closureScope = this.buildClosureScopeEntries(funcValue.capturedEnvMeta);
+    const closureScope = this.buildClosureScopeEntries(
+      funcValue.capturedEnvMeta,
+    );
     if (closureScope.length > 0) {
       heapObj.closureScope = closureScope;
       this.closureLiveEnvMap.set(heapObj.id, funcValue.capturedEnvMeta!);
@@ -1792,23 +1816,42 @@ export class Interpreter {
     // Build HeapObject properties list for the class
     const classProps: HeapObjectProperty[] = [];
     if (constructorMethod) {
-      classProps.push({ key: "constructor", displayValue: "ⓕ", valueType: "function" });
+      classProps.push({
+        key: "constructor",
+        displayValue: "ⓕ",
+        valueType: "function",
+      });
     }
     for (const m of instanceMethods) {
-      classProps.push({ key: `prototype.${m.name}`, displayValue: "ⓕ", valueType: "function" });
+      classProps.push({
+        key: `prototype.${m.name}`,
+        displayValue: "ⓕ",
+        valueType: "function",
+      });
     }
     for (const m of staticMethods) {
-      classProps.push({ key: `static ${m.name}`, displayValue: "ⓕ", valueType: "function" });
+      classProps.push({
+        key: `static ${m.name}`,
+        displayValue: "ⓕ",
+        valueType: "function",
+      });
     }
 
     // Create class HeapObject
-    const heapObj = this.addHeapObject("function", `class ${name}`, classProps, code);
+    const heapObj = this.addHeapObject(
+      "function",
+      `class ${name}`,
+      classProps,
+      code,
+    );
 
     // Add [[Prototype]] link if extends
     if (superClassName) {
       const superClass = this.classRegistry.get(superClassName);
       if (superClass) {
-        const superHeap = this.heap.find((h) => h.id === superClass.heapObjectId);
+        const superHeap = this.heap.find(
+          (h) => h.id === superClass.heapObjectId,
+        );
         heapObj.properties = heapObj.properties ?? [];
         heapObj.properties.push({
           key: "[[Prototype]]",
@@ -1868,11 +1911,19 @@ export class Interpreter {
     // Update scope
     const currentScope = this.scopes[this.scopes.length - 1];
     if (currentScope) {
-      currentScope.variables.push({ name, value: classVal, kind: "const" as VariableKind });
+      currentScope.variables.push({
+        name,
+        value: classVal,
+        kind: "const" as VariableKind,
+      });
     }
     const currentFrame = this.callStack[this.callStack.length - 1];
     if (currentFrame) {
-      currentFrame.scope.variables.push({ name, value: classVal, kind: "const" as VariableKind });
+      currentFrame.scope.variables.push({
+        name,
+        value: classVal,
+        kind: "const" as VariableKind,
+      });
     }
 
     const extendsStr = superClassName ? ` extends ${superClassName}` : "";
@@ -1941,9 +1992,11 @@ export class Interpreter {
       try {
         this.visitStatement(node.body as StatementNode);
       } catch (e) {
-        if (e instanceof BreakSignal) { didBreak = true; }
-        else if (e instanceof ContinueSignal) { didContinue = true; }
-        else throw e;
+        if (e instanceof BreakSignal) {
+          didBreak = true;
+        } else if (e instanceof ContinueSignal) {
+          didContinue = true;
+        } else throw e;
       }
 
       if (didBreak) break;
@@ -1991,9 +2044,11 @@ export class Interpreter {
       try {
         this.visitStatement(node.body as StatementNode);
       } catch (e) {
-        if (e instanceof BreakSignal) { didBreak = true; }
-        else if (e instanceof ContinueSignal) { /* continue to next iteration */ }
-        else throw e;
+        if (e instanceof BreakSignal) {
+          didBreak = true;
+        } else if (e instanceof ContinueSignal) {
+          /* continue to next iteration */
+        } else throw e;
       }
 
       if (didBreak) break;
@@ -2078,9 +2133,13 @@ export class Interpreter {
       case "AwaitExpression": {
         // Reached only when await is evaluated outside visitAsyncFunctionBody
         // (e.g. inside a try block). Evaluate the argument and propagate rejection.
-        const awaitArgValue = this.evaluateExpression((node as AwaitExpressionNode).argument);
+        const awaitArgValue = this.evaluateExpression(
+          (node as AwaitExpressionNode).argument,
+        );
         if (this.isPromiseWrapper(awaitArgValue)) {
-          const p = this.promises.get((awaitArgValue as PromiseWrapper).promiseId);
+          const p = this.promises.get(
+            (awaitArgValue as PromiseWrapper).promiseId,
+          );
           if (p && p.state === "rejected") {
             // Signal as a thrown error — do NOT set hasReturned so that
             // visitTryStatement can intercept it via isThrownError(returnValue)
@@ -2098,7 +2157,9 @@ export class Interpreter {
         // YieldExpression is normally handled in executeGeneratorBody's findYieldInStatement
         // This case handles nested yield or yield in expressions
         const yieldNode = node as YieldExpressionNode;
-        return yieldNode.argument ? this.evaluateExpression(yieldNode.argument) : undefined;
+        return yieldNode.argument
+          ? this.evaluateExpression(yieldNode.argument)
+          : undefined;
       }
       case "ThisExpression":
         return this.lookupVariable("this");
@@ -2271,10 +2332,12 @@ export class Interpreter {
       }
 
       // Resolve object — handle `this` specially (ThisExpression in AST)
-      const isThisExpr = (memberNode.object as BaseNode).type === "ThisExpression";
+      const isThisExpr =
+        (memberNode.object as BaseNode).type === "ThisExpression";
       let resolvedObj: Record<string, unknown> | null = null;
       if (isThisExpr) {
-        resolvedObj = (this.lookupVariable("this") as Record<string, unknown>) ?? obj;
+        resolvedObj =
+          (this.lookupVariable("this") as Record<string, unknown>) ?? obj;
       } else {
         resolvedObj = obj;
       }
@@ -2296,7 +2359,9 @@ export class Interpreter {
         // If this was a `this.prop` assignment, sync the heap object
         if (isThisExpr) {
           const heapId = this.objectHeapMap.get(resolvedObj);
-          const heapObj = heapId ? this.heap.find((h) => h.id === heapId) : undefined;
+          const heapObj = heapId
+            ? this.heap.find((h) => h.id === heapId)
+            : undefined;
           if (heapObj) this.syncInstanceHeapObject(heapObj, resolvedObj);
         }
       }
@@ -2446,7 +2511,9 @@ export class Interpreter {
     if (node.callee.type === "MemberExpression") {
       const memberCallee = node.callee as MemberExpressionNode;
       if (memberCallee.object.type === "Identifier") {
-        const objVal = this.lookupVariable((memberCallee.object as IdentifierNode).name);
+        const objVal = this.lookupVariable(
+          (memberCallee.object as IdentifierNode).name,
+        );
         if (this.isClassValue(objVal)) {
           const methodName = (memberCallee.property as IdentifierNode).name;
           return this.callStaticMethod(objVal, methodName, node);
@@ -2486,10 +2553,7 @@ export class Interpreter {
           objValue !== null &&
           "__isFetchResponse" in (objValue as Record<string, unknown>)
         ) {
-          return this.handleResponseJsonCall(
-            objValue as FetchResponse,
-            node,
-          );
+          return this.handleResponseJsonCall(objValue as FetchResponse, node);
         }
       }
 
@@ -2740,9 +2804,10 @@ export class Interpreter {
     const code = extractSource(this.sourceCode, node);
 
     // Evaluate the URL argument
-    const urlArg = node.arguments.length > 0
-      ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
-      : "https://api.example.com/data";
+    const urlArg =
+      node.arguments.length > 0
+        ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+        : "https://api.example.com/data";
     const url = String(urlArg);
 
     // 1. Create a pending Promise for the fetch result
@@ -2976,7 +3041,10 @@ export class Interpreter {
         ? String(this.evaluateExpression(memberExpr.property as ExpressionNode))
         : (memberExpr.property as IdentifierNode).name;
       funcName = propName;
-      const obj = this.evaluateExpression(memberExpr.object) as Record<string, unknown>;
+      const obj = this.evaluateExpression(memberExpr.object) as Record<
+        string,
+        unknown
+      >;
 
       // Look up method: first check own properties, then search class prototype chain
       if (obj && typeof obj === "object") {
@@ -3061,7 +3129,9 @@ export class Interpreter {
     if (receiver !== null) {
       this.getCurrentEnv()["this"] = receiver;
       const instanceHeapId = this.objectHeapMap.get(receiver);
-      const instanceHeap = instanceHeapId ? this.heap.find((h) => h.id === instanceHeapId) : undefined;
+      const instanceHeap = instanceHeapId
+        ? this.heap.find((h) => h.id === instanceHeapId)
+        : undefined;
       const thisEntry: MemoryEntry = {
         name: "this",
         kind: "param",
@@ -3077,7 +3147,9 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      receiver !== null ? `Calling ${funcName}(${argsDisplay}) on instance` : `Calling ${funcName}(${argsDisplay})`,
+      receiver !== null
+        ? `Calling ${funcName}(${argsDisplay}) on instance`
+        : `Calling ${funcName}(${argsDisplay})`,
       code,
     );
 
@@ -3145,7 +3217,9 @@ export class Interpreter {
         // Check if this instance was created from this class or its subclass
         // by verifying the [[Prototype]] chain in the heap
         const instanceHeap = this.heap.find((h) => h.id === heapId);
-        const protoRef = instanceHeap?.properties?.find((p) => p.key === "[[Prototype]]");
+        const protoRef = instanceHeap?.properties?.find(
+          (p) => p.key === "[[Prototype]]",
+        );
         if (
           protoRef?.heapReferenceId === classVal.heapObjectId ||
           this.isInstanceOf(heapId, classVal)
@@ -3181,8 +3255,13 @@ export class Interpreter {
     }
 
     const code = extractSource(this.sourceCode, node);
-    const evaluatedArgs = node.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
-    const params = fnVal.params.map((name: string, i: number) => ({ name, value: evaluatedArgs[i] }));
+    const evaluatedArgs = node.arguments.map((a) =>
+      this.evaluateExpression(a as ExpressionNode),
+    );
+    const params = fnVal.params.map((name: string, i: number) => ({
+      name,
+      value: evaluatedArgs[i],
+    }));
     const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
 
     this.pushFrame(
@@ -3481,9 +3560,13 @@ export class Interpreter {
 
   private scheduleMicrotask(reaction: PromiseReaction, value: unknown): void {
     // Check if this reaction is an async-resume marker
-    const asyncResumeId = (reaction as unknown as Record<string, unknown>)["__asyncResumeId"] as string | undefined;
+    const asyncResumeId = (reaction as unknown as Record<string, unknown>)[
+      "__asyncResumeId"
+    ] as string | undefined;
     if (asyncResumeId) {
-      const isRejection = !!(reaction as unknown as Record<string, unknown>)["__isRejection"];
+      const isRejection = !!(reaction as unknown as Record<string, unknown>)[
+        "__isRejection"
+      ];
       const continuation = this.asyncContinuations.get(asyncResumeId);
       if (continuation) {
         continuation.isRejection = isRejection;
@@ -3575,12 +3658,19 @@ export class Interpreter {
     node: NewExpressionNode,
   ): Record<string, unknown> {
     const code = extractSource(this.sourceCode, node);
-    const args = node.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
+    const args = node.arguments.map((a) =>
+      this.evaluateExpression(a as ExpressionNode),
+    );
 
     // 1. Create the instance heap object
-    const instanceHeapObj = this.addHeapObject("object", `${classVal.name} instance`, []);
+    const instanceHeapObj = this.addHeapObject(
+      "object",
+      `${classVal.name} instance`,
+      [],
+    );
     // Mark as a class instance so the heap card renders correctly
-    (instanceHeapObj as HeapObject & { __className?: string }).__className = classVal.name;
+    (instanceHeapObj as HeapObject & { __className?: string }).__className =
+      classVal.name;
 
     // Add [[Prototype]] property
     const classHeap = this.heap.find((h) => h.id === classVal.heapObjectId);
@@ -3630,7 +3720,13 @@ export class Interpreter {
       if (classVal.superClassName) {
         const parentClass = this.classRegistry.get(classVal.superClassName);
         if (parentClass) {
-          this.runConstructorChain(parentClass, thisObj, args, instanceHeapObj, callNode);
+          this.runConstructorChain(
+            parentClass,
+            thisObj,
+            args,
+            instanceHeapObj,
+            callNode,
+          );
         }
       }
       return;
@@ -3678,7 +3774,13 @@ export class Interpreter {
     // Execute constructor body, handling super() calls
     this.hasReturned = false;
     this.returnValue = undefined;
-    this.executeConstructorBody(ctor.body, classVal, thisObj, instanceHeapObj, callNode);
+    this.executeConstructorBody(
+      ctor.body,
+      classVal,
+      thisObj,
+      instanceHeapObj,
+      callNode,
+    );
     this.hasReturned = false;
     this.returnValue = undefined;
 
@@ -3711,13 +3813,20 @@ export class Interpreter {
         stmt.type === "ExpressionStatement" &&
         (stmt as ExpressionStatementNode).expression.type === "CallExpression"
       ) {
-        const callExpr = (stmt as ExpressionStatementNode).expression as CallExpressionNode;
+        const callExpr = (stmt as ExpressionStatementNode)
+          .expression as CallExpressionNode;
         if (
           (callExpr.callee as BaseNode).type === "Super" ||
           (callExpr.callee.type === "Identifier" &&
             (callExpr.callee as IdentifierNode).name === "super")
         ) {
-          this.handleSuperCall(callExpr, classVal, thisObj, instanceHeapObj, callNode);
+          this.handleSuperCall(
+            callExpr,
+            classVal,
+            thisObj,
+            instanceHeapObj,
+            callNode,
+          );
           continue;
         }
       }
@@ -3725,16 +3834,18 @@ export class Interpreter {
       // Detect `this.prop = value` assignment
       if (
         stmt.type === "ExpressionStatement" &&
-        (stmt as ExpressionStatementNode).expression.type === "AssignmentExpression"
+        (stmt as ExpressionStatementNode).expression.type ===
+          "AssignmentExpression"
       ) {
-        const assign = (stmt as ExpressionStatementNode).expression as AssignmentExpressionNode;
+        const assign = (stmt as ExpressionStatementNode)
+          .expression as AssignmentExpressionNode;
         if (
           assign.left.type === "MemberExpression" &&
-          (
-            (assign.left as MemberExpressionNode).object.type === "Identifier"
-              ? ((assign.left as MemberExpressionNode).object as IdentifierNode).name === "this"
-              : ((assign.left as MemberExpressionNode).object as BaseNode).type === "ThisExpression"
-          )
+          ((assign.left as MemberExpressionNode).object.type === "Identifier"
+            ? ((assign.left as MemberExpressionNode).object as IdentifierNode)
+                .name === "this"
+            : ((assign.left as MemberExpressionNode).object as BaseNode)
+                .type === "ThisExpression")
         ) {
           const memberNode = assign.left as MemberExpressionNode;
           const propName = (memberNode.property as IdentifierNode).name;
@@ -3770,7 +3881,9 @@ export class Interpreter {
     callNode: NewExpressionNode,
   ): void {
     const code = extractSource(this.sourceCode, callExpr);
-    const superArgs = callExpr.arguments.map((a) => this.evaluateExpression(a as ExpressionNode));
+    const superArgs = callExpr.arguments.map((a) =>
+      this.evaluateExpression(a as ExpressionNode),
+    );
     const parentClassName = classVal.superClassName;
     if (!parentClassName) return;
 
@@ -3787,7 +3900,10 @@ export class Interpreter {
     if (!parentClass.constructor) return;
 
     const ctor = parentClass.constructor;
-    const params = ctor.params.map((name, i) => ({ name, value: superArgs[i] }));
+    const params = ctor.params.map((name, i) => ({
+      name,
+      value: superArgs[i],
+    }));
 
     this.pushFrame(
       `${parentClassName}.constructor`,
@@ -3818,7 +3934,13 @@ export class Interpreter {
 
     this.hasReturned = false;
     this.returnValue = undefined;
-    this.executeConstructorBody(ctor.body, parentClass, thisObj, instanceHeapObj, callNode);
+    this.executeConstructorBody(
+      ctor.body,
+      parentClass,
+      thisObj,
+      instanceHeapObj,
+      callNode,
+    );
     this.hasReturned = false;
     this.returnValue = undefined;
 
@@ -3834,7 +3956,9 @@ export class Interpreter {
     thisObj: Record<string, unknown>,
   ): void {
     // Keep the [[Prototype]] entry (always first) and rebuild the rest
-    const protoEntry = instanceHeapObj.properties?.find((p) => p.key === "[[Prototype]]");
+    const protoEntry = instanceHeapObj.properties?.find(
+      (p) => p.key === "[[Prototype]]",
+    );
     const newProps: HeapObjectProperty[] = protoEntry ? [protoEntry] : [];
 
     for (const [key, val] of Object.entries(thisObj)) {
@@ -4315,7 +4439,10 @@ export class Interpreter {
   // Execute a single microtask (a .then/.catch/.finally callback or async resume)
   private executeMicrotask(microtask: PendingMicrotask): void {
     // Check if this is an async-resume microtask
-    if (microtask.callbackNode === null && this.asyncContinuations.has(microtask.id)) {
+    if (
+      microtask.callbackNode === null &&
+      this.asyncContinuations.has(microtask.id)
+    ) {
       const continuation = this.asyncContinuations.get(microtask.id)!;
       this.resumeAsyncFunction(
         microtask.id,
@@ -4461,7 +4588,9 @@ export class Interpreter {
     const params = node.params.map((p) => (p as IdentifierNode).name);
     const source = extractSource(this.sourceCode, node);
     const isArrow = node.type === "ArrowFunctionExpression";
-    const isGenerator = node.type === "FunctionExpression" && (node as FunctionExpressionNode).generator === true;
+    const isGenerator =
+      node.type === "FunctionExpression" &&
+      (node as FunctionExpressionNode).generator === true;
 
     return {
       __isFunction: true,
@@ -4537,7 +4666,9 @@ export class Interpreter {
   /**
    * Build ClosureScopeEntry[] from CapturedEnvMeta[] for display on HeapObject.
    */
-  private buildClosureScopeEntries(meta: CapturedEnvMeta[] | undefined): ClosureScopeEntry[] {
+  private buildClosureScopeEntries(
+    meta: CapturedEnvMeta[] | undefined,
+  ): ClosureScopeEntry[] {
     if (!meta || meta.length === 0) return [];
 
     return meta.map((m) => {
@@ -4551,7 +4682,7 @@ export class Interpreter {
           valueType: resolved.valueType,
           heapReferenceId: resolved.heapReferenceId,
           pointerColor: resolved.pointerColor,
-          isMutable: kind === 'let' || kind === 'var' || kind === 'param',
+          isMutable: kind === "let" || kind === "var" || kind === "param",
         };
       });
 
@@ -4574,7 +4705,9 @@ export class Interpreter {
   } {
     if (this.isFunctionValue(val)) {
       const existingId = this.objectHeapMap.get(val);
-      const existing = existingId ? this.heap.find((h) => h.id === existingId) : undefined;
+      const existing = existingId
+        ? this.heap.find((h) => h.id === existingId)
+        : undefined;
       return {
         displayValue: "ⓕ",
         valueType: "function",
@@ -4584,7 +4717,9 @@ export class Interpreter {
     }
     if (this.isPromiseWrapper(val)) {
       const p = this.promises.get((val as { promiseId: string }).promiseId);
-      const heapObj = p ? this.heap.find((h) => h.id === p.heapObjectId) : undefined;
+      const heapObj = p
+        ? this.heap.find((h) => h.id === p.heapObjectId)
+        : undefined;
       return {
         displayValue: "[Pointer]",
         valueType: "object",
@@ -4594,7 +4729,9 @@ export class Interpreter {
     }
     if (val !== null && typeof val === "object") {
       const existingId = this.objectHeapMap.get(val as object);
-      const existing = existingId ? this.heap.find((h) => h.id === existingId) : undefined;
+      const existing = existingId
+        ? this.heap.find((h) => h.id === existingId)
+        : undefined;
       return {
         displayValue: "[Pointer]",
         valueType: "object",
@@ -4742,7 +4879,8 @@ export class Interpreter {
 
     // 4. If the function completed without suspension (no await hit), settle the promise
     if (result !== "suspended") {
-      const returnVal = result === "completed-with-return" ? this.returnValue : undefined;
+      const returnVal =
+        result === "completed-with-return" ? this.returnValue : undefined;
       this.hasReturned = false;
       this.returnValue = undefined;
 
@@ -4797,7 +4935,8 @@ export class Interpreter {
 
       if (awaitInfo) {
         // Execute everything up to the await; get the awaited value
-        const { awaitedValue, resultVarName } = this.processStatementUpToAwait(stmt);
+        const { awaitedValue, resultVarName } =
+          this.processStatementUpToAwait(stmt);
 
         const awaitCode = extractSource(this.sourceCode, stmt);
 
@@ -4938,7 +5077,9 @@ export class Interpreter {
         resultPromiseId: continuation.returnPromiseId,
       };
       // Override: we use a special marker to route through async resume instead
-      (fulfillReaction as unknown as Record<string, unknown>)["__asyncResumeId"] = microtaskId;
+      (fulfillReaction as unknown as Record<string, unknown>)[
+        "__asyncResumeId"
+      ] = microtaskId;
 
       const rejectReaction: PromiseReaction = {
         id: `reaction-${this.reactionCounter++}`,
@@ -4947,8 +5088,11 @@ export class Interpreter {
         callbackSource: `resume ${continuation.functionName} (rejection)`,
         resultPromiseId: continuation.returnPromiseId,
       };
-      (rejectReaction as unknown as Record<string, unknown>)["__asyncResumeId"] = microtaskId;
-      (rejectReaction as unknown as Record<string, unknown>)["__isRejection"] = true;
+      (rejectReaction as unknown as Record<string, unknown>)[
+        "__asyncResumeId"
+      ] = microtaskId;
+      (rejectReaction as unknown as Record<string, unknown>)["__isRejection"] =
+        true;
 
       awaitedPromise.fulfillReactions.push(fulfillReaction);
       awaitedPromise.rejectReactions.push(rejectReaction);
@@ -5109,7 +5253,8 @@ export class Interpreter {
       if (expr.type === "AwaitExpression") return expr as AwaitExpressionNode;
       if (expr.type === "AssignmentExpression") {
         const right = (expr as AssignmentExpressionNode).right;
-        if (right.type === "AwaitExpression") return right as AwaitExpressionNode;
+        if (right.type === "AwaitExpression")
+          return right as AwaitExpressionNode;
       }
     }
     if (stmt.type === "ReturnStatement") {
@@ -5134,9 +5279,7 @@ export class Interpreter {
       const decl = stmt as VariableDeclarationNode;
       const d = decl.declarations[0];
       const awaitNode = d.init as AwaitExpressionNode;
-      const awaitedValue = this.evaluateExpression(
-        awaitNode.argument,
-      );
+      const awaitedValue = this.evaluateExpression(awaitNode.argument);
       // Declare the variable as undefined for now (will be assigned on resume)
       const varName = d.id.name;
       this.setVariable(varName, undefined, true);
@@ -5149,11 +5292,19 @@ export class Interpreter {
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
       const currentScope = this.scopes[this.scopes.length - 1];
       if (currentScope) {
-        currentScope.variables.push({ name: varName, value: undefined, kind: decl.kind as VariableKind });
+        currentScope.variables.push({
+          name: varName,
+          value: undefined,
+          kind: decl.kind as VariableKind,
+        });
       }
       const currentFrame = this.callStack[this.callStack.length - 1];
       if (currentFrame) {
-        currentFrame.scope.variables.push({ name: varName, value: undefined, kind: decl.kind as VariableKind });
+        currentFrame.scope.variables.push({
+          name: varName,
+          value: undefined,
+          kind: decl.kind as VariableKind,
+        });
       }
       return { awaitedValue, resultVarName: varName };
     }
@@ -5345,29 +5496,31 @@ export class Interpreter {
   ): GeneratorWrapper {
     const code = extractSource(this.sourceCode, callNode);
     const generatorId = `gen-${this.generatorCounter++}`;
-    
+
     // Get the function's heap object ID for reference
     const functionHeapId = this.objectHeapMap.get(funcValue) ?? "";
-    const functionHeap = functionHeapId ? this.heap.find(h => h.id === functionHeapId) : undefined;
+    const functionHeap = functionHeapId
+      ? this.heap.find((h) => h.id === functionHeapId)
+      : undefined;
 
     // Create generator HeapObject with properties
-    const genHeapObj = this.addHeapObject(
-      "object",
-      `Generator (${funcName})`,
-      [
-        { key: "[[GeneratorState]]", displayValue: '"suspended"', valueType: "primitive" },
-        { 
-          key: "[[GeneratorFunction]]", 
-          displayValue: `ⓕ* ${funcName}`, 
-          valueType: "function",
-          heapReferenceId: functionHeapId || undefined,
-          pointerColor: functionHeap?.color,
-        },
-        { key: "next", displayValue: "ⓕ", valueType: "function" },
-        { key: "return", displayValue: "ⓕ", valueType: "function" },
-        { key: "throw", displayValue: "ⓕ", valueType: "function" },
-      ],
-    );
+    const genHeapObj = this.addHeapObject("object", `Generator (${funcName})`, [
+      {
+        key: "[[GeneratorState]]",
+        displayValue: '"suspended"',
+        valueType: "primitive",
+      },
+      {
+        key: "[[GeneratorFunction]]",
+        displayValue: `ⓕ* ${funcName}`,
+        valueType: "function",
+        heapReferenceId: functionHeapId || undefined,
+        pointerColor: functionHeap?.color,
+      },
+      { key: "next", displayValue: "ⓕ", valueType: "function" },
+      { key: "return", displayValue: "ⓕ", valueType: "function" },
+      { key: "throw", displayValue: "ⓕ", valueType: "function" },
+    ]);
     genHeapObj.generatorState = "suspended";
 
     // Create the continuation for this generator
@@ -5380,9 +5533,10 @@ export class Interpreter {
       generatorId,
       frameId,
       frameColor,
-      remainingStatements: (funcValue.body as BlockStatementNode).body as StatementNode[],
+      remainingStatements: (funcValue.body as BlockStatementNode)
+        .body as StatementNode[],
       localEnv,
-      capturedEnvStack: funcValue.capturedEnvMeta?.map(m => m.env) ?? [],
+      capturedEnvStack: funcValue.capturedEnvMeta?.map((m) => m.env) ?? [],
       yieldResultVarName: null,
       executionPosition: 0,
       nextCallCount: 0,
@@ -5402,7 +5556,7 @@ export class Interpreter {
     // Map the wrapper to its heap object
     this.objectHeapMap.set(wrapper, genHeapObj.id);
 
-    const argsDisplay = params.map(p => displayValue(p.value)).join(", ");
+    const argsDisplay = params.map((p) => displayValue(p.value)).join(", ");
     this.snapshot(
       this.getLine(callNode),
       this.getColumn(callNode),
@@ -5422,7 +5576,7 @@ export class Interpreter {
     node: CallExpressionNode,
   ): unknown {
     const code = extractSource(this.sourceCode, node);
-    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
 
     if (!genHeap) {
       console.warn(`Generator heap object not found: ${wrapper.heapObjectId}`);
@@ -5441,9 +5595,10 @@ export class Interpreter {
     }
 
     // Get the argument value if provided
-    const argValue = node.arguments.length > 0
-      ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
-      : undefined;
+    const argValue =
+      node.arguments.length > 0
+        ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+        : undefined;
 
     if (method === "return") {
       return this.executeGeneratorReturn(wrapper, argValue, node);
@@ -5467,7 +5622,7 @@ export class Interpreter {
   ): unknown {
     const code = extractSource(this.sourceCode, node);
     const continuation = this.generatorContinuations.get(wrapper.generatorId);
-    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
 
     if (!continuation || !genHeap) {
       return { value: undefined, done: true };
@@ -5488,7 +5643,8 @@ export class Interpreter {
     }
 
     const funcValue = wrapper.functionValue;
-    const funcName = funcValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
+    const funcName =
+      funcValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
 
     // Update generator state to executing
     genHeap.generatorState = "executing";
@@ -5504,11 +5660,13 @@ export class Interpreter {
       scope: {
         name: funcName,
         type: "function",
-        variables: Object.entries(continuation.localEnv).map(([name, value]) => ({
-          name,
-          value,
-          kind: "let" as VariableKind,
-        })),
+        variables: Object.entries(continuation.localEnv).map(
+          ([name, value]) => ({
+            name,
+            value,
+            kind: "let" as VariableKind,
+          }),
+        ),
       },
       color: continuation.frameColor,
       isGenerator: true,
@@ -5516,17 +5674,19 @@ export class Interpreter {
     };
 
     // Create memory entries from local environment
-    const memEntries: MemoryEntry[] = Object.entries(continuation.localEnv).map(([name, value]) => {
-      const resolved = this.resolveValueForMemory(value);
-      return {
-        name,
-        kind: "let" as const,
-        valueType: resolved.valueType,
-        displayValue: resolved.displayValue,
-        heapReferenceId: resolved.heapReferenceId,
-        pointerColor: resolved.pointerColor,
-      };
-    });
+    const memEntries: MemoryEntry[] = Object.entries(continuation.localEnv).map(
+      ([name, value]) => {
+        const resolved = this.resolveValueForMemory(value);
+        return {
+          name,
+          kind: "let" as const,
+          valueType: resolved.valueType,
+          displayValue: resolved.displayValue,
+          heapReferenceId: resolved.heapReferenceId,
+          pointerColor: resolved.pointerColor,
+        };
+      },
+    );
 
     const memoryBlock: MemoryBlock = {
       frameId: continuation.frameId,
@@ -5538,10 +5698,14 @@ export class Interpreter {
     };
 
     // Check if frame already exists (resumed generator)
-    const existingFrameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+    const existingFrameIndex = this.callStack.findIndex(
+      (f) => f.id === continuation.frameId,
+    );
     if (existingFrameIndex >= 0) {
       this.callStack[existingFrameIndex] = frame;
-      const existingBlockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      const existingBlockIndex = this.memoryBlocks.findIndex(
+        (b) => b.frameId === continuation.frameId,
+      );
       if (existingBlockIndex >= 0) {
         this.memoryBlocks[existingBlockIndex] = memoryBlock;
       }
@@ -5596,7 +5760,7 @@ export class Interpreter {
     continuation: GeneratorContinuation,
     wrapper: GeneratorWrapper,
   ): { value: unknown; done: boolean } {
-    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
     if (!genHeap) {
       return { value: undefined, done: true };
     }
@@ -5616,7 +5780,8 @@ export class Interpreter {
 
       if (yieldInfo) {
         // Process statement up to yield and get yielded value
-        const { yieldedValue, resultVarName } = this.processStatementUpToYield(stmt);
+        const { yieldedValue, resultVarName } =
+          this.processStatementUpToYield(stmt);
 
         // Update continuation for resumption
         continuation.remainingStatements = statements.slice(i + 1);
@@ -5626,12 +5791,18 @@ export class Interpreter {
         // Suspend the generator
         genHeap.generatorState = "suspended";
         genHeap.lastYieldedValue = displayValue(yieldedValue);
-        this.updateGeneratorHeapState(genHeap, "suspended", displayValue(yieldedValue));
+        this.updateGeneratorHeapState(
+          genHeap,
+          "suspended",
+          displayValue(yieldedValue),
+        );
 
         // Update frame and memory block as suspended
-        const frame = this.callStack.find(f => f.id === continuation.frameId);
+        const frame = this.callStack.find((f) => f.id === continuation.frameId);
         if (frame) frame.status = "suspended";
-        const block = this.memoryBlocks.find(b => b.frameId === continuation.frameId);
+        const block = this.memoryBlocks.find(
+          (b) => b.frameId === continuation.frameId,
+        );
         if (block) block.suspended = true;
 
         const yieldCode = extractSource(this.sourceCode, stmt);
@@ -5659,7 +5830,12 @@ export class Interpreter {
         this.returnValue = undefined;
 
         // Generator completed
-        return this.completeGenerator(wrapper, genHeap, continuation, returnVal);
+        return this.completeGenerator(
+          wrapper,
+          genHeap,
+          continuation,
+          returnVal,
+        );
       }
 
       if (this.stepIndex >= MAX_STEPS) break;
@@ -5687,7 +5863,9 @@ export class Interpreter {
     // Clean up continuation
     this.generatorContinuations.delete(wrapper.generatorId);
 
-    const funcName = wrapper.functionValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
+    const funcName =
+      wrapper.functionValue.source.match(/function\*?\s*(\w+)/)?.[1] ??
+      "<generator>";
     this.snapshot(
       0,
       0,
@@ -5707,7 +5885,7 @@ export class Interpreter {
     node: CallExpressionNode,
   ): { value: unknown; done: boolean } {
     const code = extractSource(this.sourceCode, node);
-    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
     const continuation = this.generatorContinuations.get(wrapper.generatorId);
 
     if (genHeap) {
@@ -5717,9 +5895,13 @@ export class Interpreter {
 
     // Remove frame and memory if they exist
     if (continuation) {
-      const frameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+      const frameIndex = this.callStack.findIndex(
+        (f) => f.id === continuation.frameId,
+      );
       if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
-      const blockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      const blockIndex = this.memoryBlocks.findIndex(
+        (b) => b.frameId === continuation.frameId,
+      );
       if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
       this.generatorContinuations.delete(wrapper.generatorId);
     }
@@ -5743,7 +5925,7 @@ export class Interpreter {
     node: CallExpressionNode,
   ): { value: unknown; done: boolean } {
     const code = extractSource(this.sourceCode, node);
-    const genHeap = this.heap.find(h => h.id === wrapper.heapObjectId);
+    const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
     const continuation = this.generatorContinuations.get(wrapper.generatorId);
 
     // For now, just close the generator and propagate error
@@ -5754,9 +5936,13 @@ export class Interpreter {
     }
 
     if (continuation) {
-      const frameIndex = this.callStack.findIndex(f => f.id === continuation.frameId);
+      const frameIndex = this.callStack.findIndex(
+        (f) => f.id === continuation.frameId,
+      );
       if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
-      const blockIndex = this.memoryBlocks.findIndex(b => b.frameId === continuation.frameId);
+      const blockIndex = this.memoryBlocks.findIndex(
+        (b) => b.frameId === continuation.frameId,
+      );
       if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
       this.generatorContinuations.delete(wrapper.generatorId);
     }
@@ -5787,7 +5973,9 @@ export class Interpreter {
       closed: '"closed"',
     };
 
-    const stateProp = genHeap.properties.find(p => p.key === "[[GeneratorState]]");
+    const stateProp = genHeap.properties.find(
+      (p) => p.key === "[[GeneratorState]]",
+    );
     if (stateProp) {
       stateProp.displayValue = stateStrMap[state];
     }
@@ -5800,7 +5988,9 @@ export class Interpreter {
   /**
    * Check if a statement contains a YieldExpression at the top level.
    */
-  private findYieldInStatement(stmt: StatementNode): YieldExpressionNode | null {
+  private findYieldInStatement(
+    stmt: StatementNode,
+  ): YieldExpressionNode | null {
     if (stmt.type === "VariableDeclaration") {
       const decl = stmt as VariableDeclarationNode;
       for (const d of decl.declarations) {
@@ -5814,7 +6004,8 @@ export class Interpreter {
       if (expr.type === "YieldExpression") return expr as YieldExpressionNode;
       if (expr.type === "AssignmentExpression") {
         const right = (expr as AssignmentExpressionNode).right;
-        if (right.type === "YieldExpression") return right as YieldExpressionNode;
+        if (right.type === "YieldExpression")
+          return right as YieldExpressionNode;
       }
     }
     if (stmt.type === "ReturnStatement") {
@@ -5914,7 +6105,13 @@ export class Interpreter {
           iterableValue,
           undefined,
           // Create a synthetic call node for the internal next() call
-          { type: "CallExpression", callee: node.right, arguments: [], start: node.start, end: node.end } as CallExpressionNode,
+          {
+            type: "CallExpression",
+            callee: node.right,
+            arguments: [],
+            start: node.start,
+            end: node.end,
+          } as CallExpressionNode,
         ) as { value: unknown; done: boolean };
 
         if (result.done) {
@@ -5974,7 +6171,13 @@ export class Interpreter {
       }
     } else if (Array.isArray(iterableValue)) {
       // Handle array iteration
-      for (let i = 0; i < iterableValue.length && iterations < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS; i++) {
+      for (
+        let i = 0;
+        i < iterableValue.length &&
+        iterations < MAX_LOOP_ITERATIONS &&
+        this.stepIndex < MAX_STEPS;
+        i++
+      ) {
         const value = iterableValue[i];
 
         if (i === 0 && node.left.type === "VariableDeclaration") {
@@ -6028,7 +6231,13 @@ export class Interpreter {
       }
     } else if (typeof iterableValue === "string") {
       // Handle string iteration
-      for (let i = 0; i < iterableValue.length && iterations < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS; i++) {
+      for (
+        let i = 0;
+        i < iterableValue.length &&
+        iterations < MAX_LOOP_ITERATIONS &&
+        this.stepIndex < MAX_STEPS;
+        i++
+      ) {
         const char = iterableValue[i];
 
         if (i === 0 && node.left.type === "VariableDeclaration") {

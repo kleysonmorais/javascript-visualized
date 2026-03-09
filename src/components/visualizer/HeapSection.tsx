@@ -119,7 +119,8 @@ function isInternalSlot(key: string): boolean {
 function PropertyValue({ prop }: { prop: HeapObjectProperty }) {
   if (prop.valueType === "function") {
     // Check if it's a generator function (ⓕ*)
-    const isGenerator = prop.displayValue?.includes("*") || prop.displayValue === "ⓕ*";
+    const isGenerator =
+      prop.displayValue?.includes("*") || prop.displayValue === "ⓕ*";
     return (
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
         <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
@@ -171,7 +172,15 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
         <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
           <span style={{ color: THEME.colors.syntax.function }}>ⓕ</span>
           {variable.pointerColor && (
-            <span style={{ color: variable.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+            <span
+              style={{
+                color: variable.pointerColor,
+                fontSize: 9,
+                marginLeft: 3,
+              }}
+            >
+              ●
+            </span>
           )}
         </span>
       );
@@ -181,34 +190,59 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
         <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
           <span style={{ color: THEME.colors.text.secondary }}>[Ptr]</span>
           {variable.pointerColor && (
-            <span style={{ color: variable.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+            <span
+              style={{
+                color: variable.pointerColor,
+                fontSize: 9,
+                marginLeft: 3,
+              }}
+            >
+              ●
+            </span>
           )}
         </span>
       );
     }
     return (
-      <span style={{
-        fontFamily: THEME.fonts.code,
-        fontSize: 11,
-        color: primitiveColor(variable.displayValue),
-      }}>
+      <span
+        style={{
+          fontFamily: THEME.fonts.code,
+          fontSize: 11,
+          color: primitiveColor(variable.displayValue),
+        }}
+      >
         {variable.displayValue}
       </span>
     );
   };
 
   return (
-    <div className="flex items-center justify-between gap-2" style={{ padding: "1px 0" }}>
-      <span style={{
-        fontFamily: THEME.fonts.code,
-        fontSize: 10,
-        color: variable.isMutable ? THEME.colors.syntax.variable : THEME.colors.text.secondary,
-        fontStyle: variable.isMutable ? "normal" : "italic",
-        opacity: 0.9,
-      }}>
+    <div
+      className="flex items-center justify-between gap-2"
+      style={{ padding: "1px 0" }}
+    >
+      <span
+        style={{
+          fontFamily: THEME.fonts.code,
+          fontSize: 10,
+          color: variable.isMutable
+            ? THEME.colors.syntax.variable
+            : THEME.colors.text.secondary,
+          fontStyle: variable.isMutable ? "normal" : "italic",
+          opacity: 0.9,
+        }}
+      >
         {variable.name}
         {variable.isMutable && (
-          <span style={{ color: THEME.colors.text.muted, fontSize: 8, marginLeft: 3 }}>~</span>
+          <span
+            style={{
+              color: THEME.colors.text.muted,
+              fontSize: 8,
+              marginLeft: 3,
+            }}
+          >
+            ~
+          </span>
         )}
       </span>
       {renderValue()}
@@ -221,22 +255,26 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
   if (!obj.closureScope || obj.closureScope.length === 0) return null;
 
   return (
-    <div style={{
-      marginTop: 6,
-      border: `1px dashed ${THEME.colors.text.muted}44`,
-      borderRadius: 4,
-      padding: "5px 7px",
-    }}>
+    <div
+      style={{
+        marginTop: 6,
+        border: `1px dashed ${THEME.colors.text.muted}44`,
+        borderRadius: 4,
+        padding: "5px 7px",
+      }}
+    >
       {/* [[Scope]] header */}
-      <div style={{
-        fontFamily: THEME.fonts.code,
-        fontSize: 9,
-        fontWeight: 600,
-        color: THEME.colors.syntax.keyword,
-        fontStyle: "italic",
-        marginBottom: 4,
-        letterSpacing: "0.03em",
-      }}>
+      <div
+        style={{
+          fontFamily: THEME.fonts.code,
+          fontSize: 9,
+          fontWeight: 600,
+          color: THEME.colors.syntax.keyword,
+          fontStyle: "italic",
+          marginBottom: 4,
+          letterSpacing: "0.03em",
+        }}
+      >
         {"[[Scope]]"}
       </div>
 
@@ -245,12 +283,14 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
           {/* Scope origin header */}
           <div className="flex items-center gap-1" style={{ marginBottom: 2 }}>
             <span style={{ color: scopeEntry.scopeColor, fontSize: 8 }}>●</span>
-            <span style={{
-              fontFamily: THEME.fonts.code,
-              fontSize: 9,
-              color: THEME.colors.text.muted,
-              fontStyle: "italic",
-            }}>
+            <span
+              style={{
+                fontFamily: THEME.fonts.code,
+                fontSize: 9,
+                color: THEME.colors.text.muted,
+                fontStyle: "italic",
+              }}
+            >
               from {scopeEntry.scopeName}:
             </span>
           </div>
@@ -428,10 +468,13 @@ function GeneratorHeapCard({
   const stateStyle = getGeneratorStateStyle(stateValue);
 
   // Extract generator function reference
-  const funcProp = obj.properties?.find((p) => p.key === "[[GeneratorFunction]]");
+  const funcProp = obj.properties?.find(
+    (p) => p.key === "[[GeneratorFunction]]",
+  );
 
   // Use dashed border for suspended generators
-  const isSuspended = obj.generatorState === "suspended" || stateValue.includes("suspended");
+  const isSuspended =
+    obj.generatorState === "suspended" || stateValue.includes("suspended");
   const borderStyle = isSuspended ? "dashed" : "solid";
 
   return (
@@ -518,7 +561,15 @@ function GeneratorHeapCard({
             <span style={{ color: THEME.colors.syntax.keyword }}>*</span>
             {funcProp.displayValue.replace(/^ⓕ\*?\s*/, " ")}
             {funcProp.pointerColor && (
-              <span style={{ color: funcProp.pointerColor, fontSize: 9, marginLeft: 3 }}>●</span>
+              <span
+                style={{
+                  color: funcProp.pointerColor,
+                  fontSize: 9,
+                  marginLeft: 3,
+                }}
+              >
+                ●
+              </span>
             )}
           </span>
         </div>
@@ -528,7 +579,7 @@ function GeneratorHeapCard({
       {obj.lastYieldedValue && (
         <div
           className="flex items-center justify-between gap-2"
-          style={{ 
+          style={{
             padding: "2px 0",
             marginTop: 4,
             borderTop: `1px solid ${THEME.colors.text.muted}22`,
@@ -646,33 +697,43 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
           ) : obj.properties && obj.properties.length > 0 ? (
             <div style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
               {/* Show label for instance/class objects */}
-              {obj.label && (obj.label.includes(" instance") || obj.label.startsWith("class ")) && (
-                <div style={{
-                  color: THEME.colors.text.secondary,
-                  fontSize: 10,
-                  marginBottom: 4,
-                  fontStyle: "italic",
-                }}>
-                  {obj.label}
-                </div>
-              )}
+              {obj.label &&
+                (obj.label.includes(" instance") ||
+                  obj.label.startsWith("class ")) && (
+                  <div
+                    style={{
+                      color: THEME.colors.text.secondary,
+                      fontSize: 10,
+                      marginBottom: 4,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {obj.label}
+                  </div>
+                )}
               <div style={{ paddingLeft: 2 }}>
                 {obj.properties.map((prop, i) => {
                   const internal = isInternalSlot(prop.key);
                   return (
                     <div key={prop.key} className="flex items-center gap-1">
-                      <span style={{
-                        color: internal ? THEME.colors.syntax.keyword : THEME.colors.syntax.variable,
-                        fontStyle: internal ? "italic" : undefined,
-                        fontSize: internal ? 10 : 11,
-                        opacity: internal ? 0.85 : 1,
-                      }}>
+                      <span
+                        style={{
+                          color: internal
+                            ? THEME.colors.syntax.keyword
+                            : THEME.colors.syntax.variable,
+                          fontStyle: internal ? "italic" : undefined,
+                          fontSize: internal ? 10 : 11,
+                          opacity: internal ? 0.85 : 1,
+                        }}
+                      >
                         {prop.key}
                       </span>
                       <span style={{ color: THEME.colors.text.muted }}>:</span>
                       <PropertyValue prop={prop} />
                       {i < obj.properties!.length - 1 && (
-                        <span style={{ color: THEME.colors.text.muted }}>,</span>
+                        <span style={{ color: THEME.colors.text.muted }}>
+                          ,
+                        </span>
                       )}
                     </div>
                   );
@@ -706,7 +767,9 @@ export function HeapSection({ heap }: HeapSectionProps) {
   // Separate Promise objects, Generator objects, and other heap objects for grouping
   const promiseObjects = heap.filter(isPromiseObject);
   const generatorObjects = heap.filter(isGeneratorObject);
-  const otherObjects = heap.filter((obj) => !isPromiseObject(obj) && !isGeneratorObject(obj));
+  const otherObjects = heap.filter(
+    (obj) => !isPromiseObject(obj) && !isGeneratorObject(obj),
+  );
 
   return (
     <div
@@ -751,28 +814,29 @@ export function HeapSection({ heap }: HeapSectionProps) {
           ))}
 
           {/* Generator objects grouped together */}
-          {generatorObjects.length > 0 && (otherObjects.length > 0 || promiseObjects.length > 0) && (
-            <div
-              style={{
-                borderTop: `1px dashed ${THEME.colors.text.muted}33`,
-                marginTop: 4,
-                paddingTop: 8,
-              }}
-            >
+          {generatorObjects.length > 0 &&
+            (otherObjects.length > 0 || promiseObjects.length > 0) && (
               <div
                 style={{
-                  fontSize: 9,
-                  color: THEME.colors.text.muted,
-                  fontFamily: THEME.fonts.code,
-                  marginBottom: 6,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
+                  borderTop: `1px dashed ${THEME.colors.text.muted}33`,
+                  marginTop: 4,
+                  paddingTop: 8,
                 }}
               >
-                Generators
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: THEME.colors.text.muted,
+                    fontFamily: THEME.fonts.code,
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Generators
+                </div>
               </div>
-            </div>
-          )}
+            )}
           {generatorObjects.map((obj) => (
             <GeneratorHeapCard
               key={obj.id}
@@ -782,28 +846,29 @@ export function HeapSection({ heap }: HeapSectionProps) {
           ))}
 
           {/* Promise objects grouped together */}
-          {promiseObjects.length > 0 && (otherObjects.length > 0 || generatorObjects.length > 0) && (
-            <div
-              style={{
-                borderTop: `1px dashed ${THEME.colors.text.muted}33`,
-                marginTop: 4,
-                paddingTop: 8,
-              }}
-            >
+          {promiseObjects.length > 0 &&
+            (otherObjects.length > 0 || generatorObjects.length > 0) && (
               <div
                 style={{
-                  fontSize: 9,
-                  color: THEME.colors.text.muted,
-                  fontFamily: THEME.fonts.code,
-                  marginBottom: 6,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.05em",
+                  borderTop: `1px dashed ${THEME.colors.text.muted}33`,
+                  marginTop: 4,
+                  paddingTop: 8,
                 }}
               >
-                Promises
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: THEME.colors.text.muted,
+                    fontFamily: THEME.fonts.code,
+                    marginBottom: 6,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  Promises
+                </div>
               </div>
-            </div>
-          )}
+            )}
           {promiseObjects.map((obj) => (
             <PromiseHeapCard
               key={obj.id}
