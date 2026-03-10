@@ -75,16 +75,21 @@ export function CodeEditor({ highlightedLine }: CodeEditorProps) {
   const clearError = useVisualizerStore((s) => s.clearError);
   const error = useVisualizerStore((s) => s.error);
   const errorLine = useVisualizerStore((s) => s.errorLine);
+  const breakpoints = useVisualizerStore((s) => s.breakpoints);
+  const toggleBreakpoint = useVisualizerStore((s) => s.toggleBreakpoint);
 
   const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof Monaco | null>(null);
   const decorationsRef = useRef<string[]>([]);
   const errorDecorationsRef = useRef<string[]>([]);
+  const breakpointDecorationsRef = useRef<string[]>([]);
 
   const activeLine = highlightedLine ?? currentStep?.highlightedLine;
   const isReadOnly = steps.length > 0;
 
   const handleMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    monacoRef.current = monaco;
     defineEditorTheme(monaco);
     monaco.editor.setTheme(THEME_NAME);
 
@@ -96,6 +101,54 @@ export function CodeEditor({ highlightedLine }: CodeEditorProps) {
       run: () => {
         clearError();
         runCode();
+      },
+    });
+
+    // Handle gutter click for breakpoints
+    editor.onMouseDown((e) => {
+      if (
+        e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN &&
+        e.target.position
+      ) {
+        const line = e.target.position.lineNumber;
+        toggleBreakpoint(line);
+      }
+    });
+
+    // Register hover provider for variable values during execution
+    monaco.languages.registerHoverProvider("javascript", {
+      provideHover: (model, position) => {
+        const state = useVisualizerStore.getState();
+        const currentStep = state.currentStep;
+
+        // Only show hover info when execution has happened
+        if (!currentStep || state.steps.length === 0) return null;
+
+        const word = model.getWordAtPosition(position);
+        if (!word) return null;
+
+        const varName = word.word;
+
+        // Search all memory blocks for this variable
+        for (const block of currentStep.memoryBlocks) {
+          const entry = block.entries.find((e) => e.name === varName);
+          if (entry) {
+            return {
+              contents: [
+                { value: `**${varName}** = \`${entry.displayValue}\`` },
+                { value: `_${block.label}_ • ${entry.kind}` },
+              ],
+              range: {
+                startLineNumber: position.lineNumber,
+                startColumn: word.startColumn,
+                endLineNumber: position.lineNumber,
+                endColumn: word.endColumn,
+              },
+            };
+          }
+        }
+
+        return null;
       },
     });
   };
@@ -168,6 +221,30 @@ export function CodeEditor({ highlightedLine }: CodeEditorProps) {
     }
   }, [error, errorLine]);
 
+  // Handle breakpoint decorations
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const decorations = Array.from(breakpoints).map((line) => ({
+      range: {
+        startLineNumber: line,
+        startColumn: 1,
+        endLineNumber: line,
+        endColumn: 1,
+      },
+      options: {
+        isWholeLine: false,
+        glyphMarginClassName: "editor-breakpoint-glyph",
+      },
+    }));
+
+    breakpointDecorationsRef.current = editor.deltaDecorations(
+      breakpointDecorationsRef.current,
+      decorations,
+    );
+  }, [breakpoints]);
+
   return (
     <>
       <style>{`
@@ -190,6 +267,15 @@ export function CodeEditor({ highlightedLine }: CodeEditorProps) {
           width: 3px !important;
           margin-left: 2px;
           border-radius: 2px;
+        }
+        .editor-breakpoint-glyph {
+          background: #ef4444;
+          width: 10px !important;
+          height: 10px !important;
+          margin-left: 5px;
+          margin-top: 5px;
+          border-radius: 50%;
+          box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
         }
       `}</style>
       <MonacoEditor

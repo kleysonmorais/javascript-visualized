@@ -1,5 +1,6 @@
 import { Github } from "lucide-react";
 import { THEME } from "@/constants/theme";
+import { ExamplesDropdown } from "./ExamplesDropdown";
 
 export function Navbar() {
   return (
@@ -21,6 +22,9 @@ export function Navbar() {
         <span style={{ color: THEME.colors.text.accent }}>&lt;/&gt;</span>
         <span>JS Visualizer</span>
       </div>
+
+      {/* Center - Examples Dropdown */}
+      <ExamplesDropdown />
 
       {/* Right side - GitHub link */}
       <a

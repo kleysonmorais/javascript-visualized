@@ -1,9 +1,10 @@
-import { useEffect, useRef } from 'react';
-import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { useEffect, useRef } from "react";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
 
 export function useAutoPlay() {
   const isPlaying = useVisualizerStore((s) => s.isPlaying);
   const speed = useVisualizerStore((s) => s.speed);
+  const breakpoints = useVisualizerStore((s) => s.breakpoints);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -26,6 +27,21 @@ export function useAutoPlay() {
         }
         return;
       }
+
+      // Check if next step hits a breakpoint
+      const nextIndex = store.currentStepIndex + 1;
+      const nextStep = store.steps[nextIndex];
+      if (nextStep && store.breakpoints.has(nextStep.highlightedLine)) {
+        // Move to the breakpoint line and pause
+        store.goNext();
+        store.setIsPlaying(false);
+        if (intervalRef.current !== null) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+        return;
+      }
+
       store.goNext();
     }, delay);
 
@@ -35,5 +51,5 @@ export function useAutoPlay() {
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, speed]);
+  }, [isPlaying, speed, breakpoints]);
 }

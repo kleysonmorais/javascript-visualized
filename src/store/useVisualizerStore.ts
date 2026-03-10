@@ -65,6 +65,11 @@ interface VisualizerStore {
   setHoveredHeapId: (id: string | null) => void;
   setHoveredPointerId: (id: string | null) => void;
 
+  // Breakpoints
+  breakpoints: Set<number>;
+  toggleBreakpoint: (line: number) => void;
+  clearBreakpoints: () => void;
+
   // Mock data
   loadMockData: () => void;
 
@@ -227,6 +232,20 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
   setHoveredFrameId: (id) => set({ hoveredFrameId: id }),
   setHoveredHeapId: (id) => set({ hoveredHeapId: id }),
   setHoveredPointerId: (id) => set({ hoveredPointerId: id }),
+
+  // Breakpoints
+  breakpoints: new Set<number>(),
+  toggleBreakpoint: (line) =>
+    set((state) => {
+      const newBreakpoints = new Set(state.breakpoints);
+      if (newBreakpoints.has(line)) {
+        newBreakpoints.delete(line);
+      } else {
+        newBreakpoints.add(line);
+      }
+      return { breakpoints: newBreakpoints };
+    }),
+  clearBreakpoints: () => set({ breakpoints: new Set<number>() }),
 
   loadMockData: () =>
     set({
