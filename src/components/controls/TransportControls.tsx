@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   SkipBack,
@@ -8,9 +9,11 @@ import {
   SkipForward,
   RefreshCw,
   Clock,
+  ChevronDown,
 } from "lucide-react";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
+import { useIsSmallMobile } from "@/hooks/useMediaQuery";
 import { THEME } from "@/constants/theme";
 import type { PlaybackSpeed } from "@/types";
 
@@ -18,6 +21,9 @@ const SPEEDS: PlaybackSpeed[] = [0.5, 1, 1.5, 2, 3];
 
 function StepDescription() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isSmallMobile = useIsSmallMobile();
+
   if (!currentStep) return null;
 
   const phase = currentStep.eventLoop.phase;
@@ -26,9 +32,16 @@ function StepDescription() {
     phase === "picking-task" ||
     phase === "draining-microtasks";
 
+  const description = currentStep.description;
+  const shouldTruncate = isSmallMobile && description.length > 50;
+  const displayText =
+    shouldTruncate && !isExpanded
+      ? description.slice(0, 47) + "..."
+      : description;
+
   return (
     <div
-      className="px-4 py-2 flex items-center gap-2 text-sm"
+      className={`px-3 sm:px-4 py-2 flex items-start gap-2 text-xs sm:text-sm ${shouldTruncate ? "cursor-pointer" : ""}`}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.md,
@@ -36,13 +49,17 @@ function StepDescription() {
         color: THEME.colors.text.primary,
         fontFamily: THEME.fonts.ui,
       }}
+      onClick={() => shouldTruncate && setIsExpanded(!isExpanded)}
+      title={shouldTruncate ? description : undefined}
     >
-      {isTimer ? (
-        <Clock size={14} color={THEME.colors.text.accent} />
-      ) : (
-        <RefreshCw size={14} color={THEME.colors.text.accent} />
-      )}
-      <span>{currentStep.description}</span>
+      <span className="shrink-0 mt-0.5">
+        {isTimer ? (
+          <Clock size={14} color={THEME.colors.text.accent} />
+        ) : (
+          <RefreshCw size={14} color={THEME.colors.text.accent} />
+        )}
+      </span>
+      <span className="min-w-0 wrap-break-word">{displayText}</span>
     </div>
   );
 }
@@ -61,6 +78,8 @@ export function TransportControls() {
     setSpeed,
   } = useVisualizerStore();
   const { duration, shouldReduceMotion } = useAnimationConfig();
+  const isSmallMobile = useIsSmallMobile();
+  const [showSpeedMenu, setShowSpeedMenu] = useState(false);
 
   const atStart = currentStepIndex === 0;
   const atEnd = currentStepIndex === totalSteps - 1;
@@ -93,22 +112,51 @@ export function TransportControls() {
       style={{
         backgroundColor: THEME.colors.bg.secondary,
         borderTop: `1px solid ${THEME.colors.border.editor}`,
-        padding: "10px 16px",
+        padding: "10px 12px",
       }}
     >
       <StepDescription />
 
-      <div className="flex items-center justify-between gap-4">
+      {/* Progress bar - full width on mobile, at bottom on desktop */}
+      <div className="sm:hidden">
+        <div
+          onClick={handleProgressClick}
+          className="touch-none"
+          style={{
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: THEME.colors.bg.elevated,
+            cursor: totalSteps > 1 ? "pointer" : "default",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              height: "100%",
+              width: `${progress * 100}%`,
+              background: `linear-gradient(to right, ${THEME.colors.border.callStack}, ${THEME.colors.border.microtaskQueue})`,
+              transition: "width 0.2s ease",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
         {/* Transport buttons */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           {/* Go to start */}
           <button
             onClick={goToStart}
             disabled={atStart}
             title="Go to start (Home)"
+            className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
-              padding: "6px 8px",
+              padding: "8px 10px",
               opacity: atStart ? 0.3 : 1,
               cursor: atStart ? "not-allowed" : "pointer",
             }}
@@ -131,9 +179,10 @@ export function TransportControls() {
             onClick={goBack}
             disabled={atStart}
             title="Step back (←)"
+            className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
-              padding: "6px 8px",
+              padding: "8px 10px",
               opacity: atStart ? 0.3 : 1,
               cursor: atStart ? "not-allowed" : "pointer",
             }}
@@ -160,9 +209,10 @@ export function TransportControls() {
               shouldReduceMotion || noSteps ? undefined : { scale: 0.92 }
             }
             transition={{ duration: duration.fast }}
+            className="min-w-11 min-h-11 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
-              padding: "8px 12px",
+              padding: "10px 14px",
               borderColor: THEME.colors.text.accent,
               boxShadow: isPlaying
                 ? `0 0 10px ${THEME.colors.text.accent}55`
@@ -180,9 +230,10 @@ export function TransportControls() {
             onClick={goNext}
             disabled={atEnd}
             title="Step forward (→)"
+            className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
-              padding: "6px 8px",
+              padding: "8px 10px",
               opacity: atEnd ? 0.3 : 1,
               cursor: atEnd ? "not-allowed" : "pointer",
             }}
@@ -205,9 +256,10 @@ export function TransportControls() {
             onClick={goToEnd}
             disabled={atEnd}
             title="Go to end (End)"
+            className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
-              padding: "6px 8px",
+              padding: "8px 10px",
               opacity: atEnd ? 0.3 : 1,
               cursor: atEnd ? "not-allowed" : "pointer",
             }}
@@ -226,45 +278,115 @@ export function TransportControls() {
           </button>
         </div>
 
-        {/* Speed selector */}
-        <div className="flex items-center gap-1">
-          <span
-            style={{
-              color: THEME.colors.text.muted,
-              fontSize: 12,
-              marginRight: 4,
-              fontFamily: THEME.fonts.ui,
-            }}
-          >
-            Speed:
-          </span>
-          {SPEEDS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setSpeed(s)}
-              style={{
-                padding: "3px 8px",
-                borderRadius: THEME.radius.sm,
-                fontSize: 12,
-                fontFamily: THEME.fonts.code,
-                border: `1px solid ${s === speed ? THEME.colors.text.accent : THEME.colors.border.editor}`,
-                backgroundColor:
-                  s === speed
-                    ? THEME.colors.text.accent
-                    : THEME.colors.bg.tertiary,
-                color:
-                  s === speed
-                    ? THEME.colors.bg.primary
-                    : THEME.colors.text.secondary,
-                cursor: "pointer",
-              }}
-            >
-              {s}x
-            </button>
-          ))}
+        {/* Speed selector - compact on mobile */}
+        <div className="relative flex items-center gap-1">
+          {isSmallMobile ? (
+            // Compact speed dropdown for mobile
+            <div className="relative">
+              <button
+                onClick={() => setShowSpeedMenu(!showSpeedMenu)}
+                className="flex items-center gap-1 min-w-11 min-h-10"
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: THEME.radius.sm,
+                  fontSize: 12,
+                  fontFamily: THEME.fonts.code,
+                  border: `1px solid ${THEME.colors.text.accent}`,
+                  backgroundColor: THEME.colors.bg.tertiary,
+                  color: THEME.colors.text.accent,
+                  cursor: "pointer",
+                }}
+              >
+                {speed}x
+                <ChevronDown size={12} />
+              </button>
+              <AnimatePresence>
+                {showSpeedMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute bottom-full left-0 mb-1 flex flex-col gap-1 p-1 rounded-md z-50"
+                    style={{
+                      backgroundColor: THEME.colors.bg.secondary,
+                      border: `1px solid ${THEME.colors.border.editor}`,
+                    }}
+                  >
+                    {SPEEDS.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => {
+                          setSpeed(s);
+                          setShowSpeedMenu(false);
+                        }}
+                        className="min-h-9"
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: THEME.radius.sm,
+                          fontSize: 12,
+                          fontFamily: THEME.fonts.code,
+                          border: `1px solid ${s === speed ? THEME.colors.text.accent : "transparent"}`,
+                          backgroundColor:
+                            s === speed
+                              ? THEME.colors.text.accent
+                              : "transparent",
+                          color:
+                            s === speed
+                              ? THEME.colors.bg.primary
+                              : THEME.colors.text.secondary,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {s}x
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          ) : (
+            // Full speed selector for desktop
+            <>
+              <span
+                style={{
+                  color: THEME.colors.text.muted,
+                  fontSize: 12,
+                  marginRight: 4,
+                  fontFamily: THEME.fonts.ui,
+                }}
+              >
+                Speed:
+              </span>
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSpeed(s)}
+                  style={{
+                    padding: "3px 8px",
+                    borderRadius: THEME.radius.sm,
+                    fontSize: 12,
+                    fontFamily: THEME.fonts.code,
+                    border: `1px solid ${s === speed ? THEME.colors.text.accent : THEME.colors.border.editor}`,
+                    backgroundColor:
+                      s === speed
+                        ? THEME.colors.text.accent
+                        : THEME.colors.bg.tertiary,
+                    color:
+                      s === speed
+                        ? THEME.colors.bg.primary
+                        : THEME.colors.text.secondary,
+                    cursor: "pointer",
+                  }}
+                >
+                  {s}x
+                </button>
+              ))}
+            </>
+          )}
         </div>
 
-        {/* Step indicator */}
+        {/* Step indicator - compact on mobile */}
         <span
           style={{
             fontFamily: THEME.fonts.code,
@@ -273,7 +395,7 @@ export function TransportControls() {
             whiteSpace: "nowrap",
           }}
         >
-          Step{" "}
+          {!isSmallMobile && "Step "}
           <AnimatePresence mode="wait">
             <motion.span
               key={totalSteps === 0 ? "empty" : currentStepIndex}
@@ -282,37 +404,37 @@ export function TransportControls() {
               exit={shouldReduceMotion ? undefined : { opacity: 0, y: 5 }}
               transition={{ duration: duration.fast }}
             >
-              {totalSteps === 0
-                ? "—"
-                : `${currentStepIndex + 1} / ${totalSteps}`}
+              {totalSteps === 0 ? "—" : `${currentStepIndex + 1}/${totalSteps}`}
             </motion.span>
           </AnimatePresence>
         </span>
       </div>
 
-      {/* Progress bar */}
-      <div
-        onClick={handleProgressClick}
-        style={{
-          height: 4,
-          borderRadius: 2,
-          backgroundColor: THEME.colors.bg.elevated,
-          cursor: totalSteps > 1 ? "pointer" : "default",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
+      {/* Progress bar - desktop only */}
+      <div className="hidden sm:block">
         <div
+          onClick={handleProgressClick}
           style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            height: "100%",
-            width: `${progress * 100}%`,
-            background: `linear-gradient(to right, ${THEME.colors.border.callStack}, ${THEME.colors.border.microtaskQueue})`,
-            transition: "width 0.2s ease",
+            height: 4,
+            borderRadius: 2,
+            backgroundColor: THEME.colors.bg.elevated,
+            cursor: totalSteps > 1 ? "pointer" : "default",
+            position: "relative",
+            overflow: "hidden",
           }}
-        />
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              height: "100%",
+              width: `${progress * 100}%`,
+              background: `linear-gradient(to right, ${THEME.colors.border.callStack}, ${THEME.colors.border.microtaskQueue})`,
+              transition: "width 0.2s ease",
+            }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -34,7 +34,12 @@ function StatusDot({ status }: { status: WebAPIEntry["status"] }) {
   );
 }
 
-export function WebAPIs() {
+interface WebAPIsProps {
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+}
+
+export function WebAPIs({ collapsible, defaultCollapsed }: WebAPIsProps = {}) {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const activeEntries = currentStep?.webAPIs ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
@@ -46,6 +51,8 @@ export function WebAPIs() {
       glowEffect={THEME.glow.webAPIs}
       className="shrink-0"
       scrollable={false}
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
     >
       {activeEntries.length === 0 ? (
         <div className="flex items-center justify-center h-full">

@@ -12,7 +12,15 @@ const METHOD_COLORS: Record<ConsoleMethod, string> = {
   error: THEME.colors.status.error,
 };
 
-export function ConsoleOutput() {
+interface ConsoleOutputProps {
+  collapsible?: boolean;
+  defaultCollapsed?: boolean;
+}
+
+export function ConsoleOutput({
+  collapsible,
+  defaultCollapsed,
+}: ConsoleOutputProps = {}) {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const entries = currentStep?.console ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
@@ -22,6 +30,8 @@ export function ConsoleOutput() {
       title="console"
       borderColor={THEME.colors.border.console}
       className="shrink-0 min-h-24 max-h-40"
+      collapsible={collapsible}
+      defaultCollapsed={defaultCollapsed}
     >
       <div
         className="flex flex-col gap-1 h-full overflow-y-auto"

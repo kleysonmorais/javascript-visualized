@@ -20,12 +20,13 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import type { EventLoopPhase } from "@/types";
 
 function FlowArrow({ visible }: { visible: boolean }) {
   return (
     <div
-      className="flex justify-center"
+      className="hidden lg:flex justify-center"
       style={{
         height: 16,
         opacity: visible ? 1 : 0,
@@ -48,9 +49,7 @@ function MicrotaskFlowArrow({
   const Icon = direction === "down" ? ChevronDown : ChevronRight;
   return (
     <div
-      className={
-        direction === "down" ? "flex justify-center" : "flex items-center"
-      }
+      className={`hidden lg:flex ${direction === "down" ? "justify-center" : "items-center"}`}
       style={{
         height: direction === "down" ? 16 : "auto",
         width: direction === "right" ? 16 : "auto",
@@ -85,12 +84,14 @@ export function AppShell() {
   const showMicrotaskFlow =
     hasMicrotaskQueue || isMicrotaskPhase(eventLoopPhase);
 
+  const isMobile = useIsMobile();
+
   useAutoPlay();
   useKeyboardShortcuts();
 
   return (
     <div
-      className="h-screen flex flex-col overflow-hidden"
+      className="h-screen min-w-[320px] flex flex-col overflow-hidden"
       style={{
         backgroundColor: THEME.colors.bg.primary,
         fontFamily: THEME.fonts.ui,
@@ -99,22 +100,24 @@ export function AppShell() {
       {/* Navbar */}
       <Navbar />
 
-      {/* Main layout: left (editor + console) | right (visualizer panels) */}
-      <main className="flex-1 overflow-hidden p-2 flex gap-2 min-h-0">
-        {/* Left column: Code Editor + Console */}
-        <div className="flex flex-col gap-2 w-1/2 min-h-0 overflow-hidden">
+      {/* Main layout: responsive grid - stacked on mobile, side-by-side on desktop */}
+      <main className="flex-1 min-h-0 p-2 gap-2 overflow-y-auto lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(350px,2fr)_3fr]">
+        {/* Left column on desktop / First section on mobile: Code Editor + Console */}
+        <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
           {/* Code Editor */}
           <Panel
             title="Code"
             borderColor={THEME.colors.border.editor}
-            className="flex-1 min-h-0"
+            className="flex-1 min-h-0 lg:min-h-50"
             scrollable={false}
+            collapsible={isMobile}
+            defaultCollapsed={isMobile}
             headerRight={
               <div className="flex items-center gap-2">
                 {hasSteps && (
                   <button
                     onClick={resetToEdit}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors min-h-9 lg:min-h-0"
                     style={{
                       backgroundColor: THEME.colors.bg.elevated,
                       border: `1px solid ${THEME.colors.border.editor}`,
@@ -146,7 +149,7 @@ export function AppShell() {
                     runCode();
                   }}
                   disabled={isRunning}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded transition-all"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded transition-all min-h-9 lg:min-h-0"
                   style={{
                     backgroundColor: isRunning
                       ? THEME.colors.bg.elevated
@@ -178,7 +181,7 @@ export function AppShell() {
             }
           >
             {/* Override inner padding to let Monaco fill the panel */}
-            <div className="-m-3 h-full">
+            <div className="-m-3 h-full min-h-50 lg:min-h-0">
               <CodeEditor />
             </div>
             {/* Error display */}
@@ -193,9 +196,10 @@ export function AppShell() {
                   color: THEME.colors.status.error,
                 }}
               >
-                <span>{error}</span>
+                <span className="wrap-break-word">{error}</span>
                 <button
                   onClick={clearError}
+                  className="min-w-6 min-h-6"
                   style={{
                     marginLeft: 12,
                     padding: "2px 6px",
@@ -214,39 +218,44 @@ export function AppShell() {
             )}
           </Panel>
 
-          {/* Console */}
-          <ConsoleOutput />
+          {/* Console - only shown in desktop left column */}
+          <div className="hidden lg:block">
+            <ConsoleOutput />
+          </div>
         </div>
 
-        {/* Right column: Visualizer panels */}
-        <div className="flex flex-col w-1/2 gap-2 min-h-0 overflow-hidden">
-          {/* Top row: Call Stack + Memory */}
-          <div className="flex gap-2 flex-1 min-h-0">
-            <CallStack />
-            <MemoryPanel />
+        {/* Right column on desktop / Rest of panels on mobile: Visualizer panels */}
+        <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
+          {/* Desktop: Top row - Call Stack + Memory side by side */}
+          {/* Mobile: Stacked individually */}
+          <div className="flex flex-col lg:flex-row gap-2 lg:flex-1 lg:min-h-0">
+            <CallStack collapsible={isMobile} />
+            <MemoryPanel collapsible={isMobile} />
           </div>
 
-          {/* Flow indicator: Call Stack/Memory → Web APIs */}
+          {/* Flow indicator: Call Stack/Memory → Web APIs (desktop only) */}
           <FlowArrow visible={hasWebAPIs} />
 
-          {/* Middle row: Web APIs */}
-          <WebAPIs />
+          {/* Web APIs */}
+          <WebAPIs collapsible={isMobile} defaultCollapsed={isMobile} />
 
-          {/* Flow indicator: Web APIs → Task Queue */}
+          {/* Flow indicator: Web APIs → Task Queue (desktop only) */}
           <FlowArrow visible={hasTaskQueue} />
 
-          {/* Bottom row: Event Loop + Queues with flow indicators */}
-          <div className="flex gap-2 items-stretch">
-            <div className="flex flex-col items-center gap-1 shrink-0">
+          {/* Desktop: Bottom row - Event Loop + Queues with flow indicators */}
+          {/* Mobile: Stacked queues */}
+          <div className="flex flex-col lg:flex-row gap-2 lg:items-stretch">
+            {/* Event Loop - inline on mobile, column on desktop */}
+            <div className="flex lg:flex-col items-center gap-1 shrink-0">
               <EventLoopIndicator />
-              {/* Flow indicator: Event Loop picks from queues */}
+              {/* Flow indicator: Event Loop picks from queues (desktop only) */}
               <MicrotaskFlowArrow
                 visible={showMicrotaskFlow}
                 direction="right"
               />
             </div>
             <div className="flex flex-col gap-2 flex-1 min-w-0">
-              {/* Microtask Queue with flow indicator from Promises */}
+              {/* Microtask Queue with flow indicator */}
               <div className="flex flex-col">
                 <MicrotaskFlowArrow
                   visible={showMicrotaskFlow}
@@ -257,6 +266,11 @@ export function AppShell() {
               {/* Task Queue */}
               <TaskQueue />
             </div>
+          </div>
+
+          {/* Console - shown at bottom on mobile */}
+          <div className="lg:hidden">
+            <ConsoleOutput collapsible={isMobile} />
           </div>
         </div>
       </main>
