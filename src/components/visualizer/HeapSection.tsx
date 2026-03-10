@@ -13,6 +13,7 @@ import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { ClosureVariable, HeapObject, HeapObjectProperty } from "@/types";
+import { SyntaxHighlightedSource } from "@/utils/syntaxHighlight";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -697,19 +698,7 @@ function HeapCard({
         label={label}
         badge={badge}
       >
-        <pre
-          style={{
-            margin: 0,
-            fontFamily: THEME.fonts.code,
-            fontSize: 10,
-            color: THEME.colors.syntax.function,
-            whiteSpace: "pre-wrap",
-            wordBreak: "break-all",
-            opacity: 0.8,
-          }}
-        >
-          {src}
-        </pre>
+        <SyntaxHighlightedSource src={src} />
         <ClosureScopeSection obj={obj} />
       </HeapCardShell>
     );
