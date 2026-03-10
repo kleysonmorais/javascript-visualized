@@ -1,6 +1,8 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Check, Clock, X, Pause, Play, Square } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { ClosureVariable, HeapObject, HeapObjectProperty } from "@/types";
 
 function primitiveColor(displayValue: string): string {
@@ -372,6 +374,7 @@ function PromiseHeapCard({
   isHighlighted: boolean;
 }) {
   const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   // Separate internal slots from regular properties
   const internalSlots =
@@ -380,14 +383,19 @@ function PromiseHeapCard({
     obj.properties?.filter((p) => !p.key.startsWith("[[")) ?? [];
 
   return (
-    <div
+    <motion.div
+      animate={{
+        boxShadow: isHighlighted
+          ? `0 0 12px ${obj.color}50`
+          : "0 0 0px transparent",
+        borderColor: isHighlighted ? obj.color : `${obj.color}44`,
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.sm,
         padding: "8px 10px",
         border: `1px solid ${isHighlighted ? obj.color : `${obj.color}44`}`,
-        boxShadow: isHighlighted ? `0 0 12px ${obj.color}50` : "none",
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredHeapId(obj.id)}
@@ -448,7 +456,7 @@ function PromiseHeapCard({
           ))}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -461,6 +469,7 @@ function GeneratorHeapCard({
   isHighlighted: boolean;
 }) {
   const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   // Extract generator state
   const stateProp = obj.properties?.find((p) => p.key === "[[GeneratorState]]");
@@ -478,16 +487,21 @@ function GeneratorHeapCard({
   const borderStyle = isSuspended ? "dashed" : "solid";
 
   return (
-    <div
+    <motion.div
+      animate={{
+        opacity: isSuspended ? 0.85 : 1,
+        boxShadow: isHighlighted
+          ? `0 0 12px ${obj.color}50`
+          : "0 0 0px transparent",
+        borderColor: isHighlighted ? obj.color : `${obj.color}44`,
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.sm,
         padding: "8px 10px",
         border: `1px ${borderStyle} ${isHighlighted ? obj.color : `${obj.color}44`}`,
-        boxShadow: isHighlighted ? `0 0 12px ${obj.color}50` : "none",
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         cursor: "pointer",
-        opacity: isSuspended ? 0.85 : 1,
       }}
       onMouseEnter={() => setHoveredHeapId(obj.id)}
       onMouseLeave={() => setHoveredHeapId(null)}
@@ -606,7 +620,7 @@ function GeneratorHeapCard({
           </span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -617,16 +631,22 @@ interface HeapCardProps {
 
 function HeapCard({ obj, isHighlighted }: HeapCardProps) {
   const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   return (
-    <div
+    <motion.div
+      animate={{
+        boxShadow: isHighlighted
+          ? `0 0 12px ${obj.color}50`
+          : "0 0 0px transparent",
+        borderColor: isHighlighted ? obj.color : `${obj.color}33`,
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.sm,
         padding: "6px 8px",
         border: `1px solid ${isHighlighted ? obj.color : `${obj.color}33`}`,
-        boxShadow: isHighlighted ? `0 0 12px ${obj.color}50` : "none",
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredHeapId(obj.id)}
@@ -753,7 +773,7 @@ function HeapCard({ obj, isHighlighted }: HeapCardProps) {
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -763,6 +783,7 @@ interface HeapSectionProps {
 
 export function HeapSection({ heap }: HeapSectionProps) {
   const hoveredPointerId = useVisualizerStore((s) => s.hoveredPointerId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   // Separate Promise objects, Generator objects, and other heap objects for grouping
   const promiseObjects = heap.filter(isPromiseObject);
@@ -805,13 +826,26 @@ export function HeapSection({ heap }: HeapSectionProps) {
       ) : (
         <div className="flex flex-col gap-2">
           {/* Regular heap objects first */}
-          {otherObjects.map((obj) => (
-            <HeapCard
-              key={obj.id}
-              obj={obj}
-              isHighlighted={hoveredPointerId === obj.id}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {otherObjects.map((obj) => (
+              <motion.div
+                key={obj.id}
+                initial={
+                  shouldReduceMotion ? false : { opacity: 0, scale: 0.9 }
+                }
+                animate={{ opacity: 1, scale: 1 }}
+                exit={
+                  shouldReduceMotion ? undefined : { opacity: 0, scale: 0.9 }
+                }
+                transition={{ duration: duration.normal }}
+              >
+                <HeapCard
+                  obj={obj}
+                  isHighlighted={hoveredPointerId === obj.id}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {/* Generator objects grouped together */}
           {generatorObjects.length > 0 &&
@@ -837,13 +871,26 @@ export function HeapSection({ heap }: HeapSectionProps) {
                 </div>
               </div>
             )}
-          {generatorObjects.map((obj) => (
-            <GeneratorHeapCard
-              key={obj.id}
-              obj={obj}
-              isHighlighted={hoveredPointerId === obj.id}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {generatorObjects.map((obj) => (
+              <motion.div
+                key={obj.id}
+                initial={
+                  shouldReduceMotion ? false : { opacity: 0, scale: 0.9 }
+                }
+                animate={{ opacity: 1, scale: 1 }}
+                exit={
+                  shouldReduceMotion ? undefined : { opacity: 0, scale: 0.9 }
+                }
+                transition={{ duration: duration.normal }}
+              >
+                <GeneratorHeapCard
+                  obj={obj}
+                  isHighlighted={hoveredPointerId === obj.id}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
 
           {/* Promise objects grouped together */}
           {promiseObjects.length > 0 &&
@@ -869,13 +916,26 @@ export function HeapSection({ heap }: HeapSectionProps) {
                 </div>
               </div>
             )}
-          {promiseObjects.map((obj) => (
-            <PromiseHeapCard
-              key={obj.id}
-              obj={obj}
-              isHighlighted={hoveredPointerId === obj.id}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {promiseObjects.map((obj) => (
+              <motion.div
+                key={obj.id}
+                initial={
+                  shouldReduceMotion ? false : { opacity: 0, scale: 0.9 }
+                }
+                animate={{ opacity: 1, scale: 1 }}
+                exit={
+                  shouldReduceMotion ? undefined : { opacity: 0, scale: 0.9 }
+                }
+                transition={{ duration: duration.normal }}
+              >
+                <PromiseHeapCard
+                  obj={obj}
+                  isHighlighted={hoveredPointerId === obj.id}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </div>

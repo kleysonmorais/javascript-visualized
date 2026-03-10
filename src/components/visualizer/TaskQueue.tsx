@@ -1,10 +1,13 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 
 export function TaskQueue() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const tasks = currentStep?.taskQueue ?? [];
+  const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
 
   return (
     <Panel
@@ -38,46 +41,52 @@ export function TaskQueue() {
           >
             ▶
           </span>
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              style={{
-                backgroundColor: THEME.colors.bg.tertiary,
-                border: `1px solid ${THEME.colors.border.taskQueue}`,
-                borderRadius: THEME.radius.md,
-                padding: "6px 10px",
-                flexShrink: 0,
-                minWidth: 100,
-                maxWidth: 160,
-              }}
-            >
-              <div
+          <AnimatePresence mode="popLayout">
+            {tasks.map((task) => (
+              <motion.div
+                key={task.id}
+                initial={shouldReduceMotion ? false : { opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, x: -30 }}
+                transition={getSpringTransition()}
                 style={{
-                  fontFamily: THEME.fonts.code,
-                  fontSize: 12,
-                  color: THEME.colors.text.primary,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-                title={task.callbackLabel}
-              >
-                {task.callbackLabel.length > 40
-                  ? task.callbackLabel.slice(0, 40) + "…"
-                  : task.callbackLabel}
-              </div>
-              <div
-                style={{
-                  fontFamily: THEME.fonts.ui,
-                  fontSize: 10,
-                  color: THEME.colors.text.muted,
-                  marginTop: 2,
+                  backgroundColor: THEME.colors.bg.tertiary,
+                  border: `1px solid ${THEME.colors.border.taskQueue}`,
+                  borderRadius: THEME.radius.md,
+                  padding: "6px 10px",
+                  flexShrink: 0,
+                  minWidth: 100,
+                  maxWidth: 160,
                 }}
               >
-                {task.sourceType}
-              </div>
-            </div>
-          ))}
+                <div
+                  style={{
+                    fontFamily: THEME.fonts.code,
+                    fontSize: 12,
+                    color: THEME.colors.text.primary,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={task.callbackLabel}
+                >
+                  {task.callbackLabel.length > 40
+                    ? task.callbackLabel.slice(0, 40) + "…"
+                    : task.callbackLabel}
+                </div>
+                <div
+                  style={{
+                    fontFamily: THEME.fonts.ui,
+                    fontSize: 10,
+                    color: THEME.colors.text.muted,
+                    marginTop: 2,
+                  }}
+                >
+                  {task.sourceType}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </Panel>

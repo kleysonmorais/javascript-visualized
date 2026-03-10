@@ -1,5 +1,7 @@
+import { motion } from "framer-motion";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { MemoryBlock, MemoryEntry } from "@/types";
 
 interface PointerBadgeProps {
@@ -14,25 +16,28 @@ function PointerBadge({
   isHighlighted,
 }: PointerBadgeProps) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   return (
-    <span
+    <motion.span
       style={{
         color,
         fontSize: 10,
         lineHeight: 1,
         marginLeft: 4,
-        transition: "text-shadow 0.2s ease",
-        textShadow: isHighlighted ? `0 0 8px ${color}` : "none",
         cursor: heapReferenceId ? "pointer" : "default",
       }}
+      animate={{
+        textShadow: isHighlighted ? `0 0 8px ${color}` : "0 0 0px transparent",
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
       onMouseEnter={() =>
         heapReferenceId && setHoveredPointerId(heapReferenceId)
       }
       onMouseLeave={() => heapReferenceId && setHoveredPointerId(null)}
     >
       ●
-    </span>
+    </motion.span>
   );
 }
 
@@ -54,21 +59,24 @@ interface EntryValueProps {
 
 function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   if (entry.valueType === "function") {
     const isGenerator = entry.displayValue === "ⓕ*";
     return (
-      <span
+      <motion.span
         style={{
           fontFamily: THEME.fonts.code,
           fontSize: 12,
           cursor: entry.heapReferenceId ? "pointer" : "default",
-          transition: "text-shadow 0.2s ease",
+        }}
+        animate={{
           textShadow:
             isPointerHighlighted && entry.pointerColor
               ? `0 0 8px ${entry.pointerColor}`
-              : "none",
+              : "0 0 0px transparent",
         }}
+        transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
         onMouseEnter={() =>
           entry.heapReferenceId && setHoveredPointerId(entry.heapReferenceId)
         }
@@ -89,22 +97,24 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
             isHighlighted={isPointerHighlighted}
           />
         )}
-      </span>
+      </motion.span>
     );
   }
   if (entry.valueType === "object") {
     return (
-      <span
+      <motion.span
         style={{
           fontFamily: THEME.fonts.code,
           fontSize: 12,
           cursor: entry.heapReferenceId ? "pointer" : "default",
-          transition: "text-shadow 0.2s ease",
+        }}
+        animate={{
           textShadow:
             isPointerHighlighted && entry.pointerColor
               ? `0 0 8px ${entry.pointerColor}`
-              : "none",
+              : "0 0 0px transparent",
         }}
+        transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
         onMouseEnter={() =>
           entry.heapReferenceId && setHoveredPointerId(entry.heapReferenceId)
         }
@@ -120,19 +130,31 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
             isHighlighted={isPointerHighlighted}
           />
         )}
-      </span>
+      </motion.span>
     );
   }
+  // Primitive value with change highlight animation
   return (
-    <span
+    <motion.span
+      key={`${entry.name}-${entry.displayValue}`}
+      initial={
+        shouldReduceMotion
+          ? false
+          : { backgroundColor: "rgba(34, 211, 238, 0.2)" }
+      }
+      animate={{ backgroundColor: "rgba(34, 211, 238, 0)" }}
+      transition={{ duration: duration.highlight }}
       style={{
         fontFamily: THEME.fonts.code,
         fontSize: 12,
         color: primitiveColor(entry.displayValue),
+        borderRadius: 2,
+        padding: "0 2px",
+        margin: "0 -2px",
       }}
     >
       {entry.displayValue}
-    </span>
+    </motion.span>
   );
 }
 
@@ -144,6 +166,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
   const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   const isFrameHighlighted = hoveredFrameId === block.frameId;
   const isSuspended = block.suspended === true;
@@ -151,7 +174,15 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
   const suspendedColor = THEME.colors.status.pending; // amber
 
   return (
-    <div
+    <motion.div
+      animate={{
+        opacity: isSuspended ? 0.5 : 1,
+        boxShadow: isFrameHighlighted
+          ? `0 0 12px ${block.color}50`
+          : "0 0 0px transparent",
+        borderColor: isFrameHighlighted ? block.color : `${block.color}33`,
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.medium }}
       style={{
         border: `1px solid ${isFrameHighlighted ? block.color : `${block.color}33`}`,
         borderLeftWidth: 3,
@@ -164,10 +195,6 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
         borderRadius: THEME.radius.sm,
         backgroundColor: THEME.colors.bg.elevated,
         padding: "8px 10px",
-        boxShadow: isFrameHighlighted ? `0 0 12px ${block.color}50` : "none",
-        opacity: isSuspended ? 0.5 : 1,
-        transition:
-          "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredFrameId(block.frameId)}
@@ -273,6 +300,6 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
           })}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

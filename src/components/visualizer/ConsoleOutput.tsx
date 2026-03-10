@@ -1,6 +1,8 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { ConsoleMethod } from "@/types";
 
 const METHOD_COLORS: Record<ConsoleMethod, string> = {
@@ -13,6 +15,7 @@ const METHOD_COLORS: Record<ConsoleMethod, string> = {
 export function ConsoleOutput() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const entries = currentStep?.console ?? [];
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   return (
     <Panel
@@ -36,14 +39,22 @@ export function ConsoleOutput() {
             <span style={{ color: THEME.colors.text.accent }}>{">"}</span>
           </span>
         ) : (
-          entries.map((entry) => (
-            <div key={entry.id} className="flex gap-2">
-              <span style={{ color: THEME.colors.text.accent }}>{">"}</span>
-              <span style={{ color: METHOD_COLORS[entry.method] }}>
-                {entry.args.join(" ")}
-              </span>
-            </div>
-          ))
+          <AnimatePresence mode="popLayout">
+            {entries.map((entry) => (
+              <motion.div
+                key={entry.id}
+                className="flex gap-2"
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: duration.normal }}
+              >
+                <span style={{ color: THEME.colors.text.accent }}>{">"}</span>
+                <span style={{ color: METHOD_COLORS[entry.method] }}>
+                  {entry.args.join(" ")}
+                </span>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         )}
       </div>
     </Panel>

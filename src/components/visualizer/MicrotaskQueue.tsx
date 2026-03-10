@@ -1,6 +1,8 @@
+import { motion, AnimatePresence } from "framer-motion";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { QueueItem } from "@/types";
 
 interface MicrotaskCardProps {
@@ -10,9 +12,19 @@ interface MicrotaskCardProps {
 
 function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   return (
-    <div
+    <motion.div
+      animate={{
+        boxShadow: isHighlighted
+          ? `0 0 12px ${THEME.colors.border.microtaskQueue}50`
+          : "0 0 0px transparent",
+        borderColor: isHighlighted
+          ? THEME.colors.border.microtaskQueue
+          : THEME.colors.border.microtaskQueue,
+      }}
+      transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         border: `1px solid ${THEME.colors.border.microtaskQueue}`,
@@ -21,10 +33,6 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
         flexShrink: 0,
         minWidth: 100,
         maxWidth: 180,
-        boxShadow: isHighlighted
-          ? `0 0 12px ${THEME.colors.border.microtaskQueue}50`
-          : "none",
-        transition: "box-shadow 0.2s ease, border-color 0.2s ease",
         cursor: "pointer",
       }}
       onMouseEnter={() => task.sourceId && setHoveredPointerId(task.sourceId)}
@@ -61,7 +69,7 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
       >
         {task.sourceType === "promise" ? "Promise" : task.sourceType}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -69,6 +77,7 @@ export function MicrotaskQueue() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const microtasks = currentStep?.microtaskQueue ?? [];
+  const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
 
   return (
     <Panel
@@ -107,13 +116,22 @@ export function MicrotaskQueue() {
             <span style={{ fontSize: 12 }}>▶</span>
             <span style={{ fontSize: 8, opacity: 0.7 }}>OUT</span>
           </div>
-          {microtasks.map((task) => (
-            <MicrotaskCard
-              key={task.id}
-              task={task}
-              isHighlighted={hoveredHeapId === task.sourceId}
-            />
-          ))}
+          <AnimatePresence mode="popLayout">
+            {microtasks.map((task) => (
+              <motion.div
+                key={task.id}
+                initial={shouldReduceMotion ? false : { opacity: 0, x: 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={shouldReduceMotion ? undefined : { opacity: 0, x: -30 }}
+                transition={getSpringTransition()}
+              >
+                <MicrotaskCard
+                  task={task}
+                  isHighlighted={hoveredHeapId === task.sourceId}
+                />
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       )}
     </Panel>

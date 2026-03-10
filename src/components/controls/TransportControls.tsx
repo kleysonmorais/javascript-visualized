@@ -1,3 +1,4 @@
+import { motion, AnimatePresence } from "framer-motion";
 import {
   SkipBack,
   ChevronLeft,
@@ -9,6 +10,7 @@ import {
   Clock,
 } from "lucide-react";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import { THEME } from "@/constants/theme";
 import type { PlaybackSpeed } from "@/types";
 
@@ -58,6 +60,7 @@ export function TransportControls() {
     goToEnd,
     setSpeed,
   } = useVisualizerStore();
+  const { duration, shouldReduceMotion } = useAnimationConfig();
 
   const atStart = currentStepIndex === 0;
   const atEnd = currentStepIndex === totalSteps - 1;
@@ -149,10 +152,14 @@ export function TransportControls() {
           </button>
 
           {/* Play/Pause — emphasized */}
-          <button
+          <motion.button
             onClick={togglePlayback}
             disabled={noSteps}
             title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+            whileTap={
+              shouldReduceMotion || noSteps ? undefined : { scale: 0.92 }
+            }
+            transition={{ duration: duration.fast }}
             style={{
               ...btnBase,
               padding: "8px 12px",
@@ -166,7 +173,7 @@ export function TransportControls() {
             }}
           >
             {isPlaying ? <Pause size={18} /> : <Play size={18} />}
-          </button>
+          </motion.button>
 
           {/* Step forward */}
           <button
@@ -267,7 +274,19 @@ export function TransportControls() {
           }}
         >
           Step{" "}
-          {totalSteps === 0 ? "—" : `${currentStepIndex + 1} / ${totalSteps}`}
+          <AnimatePresence mode="wait">
+            <motion.span
+              key={totalSteps === 0 ? "empty" : currentStepIndex}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: -5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={shouldReduceMotion ? undefined : { opacity: 0, y: 5 }}
+              transition={{ duration: duration.fast }}
+            >
+              {totalSteps === 0
+                ? "—"
+                : `${currentStepIndex + 1} / ${totalSteps}`}
+            </motion.span>
+          </AnimatePresence>
         </span>
       </div>
 
