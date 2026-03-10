@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
@@ -22,19 +23,31 @@ export function ConsoleOutput({
   defaultCollapsed,
 }: ConsoleOutputProps = {}) {
   const currentStep = useVisualizerStore((s) => s.currentStep);
-  const entries = currentStep?.console ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  const entries = useMemo(
+    () => currentStep?.console ?? [],
+    [currentStep?.console],
+  );
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [entries]);
 
   return (
     <Panel
       title="console"
-      borderColor={THEME.colors.border.console}
-      className="shrink-0 min-h-24 max-h-40"
+      className="shrink-0"
       collapsible={collapsible}
       defaultCollapsed={defaultCollapsed}
     >
       <div
-        className="flex flex-col gap-1 h-full overflow-y-auto"
+        ref={scrollRef}
+        className="flex flex-col gap-1 h-full overflow-y-auto min-h-40 
+        max-h-40 2xl:min-h-60 2xl:max-h-60"
         style={{
           fontFamily: THEME.fonts.code,
           fontSize: 13,

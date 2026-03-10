@@ -44,11 +44,11 @@ export function WebAPIs({ collapsible, defaultCollapsed }: WebAPIsProps = {}) {
   const activeEntries = currentStep?.webAPIs ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
 
+  if (activeEntries.length === 0) return null;
+
   return (
     <Panel
       title="Web APIs"
-      borderColor={THEME.colors.border.webAPIs}
-      glowEffect={THEME.glow.webAPIs}
       className="shrink-0"
       scrollable={false}
       collapsible={collapsible}

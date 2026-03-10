@@ -79,13 +79,15 @@ export function MicrotaskQueue() {
   const microtasks = currentStep?.microtaskQueue ?? [];
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
 
+  if (
+    microtasks.length === 0 &&
+    currentStep?.eventLoop.phase !== "draining-microtasks"
+  ) {
+    return null;
+  }
+
   return (
-    <Panel
-      title="Microtask Queue"
-      borderColor={THEME.colors.border.microtaskQueue}
-      glowEffect={THEME.glow.microtaskQueue}
-      scrollable={false}
-    >
+    <Panel title="Microtask Queue" scrollable={false}>
       {microtasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span

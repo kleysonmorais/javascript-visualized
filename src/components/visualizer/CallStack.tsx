@@ -35,8 +35,6 @@ export function CallStack({
   return (
     <Panel
       title="Call Stack"
-      borderColor={THEME.colors.border.callStack}
-      glowEffect={THEME.glow.callStack}
       className="flex-1 min-h-0"
       collapsible={collapsible}
       defaultCollapsed={defaultCollapsed}

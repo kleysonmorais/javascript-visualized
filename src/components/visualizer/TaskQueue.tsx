@@ -9,13 +9,12 @@ export function TaskQueue() {
   const tasks = currentStep?.taskQueue ?? [];
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
 
+  if (tasks.length === 0 && currentStep?.eventLoop.phase !== "picking-task") {
+    return null;
+  }
+
   return (
-    <Panel
-      title="Task Queue"
-      borderColor={THEME.colors.border.taskQueue}
-      glowEffect={THEME.glow.taskQueue}
-      scrollable={false}
-    >
+    <Panel title="Task Queue" scrollable={false}>
       {tasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span

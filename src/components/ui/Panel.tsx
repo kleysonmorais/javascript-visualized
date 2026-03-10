@@ -1,11 +1,10 @@
 import { useState, type ReactNode } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import { THEME } from "@/constants/theme";
 
 interface PanelProps {
   title: string;
-  borderColor: string;
-  glowEffect?: string;
   className?: string;
   headerRight?: ReactNode;
   children: ReactNode;
@@ -18,8 +17,6 @@ interface PanelProps {
 
 export function Panel({
   title,
-  borderColor,
-  glowEffect,
   className = "",
   headerRight,
   children,
@@ -40,15 +37,16 @@ export function Panel({
       className={`relative flex flex-col rounded-lg border-2 ${isCollapsed ? "" : "min-h-0"} ${className}`}
       style={{
         backgroundColor: "#12121a",
-        borderColor,
-        boxShadow: glowEffect,
+        borderColor: THEME.colors.border.primary,
       }}
     >
       <div
         className={`px-3 py-2 text-xs font-semibold uppercase tracking-widest flex items-center justify-between shrink-0 ${collapsible ? "cursor-pointer select-none" : ""}`}
         style={{
-          color: borderColor,
-          borderBottom: isCollapsed ? "none" : `1px solid ${borderColor}22`,
+          color: "white",
+          borderBottom: isCollapsed
+            ? "none"
+            : `1px solid ${THEME.colors.border.primary}`,
         }}
         onClick={handleHeaderClick}
         onTouchStart={collapsible ? handleHeaderClick : undefined}

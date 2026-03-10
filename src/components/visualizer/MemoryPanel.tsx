@@ -28,7 +28,6 @@ export function MemoryPanel({
   return (
     <Panel
       title="Memory"
-      borderColor={THEME.colors.border.memory}
       className="flex-1 min-h-0"
       collapsible={collapsible}
       defaultCollapsed={defaultCollapsed}

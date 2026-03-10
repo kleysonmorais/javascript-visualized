@@ -17,6 +17,7 @@ export const THEME = {
       console: "#6b7280", // gray
       editor: "#374151", // dark gray
       memory: "#a855f7", // purple — matches webAPIs panel area
+      primary: "#374151", // dark gray
     },
     // Text
     text: {

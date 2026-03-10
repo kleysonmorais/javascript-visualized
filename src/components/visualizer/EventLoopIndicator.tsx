@@ -78,7 +78,7 @@ function PriorityIndicator({ phase }: { phase: EventLoopPhase }) {
         padding: "6px 8px",
         backgroundColor: `${THEME.colors.bg.tertiary}`,
         borderRadius: THEME.radius.sm,
-        fontSize: 9,
+        fontSize: 12,
         fontFamily: THEME.fonts.ui,
       }}
     >
@@ -127,12 +127,7 @@ export function EventLoopIndicator() {
   };
 
   return (
-    <Panel
-      title="Event Loop"
-      borderColor={THEME.colors.border.eventLoop}
-      glowEffect={THEME.glow.eventLoop}
-      className="w-36"
-    >
+    <Panel title="Event Loop" className="w-48">
       <style>{`
         @keyframes event-loop-spin {
           from { transform: rotate(0deg); }
