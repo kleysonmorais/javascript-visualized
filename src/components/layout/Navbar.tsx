@@ -29,7 +29,7 @@ export function Navbar() {
 
       {/* Right side - GitHub link */}
       <a
-        href="https://github.com/kleysondev/js-visualizer"
+        href="https://github.com/kleysonmorais/javascript-visualized"
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors min-h-9 min-w-9 justify-center"
