@@ -1,27 +1,31 @@
-import { Globe } from 'lucide-react';
-import { Panel } from '@/components/ui/Panel';
-import { THEME } from '@/constants/theme';
-import { useVisualizerStore } from '@/store/useVisualizerStore';
-import type { WebAPIEntry } from '@/types';
+import { Globe } from "lucide-react";
+import { Panel } from "@/components/ui/Panel";
+import { THEME } from "@/constants/theme";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
+import type { WebAPIEntry } from "@/types";
 
-function statusBorderColor(status: WebAPIEntry['status']): string {
-  if (status === 'running') return THEME.colors.border.webAPIs;
-  if (status === 'cancelled') return THEME.colors.status.error;
+function statusBorderColor(status: WebAPIEntry["status"]): string {
+  if (status === "running") return THEME.colors.border.webAPIs;
+  if (status === "cancelled") return THEME.colors.status.error;
   return THEME.colors.status.completed;
 }
 
-function StatusDot({ status }: { status: WebAPIEntry['status'] }) {
+function StatusDot({ status }: { status: WebAPIEntry["status"] }) {
   const color =
-    status === 'running'
+    status === "running"
       ? THEME.colors.status.running
-      : status === 'cancelled'
-      ? THEME.colors.status.error
-      : THEME.colors.status.completed;
+      : status === "cancelled"
+        ? THEME.colors.status.error
+        : THEME.colors.status.completed;
 
   return (
     <span className="flex items-center gap-1" style={{ fontSize: 11, color }}>
       <span style={{ fontSize: 8 }}>●</span>
-      <span style={{ textDecoration: status === 'cancelled' ? 'line-through' : 'none' }}>
+      <span
+        style={{
+          textDecoration: status === "cancelled" ? "line-through" : "none",
+        }}
+      >
         {status}
       </span>
     </span>
@@ -37,12 +41,17 @@ export function WebAPIs() {
       title="Web APIs"
       borderColor={THEME.colors.border.webAPIs}
       glowEffect={THEME.glow.webAPIs}
+      className="shrink-0"
+      scrollable={false}
     >
       {activeEntries.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
             className="text-center text-xs"
-            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+            style={{
+              color: THEME.colors.text.muted,
+              fontFamily: THEME.fonts.ui,
+            }}
           >
             Web APIs will appear here when the code uses setTimeout, fetch, etc.
           </span>
@@ -50,21 +59,21 @@ export function WebAPIs() {
       ) : (
         <div className="flex flex-col gap-2 overflow-y-auto">
           {activeEntries.map((entry) => {
-            const isCompleted = entry.status === 'completed';
-            const isCancelled = entry.status === 'cancelled';
+            const isCompleted = entry.status === "completed";
+            const isCancelled = entry.status === "cancelled";
             const progress =
               entry.delay && entry.elapsed !== undefined
                 ? Math.min(entry.elapsed / entry.delay, 1)
                 : 0;
             const borderColor = statusBorderColor(entry.status);
 
-            const isFetch = entry.type === 'fetch';
+            const isFetch = entry.type === "fetch";
             const promiseStateColor =
-              entry.promiseState === 'fulfilled'
+              entry.promiseState === "fulfilled"
                 ? THEME.colors.status.running
-                : entry.promiseState === 'rejected'
-                ? THEME.colors.status.error
-                : THEME.colors.status.pending;
+                : entry.promiseState === "rejected"
+                  ? THEME.colors.status.error
+                  : THEME.colors.status.pending;
 
             return (
               <div
@@ -73,9 +82,9 @@ export function WebAPIs() {
                   backgroundColor: THEME.colors.bg.tertiary,
                   border: `1px solid ${borderColor}`,
                   borderRadius: THEME.radius.md,
-                  padding: '10px 12px',
+                  padding: "10px 12px",
                   opacity: isCompleted || isCancelled ? 0.6 : 1,
-                  transition: 'opacity 0.2s ease',
+                  transition: "opacity 0.2s ease",
                 }}
               >
                 {/* Header */}
@@ -87,9 +96,7 @@ export function WebAPIs() {
                     color: THEME.colors.syntax.function,
                   }}
                 >
-                  {isFetch && (
-                    <Globe size={13} style={{ flexShrink: 0 }} />
-                  )}
+                  {isFetch && <Globe size={13} style={{ flexShrink: 0 }} />}
                   {entry.type}
                 </div>
 
@@ -105,21 +112,21 @@ export function WebAPIs() {
                         flexShrink: 0,
                       }}
                     >
-                      {isFetch ? 'url' : 'callback'}
+                      {isFetch ? "url" : "callback"}
                     </span>
                     <span
                       style={{
                         fontSize: 11,
                         color: THEME.colors.text.secondary,
                         fontFamily: THEME.fonts.code,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                       }}
                       title={entry.callback}
                     >
                       {entry.callback.length > 60
-                        ? entry.callback.slice(0, 60) + '…'
+                        ? entry.callback.slice(0, 60) + "…"
                         : entry.callback}
                     </span>
                   </div>
@@ -157,7 +164,7 @@ export function WebAPIs() {
                           fontFamily: THEME.fonts.code,
                           minWidth: 52,
                           flexShrink: 0,
-                          fontStyle: 'italic',
+                          fontStyle: "italic",
                         }}
                       >
                         [[Promise]]
@@ -178,42 +185,45 @@ export function WebAPIs() {
                 </div>
 
                 {/* Progress bar */}
-                {entry.status === 'running' && entry.delay !== undefined && entry.delay > 0 && (
-                  <div
-                    style={{
-                      height: 4,
-                      borderRadius: 2,
-                      backgroundColor: THEME.colors.bg.primary,
-                      overflow: 'hidden',
-                      marginBottom: 8,
-                    }}
-                  >
+                {entry.status === "running" &&
+                  entry.delay !== undefined &&
+                  entry.delay > 0 && (
                     <div
                       style={{
-                        height: '100%',
-                        width: `${progress * 100}%`,
-                        backgroundColor: isFetch
-                          ? THEME.colors.border.webAPIs
-                          : THEME.colors.status.running,
-                        transition: 'width 0.3s ease',
+                        height: 4,
+                        borderRadius: 2,
+                        backgroundColor: THEME.colors.bg.primary,
+                        overflow: "hidden",
+                        marginBottom: 8,
                       }}
-                    />
-                  </div>
-                )}
+                    >
+                      <div
+                        style={{
+                          height: "100%",
+                          width: `${progress * 100}%`,
+                          backgroundColor: isFetch
+                            ? THEME.colors.border.webAPIs
+                            : THEME.colors.status.running,
+                          transition: "width 0.3s ease",
+                        }}
+                      />
+                    </div>
+                  )}
 
                 {/* Status badge */}
                 <div className="flex justify-between items-center">
-                  {entry.elapsed !== undefined && entry.status === 'running' && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: THEME.colors.text.muted,
-                        fontFamily: THEME.fonts.code,
-                      }}
-                    >
-                      elapsed: {entry.elapsed}ms
-                    </span>
-                  )}
+                  {entry.elapsed !== undefined &&
+                    entry.status === "running" && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: THEME.colors.text.muted,
+                          fontFamily: THEME.fonts.code,
+                        }}
+                      >
+                        elapsed: {entry.elapsed}ms
+                      </span>
+                    )}
                   <div className="ml-auto">
                     <StatusDot status={entry.status} />
                   </div>

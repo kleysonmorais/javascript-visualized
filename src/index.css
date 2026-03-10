@@ -11,7 +11,7 @@
   --color-border-call-stack: #f59e0b;
   --color-border-web-apis: #a855f7;
   --color-border-task-queue: #ec4899;
-  --color-border-microtask-queue: #06b6d4;
+  --color-border-microtask-queue: #10b981;
   --color-border-event-loop: #06b6d4;
   --color-border-console: #6b7280;
   --color-border-editor: #374151;
@@ -37,8 +37,8 @@
   --color-status-error: #ef4444;
 
   /* Fonts */
-  --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
-  --font-ui: 'Geist', 'Inter', system-ui, sans-serif;
+  --font-code: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+  --font-ui: "Geist", "Inter", system-ui, sans-serif;
 
   /* Border radius */
   --radius-sm: 6px;
@@ -47,14 +47,16 @@
   --radius-xl: 16px;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-html, body, #root {
-  height: 100%;
-  margin: 0;
-  padding: 0;
+html,
+body,
+#root {
+  @apply h-full overflow-hidden m-0 p-0;
 }
 
 body {

@@ -1,6 +1,6 @@
-import { Panel } from '@/components/ui/Panel';
-import { THEME } from '@/constants/theme';
-import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { Panel } from "@/components/ui/Panel";
+import { THEME } from "@/constants/theme";
+import { useVisualizerStore } from "@/store/useVisualizerStore";
 
 export function TaskQueue() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
@@ -11,12 +11,16 @@ export function TaskQueue() {
       title="Task Queue"
       borderColor={THEME.colors.border.taskQueue}
       glowEffect={THEME.glow.taskQueue}
+      scrollable={false}
     >
       {tasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
             className="text-center text-xs"
-            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+            style={{
+              color: THEME.colors.text.muted,
+              fontFamily: THEME.fonts.ui,
+            }}
           >
             Callbacks from Web APIs will queue here
           </span>
@@ -29,7 +33,7 @@ export function TaskQueue() {
               fontSize: 12,
               color: THEME.colors.text.muted,
               flexShrink: 0,
-              userSelect: 'none',
+              userSelect: "none",
             }}
           >
             ▶
@@ -41,7 +45,7 @@ export function TaskQueue() {
                 backgroundColor: THEME.colors.bg.tertiary,
                 border: `1px solid ${THEME.colors.border.taskQueue}`,
                 borderRadius: THEME.radius.md,
-                padding: '6px 10px',
+                padding: "6px 10px",
                 flexShrink: 0,
                 minWidth: 100,
                 maxWidth: 160,
@@ -52,14 +56,14 @@ export function TaskQueue() {
                   fontFamily: THEME.fonts.code,
                   fontSize: 12,
                   color: THEME.colors.text.primary,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
                 title={task.callbackLabel}
               >
                 {task.callbackLabel.length > 40
-                  ? task.callbackLabel.slice(0, 40) + '…'
+                  ? task.callbackLabel.slice(0, 40) + "…"
                   : task.callbackLabel}
               </div>
               <div

@@ -7,6 +7,7 @@ interface PanelProps {
   className?: string;
   headerRight?: ReactNode;
   children: ReactNode;
+  scrollable?: boolean;
 }
 
 export function Panel({
@@ -16,19 +17,19 @@ export function Panel({
   className = "",
   headerRight,
   children,
+  scrollable = true,
 }: PanelProps) {
   return (
     <div
-      className={`flex flex-col rounded-[12px] overflow-hidden ${className}`}
+      className={`relative flex flex-col rounded-lg border-2 min-h-0 ${className}`}
       style={{
         backgroundColor: "#12121a",
-        border: `1.5px solid ${borderColor}`,
+        borderColor,
         boxShadow: glowEffect,
-        position: "relative",
       }}
     >
       <div
-        className="px-4 py-2 text-xs font-semibold uppercase tracking-widest flex items-center justify-between"
+        className="px-3 py-2 text-xs font-semibold uppercase tracking-widest flex items-center justify-between shrink-0"
         style={{
           color: borderColor,
           borderBottom: `1px solid ${borderColor}22`,
@@ -37,7 +38,11 @@ export function Panel({
         <span>{title}</span>
         {headerRight}
       </div>
-      <div className="flex-1 p-4">{children}</div>
+      <div
+        className={`flex-1 p-3 min-h-0 ${scrollable ? "overflow-y-auto" : ""}`}
+      >
+        {children}
+      </div>
     </div>
   );
 }

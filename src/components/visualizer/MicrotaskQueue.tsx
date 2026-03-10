@@ -75,6 +75,7 @@ export function MicrotaskQueue() {
       title="Microtask Queue"
       borderColor={THEME.colors.border.microtaskQueue}
       glowEffect={THEME.glow.microtaskQueue}
+      scrollable={false}
     >
       {microtasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">

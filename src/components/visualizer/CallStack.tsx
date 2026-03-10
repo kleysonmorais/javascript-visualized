@@ -26,13 +26,16 @@ export function CallStack() {
       title="Call Stack"
       borderColor={THEME.colors.border.callStack}
       glowEffect={THEME.glow.callStack}
-      className="flex-1"
+      className="flex-1 min-h-0"
     >
       {reversed.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
             className="text-center text-xs"
-            style={{ color: THEME.colors.text.muted, fontFamily: THEME.fonts.ui }}
+            style={{
+              color: THEME.colors.text.muted,
+              fontFamily: THEME.fonts.ui,
+            }}
           >
             Run code to see the Call Stack
           </span>
@@ -57,7 +60,8 @@ export function CallStack() {
                   color: THEME.colors.text.primary,
                   boxShadow: isHovered ? `0 0 12px ${color}50` : "none",
                   opacity: isSuspended ? 0.5 : 1,
-                  transition: "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
+                  transition:
+                    "box-shadow 0.2s ease, border-color 0.2s ease, opacity 0.3s ease",
                   cursor: "pointer",
                 }}
                 onMouseEnter={() => setHoveredFrameId(frame.id)}

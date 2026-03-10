@@ -1,4 +1,10 @@
-import { Play, Loader2, RotateCcw, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Play,
+  Loader2,
+  RotateCcw,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { CallStack } from "@/components/visualizer/CallStack";
@@ -10,6 +16,7 @@ import { EventLoopIndicator } from "@/components/visualizer/EventLoopIndicator";
 import { ConsoleOutput } from "@/components/visualizer/ConsoleOutput";
 import { Panel } from "@/components/ui/Panel";
 import { TransportControls } from "@/components/controls/TransportControls";
+import { Navbar } from "@/components/layout/Navbar";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -22,7 +29,7 @@ function FlowArrow({ visible }: { visible: boolean }) {
       style={{
         height: 16,
         opacity: visible ? 1 : 0,
-        transition: 'opacity 0.3s ease',
+        transition: "opacity 0.3s ease",
       }}
     >
       <ChevronDown size={16} color={THEME.colors.text.muted} />
@@ -33,20 +40,22 @@ function FlowArrow({ visible }: { visible: boolean }) {
 /** Cyan-colored flow arrow for microtask flows */
 function MicrotaskFlowArrow({
   visible,
-  direction = 'down',
+  direction = "down",
 }: {
   visible: boolean;
-  direction?: 'down' | 'right';
+  direction?: "down" | "right";
 }) {
-  const Icon = direction === 'down' ? ChevronDown : ChevronRight;
+  const Icon = direction === "down" ? ChevronDown : ChevronRight;
   return (
     <div
-      className={direction === 'down' ? 'flex justify-center' : 'flex items-center'}
+      className={
+        direction === "down" ? "flex justify-center" : "flex items-center"
+      }
       style={{
-        height: direction === 'down' ? 16 : 'auto',
-        width: direction === 'right' ? 16 : 'auto',
+        height: direction === "down" ? 16 : "auto",
+        width: direction === "right" ? 16 : "auto",
         opacity: visible ? 1 : 0,
-        transition: 'opacity 0.3s ease',
+        transition: "opacity 0.3s ease",
       }}
     >
       <Icon size={16} color={THEME.colors.border.microtaskQueue} />
@@ -56,7 +65,7 @@ function MicrotaskFlowArrow({
 
 /** Check if event loop is in a microtask-related phase */
 function isMicrotaskPhase(phase: EventLoopPhase): boolean {
-  return phase === 'checking-microtasks' || phase === 'draining-microtasks';
+  return phase === "checking-microtasks" || phase === "draining-microtasks";
 }
 
 export function AppShell() {
@@ -72,40 +81,34 @@ export function AppShell() {
   const hasWebAPIs = (currentStep?.webAPIs?.length ?? 0) > 0;
   const hasTaskQueue = (currentStep?.taskQueue?.length ?? 0) > 0;
   const hasMicrotaskQueue = (currentStep?.microtaskQueue?.length ?? 0) > 0;
-  const eventLoopPhase = currentStep?.eventLoop?.phase ?? 'idle';
-  const showMicrotaskFlow = hasMicrotaskQueue || isMicrotaskPhase(eventLoopPhase);
+  const eventLoopPhase = currentStep?.eventLoop?.phase ?? "idle";
+  const showMicrotaskFlow =
+    hasMicrotaskQueue || isMicrotaskPhase(eventLoopPhase);
 
   useAutoPlay();
   useKeyboardShortcuts();
 
   return (
     <div
-      className="min-h-screen p-6 flex flex-col gap-4"
+      className="h-screen flex flex-col overflow-hidden"
       style={{
         backgroundColor: THEME.colors.bg.primary,
         fontFamily: THEME.fonts.ui,
       }}
     >
-      {/* Header */}
-      <h1
-        className="text-2xl font-semibold tracking-tight text-center"
-        style={{ color: THEME.colors.text.primary }}
-      >
-        JS Execution Context Visualizer
-      </h1>
+      {/* Navbar */}
+      <Navbar />
 
       {/* Main layout: left (editor + console) | right (visualizer panels) */}
-      <div
-        className="flex gap-4 flex-1 min-h-0"
-        style={{ minHeight: "calc(100vh - 160px)" }}
-      >
+      <main className="flex-1 overflow-hidden p-2 flex gap-2 min-h-0">
         {/* Left column: Code Editor + Console */}
-        <div className="flex flex-col gap-4 w-1/2">
+        <div className="flex flex-col gap-2 w-1/2 min-h-0 overflow-hidden">
           {/* Code Editor */}
           <Panel
             title="Code"
             borderColor={THEME.colors.border.editor}
-            className="flex-1"
+            className="flex-1 min-h-0"
+            scrollable={false}
             headerRight={
               <div className="flex items-center gap-2">
                 {hasSteps && (
@@ -175,7 +178,7 @@ export function AppShell() {
             }
           >
             {/* Override inner padding to let Monaco fill the panel */}
-            <div className="-m-4 h-full" style={{ minHeight: 400 }}>
+            <div className="-m-3 h-full">
               <CodeEditor />
             </div>
             {/* Error display */}
@@ -216,9 +219,9 @@ export function AppShell() {
         </div>
 
         {/* Right column: Visualizer panels */}
-        <div className="flex flex-col w-1/2" style={{ gap: 0 }}>
+        <div className="flex flex-col w-1/2 gap-2 min-h-0 overflow-hidden">
           {/* Top row: Call Stack + Memory */}
-          <div className="flex gap-4 flex-1">
+          <div className="flex gap-2 flex-1 min-h-0">
             <CallStack />
             <MemoryPanel />
           </div>
@@ -233,16 +236,22 @@ export function AppShell() {
           <FlowArrow visible={hasTaskQueue} />
 
           {/* Bottom row: Event Loop + Queues with flow indicators */}
-          <div className="flex gap-4">
-            <div className="flex flex-col items-center gap-2">
+          <div className="flex gap-2 items-stretch">
+            <div className="flex flex-col items-center gap-1 shrink-0">
               <EventLoopIndicator />
               {/* Flow indicator: Event Loop picks from queues */}
-              <MicrotaskFlowArrow visible={showMicrotaskFlow} direction="right" />
+              <MicrotaskFlowArrow
+                visible={showMicrotaskFlow}
+                direction="right"
+              />
             </div>
-            <div className="flex flex-col gap-2 flex-1">
+            <div className="flex flex-col gap-2 flex-1 min-w-0">
               {/* Microtask Queue with flow indicator from Promises */}
               <div className="flex flex-col">
-                <MicrotaskFlowArrow visible={showMicrotaskFlow} direction="down" />
+                <MicrotaskFlowArrow
+                  visible={showMicrotaskFlow}
+                  direction="down"
+                />
                 <MicrotaskQueue />
               </div>
               {/* Task Queue */}
@@ -250,7 +259,7 @@ export function AppShell() {
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Footer: Transport Controls */}
       <TransportControls />
