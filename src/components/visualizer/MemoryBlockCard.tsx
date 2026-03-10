@@ -1,20 +1,31 @@
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { ChevronRight } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { MemoryBlock, MemoryEntry } from "@/types";
 
-interface PointerBadgeProps {
-  color: string;
-  heapReferenceId?: string;
-  isHighlighted?: boolean;
+function primitiveColor(displayValue: string): string {
+  if (displayValue === "undefined" || displayValue === "null")
+    return THEME.colors.text.muted;
+  if (displayValue === "true" || displayValue === "false")
+    return THEME.colors.syntax.keyword;
+  if (/^-?\d/.test(displayValue)) return THEME.colors.syntax.number;
+  if (displayValue.startsWith('"') || displayValue.startsWith("'"))
+    return THEME.colors.syntax.string;
+  return THEME.colors.text.primary;
 }
 
-function PointerBadge({
+function PointerDot({
   color,
   heapReferenceId,
   isHighlighted,
-}: PointerBadgeProps) {
+}: {
+  color: string;
+  heapReferenceId?: string;
+  isHighlighted?: boolean;
+}) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
 
@@ -22,10 +33,11 @@ function PointerBadge({
     <motion.span
       style={{
         color,
-        fontSize: 10,
+        fontSize: 8,
         lineHeight: 1,
         marginLeft: 4,
         cursor: heapReferenceId ? "pointer" : "default",
+        display: "inline-block",
       }}
       animate={{
         textShadow: isHighlighted ? `0 0 8px ${color}` : "0 0 0px transparent",
@@ -41,23 +53,13 @@ function PointerBadge({
   );
 }
 
-function primitiveColor(displayValue: string): string {
-  if (displayValue === "undefined" || displayValue === "null")
-    return THEME.colors.text.muted;
-  if (displayValue === "true" || displayValue === "false")
-    return THEME.colors.syntax.keyword;
-  if (/^-?\d/.test(displayValue)) return THEME.colors.syntax.number;
-  if (displayValue.startsWith('"') || displayValue.startsWith("'"))
-    return THEME.colors.syntax.string;
-  return THEME.colors.text.primary;
-}
-
-interface EntryValueProps {
+function EntryValue({
+  entry,
+  isPointerHighlighted,
+}: {
   entry: MemoryEntry;
   isPointerHighlighted: boolean;
-}
-
-function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
+}) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
 
@@ -65,9 +67,10 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
     const isGenerator = entry.displayValue === "ⓕ*";
     return (
       <motion.span
+        className="flex items-center"
         style={{
           fontFamily: THEME.fonts.code,
-          fontSize: 12,
+          fontSize: 11,
           cursor: entry.heapReferenceId ? "pointer" : "default",
         }}
         animate={{
@@ -82,16 +85,18 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
         }
         onMouseLeave={() => entry.heapReferenceId && setHoveredPointerId(null)}
       >
-        <span style={{ color: THEME.colors.syntax.function, fontWeight: 700 }}>
-          ⓕ
+        <span style={{ color: THEME.colors.syntax.function, fontWeight: 600 }}>
+          ƒ
         </span>
         {isGenerator && (
-          <span style={{ color: THEME.colors.syntax.keyword, fontWeight: 700 }}>
+          <span
+            style={{ color: THEME.colors.syntax.keyword, fontWeight: 600 }}
+          >
             *
           </span>
         )}
         {entry.pointerColor && (
-          <PointerBadge
+          <PointerDot
             color={entry.pointerColor}
             heapReferenceId={entry.heapReferenceId}
             isHighlighted={isPointerHighlighted}
@@ -100,12 +105,14 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
       </motion.span>
     );
   }
+
   if (entry.valueType === "object") {
     return (
       <motion.span
+        className="flex items-center"
         style={{
           fontFamily: THEME.fonts.code,
-          fontSize: 12,
+          fontSize: 11,
           cursor: entry.heapReferenceId ? "pointer" : "default",
         }}
         animate={{
@@ -120,11 +127,17 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
         }
         onMouseLeave={() => entry.heapReferenceId && setHoveredPointerId(null)}
       >
-        <span style={{ color: THEME.colors.text.muted, fontStyle: "italic" }}>
-          [Pointer]
+        <span
+          style={{
+            color: THEME.colors.text.muted,
+            fontSize: 10,
+            fontStyle: "italic",
+          }}
+        >
+          ref
         </span>
         {entry.pointerColor && (
-          <PointerBadge
+          <PointerDot
             color={entry.pointerColor}
             heapReferenceId={entry.heapReferenceId}
             isHighlighted={isPointerHighlighted}
@@ -133,20 +146,20 @@ function EntryValue({ entry, isPointerHighlighted }: EntryValueProps) {
       </motion.span>
     );
   }
-  // Primitive value with change highlight animation
+
   return (
     <motion.span
       key={`${entry.name}-${entry.displayValue}`}
       initial={
         shouldReduceMotion
           ? false
-          : { backgroundColor: "rgba(34, 211, 238, 0.2)" }
+          : { backgroundColor: `${THEME.colors.syntax.keyword}22` }
       }
-      animate={{ backgroundColor: "rgba(34, 211, 238, 0)" }}
+      animate={{ backgroundColor: "rgba(0,0,0,0)" }}
       transition={{ duration: duration.highlight }}
       style={{
         fontFamily: THEME.fonts.code,
-        fontSize: 12,
+        fontSize: 11,
         color: primitiveColor(entry.displayValue),
         borderRadius: 2,
         padding: "0 2px",
@@ -163,6 +176,7 @@ interface MemoryBlockCardProps {
 }
 
 export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
+  const [collapsed, setCollapsed] = useState(false);
   const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
@@ -171,135 +185,186 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
   const isFrameHighlighted = hoveredFrameId === block.frameId;
   const isSuspended = block.suspended === true;
   const isModuleScope = block.type === "module";
-  const suspendedColor = THEME.colors.status.pending; // amber
+  const suspendedColor = THEME.colors.status.pending;
+
+  const accentColor = isSuspended ? suspendedColor : block.color;
+  const borderStyle = isSuspended ? "dashed" : isModuleScope ? "dotted" : "solid";
 
   return (
     <motion.div
       animate={{
-        opacity: isSuspended ? 0.5 : 1,
+        opacity: isSuspended ? 0.6 : 1,
         boxShadow: isFrameHighlighted
-          ? `0 0 12px ${block.color}50`
+          ? `0 0 10px ${accentColor}40`
           : "0 0 0px transparent",
-        borderColor: isFrameHighlighted ? block.color : `${block.color}33`,
       }}
       transition={{ duration: shouldReduceMotion ? 0 : duration.medium }}
       style={{
-        border: `1px solid ${isFrameHighlighted ? block.color : `${block.color}33`}`,
-        borderLeftWidth: 3,
-        borderLeftColor: isSuspended ? suspendedColor : block.color,
-        borderLeftStyle: isSuspended
-          ? "dashed"
-          : isModuleScope
-            ? "dotted"
-            : "solid",
+        border: `1px solid ${isFrameHighlighted ? accentColor : `${accentColor}28`}`,
+        borderLeftWidth: 2,
+        borderLeftColor: accentColor,
+        borderLeftStyle: borderStyle,
         borderRadius: THEME.radius.sm,
         backgroundColor: THEME.colors.bg.elevated,
-        padding: "8px 10px",
+        overflow: "hidden",
         cursor: "pointer",
       }}
       onMouseEnter={() => setHoveredFrameId(block.frameId)}
       onMouseLeave={() => setHoveredFrameId(null)}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span style={{ color: block.color, fontSize: 10, lineHeight: 1 }}>
-          ●
-        </span>
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: block.color,
-            fontFamily: THEME.fonts.code,
-          }}
-        >
-          {block.label}
+      {/* Header row */}
+      <div
+        className="flex items-center justify-between gap-2"
+        style={{ padding: "6px 8px", userSelect: "none" }}
+        onClick={() => setCollapsed((c) => !c)}
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <motion.div
+            animate={{ rotate: collapsed ? 0 : 90 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.15 }}
+            style={{ color: THEME.colors.text.muted, flexShrink: 0 }}
+          >
+            <ChevronRight size={11} />
+          </motion.div>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              fontFamily: THEME.fonts.code,
+              color: accentColor,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+            }}
+          >
+            {block.label}
+          </span>
           {isSuspended && (
             <span
               style={{
-                color: THEME.colors.text.muted,
-                fontWeight: 400,
-                marginLeft: 4,
+                fontSize: 9,
+                fontFamily: THEME.fonts.code,
+                color: suspendedColor,
+                backgroundColor: `${suspendedColor}18`,
+                padding: "1px 5px",
+                borderRadius: 3,
+                flexShrink: 0,
               }}
             >
-              (suspended)
+              suspended
             </span>
           )}
+        </div>
+        <span
+          style={{
+            fontSize: 9,
+            fontFamily: THEME.fonts.code,
+            color: THEME.colors.text.muted,
+            flexShrink: 0,
+          }}
+        >
+          {block.entries.length === 0
+            ? "empty"
+            : `${block.entries.length} var${block.entries.length !== 1 ? "s" : ""}`}
         </span>
       </div>
 
-      {/* Entries */}
-      {block.entries.length === 0 ? (
-        <div
-          style={{
-            fontSize: 11,
-            color: THEME.colors.text.muted,
-            fontFamily: THEME.fonts.code,
-          }}
-        >
-          (empty)
-        </div>
-      ) : (
-        <div className="flex flex-col gap-1">
-          {block.entries.map((entry) => {
-            const isPointerHighlighted =
-              entry.heapReferenceId === hoveredHeapId;
-            const isThis = entry.name === "this";
-            return (
-              <div
-                key={entry.name}
-                className="flex items-center justify-between gap-4"
-              >
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontFamily: THEME.fonts.code,
-                    color: isThis
-                      ? THEME.colors.syntax.keyword
-                      : THEME.colors.text.secondary,
-                    fontWeight: isThis ? 700 : undefined,
-                    flexShrink: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                >
-                  {/* Destructuring indicator */}
-                  {entry.isDestructured && (
+      {/* Variable table */}
+      <AnimatePresence initial={false}>
+        {!collapsed && block.entries.length > 0 && (
+          <motion.div
+            initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
+            transition={{ duration: shouldReduceMotion ? 0 : duration.fast ?? 0.12 }}
+            style={{ overflow: "hidden" }}
+          >
+            <div
+              style={{
+                borderTop: `1px solid ${accentColor}18`,
+                margin: "0 8px",
+              }}
+            />
+            <div style={{ padding: "4px 8px 6px" }}>
+              {block.entries.map((entry, idx) => {
+                const isPointerHighlighted =
+                  entry.heapReferenceId === hoveredHeapId;
+                const isThis = entry.name === "this";
+                const isLast = idx === block.entries.length - 1;
+
+                return (
+                  <div
+                    key={entry.name}
+                    className="flex items-center justify-between"
+                    style={{
+                      padding: "3px 0",
+                      borderBottom: isLast
+                        ? "none"
+                        : `1px solid ${THEME.colors.text.muted}12`,
+                      gap: 8,
+                    }}
+                  >
+                    {/* Key cell */}
                     <span
-                      style={{
-                        color: THEME.colors.text.muted,
-                        fontSize: 10,
-                      }}
-                      title="Destructured"
+                      className="flex items-center gap-1 min-w-0"
+                      style={{ flexShrink: 0, maxWidth: "55%" }}
                     >
-                      {"{ }"}
+                      {entry.isDestructured && (
+                        <span
+                          style={{
+                            color: THEME.colors.text.muted,
+                            fontSize: 9,
+                          }}
+                          title="Destructured"
+                        >
+                          {"{}"}
+                        </span>
+                      )}
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontFamily: THEME.fonts.code,
+                          color: isThis
+                            ? THEME.colors.syntax.keyword
+                            : THEME.colors.text.secondary,
+                          fontWeight: isThis ? 700 : 400,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {entry.name}
+                      </span>
+                      {entry.isExported && (
+                        <span
+                          style={{
+                            color: THEME.colors.syntax.keyword,
+                            fontSize: 9,
+                          }}
+                          title="Exported"
+                        >
+                          ↗
+                        </span>
+                      )}
                     </span>
-                  )}
-                  {entry.name}
-                  {/* Export badge */}
-                  {entry.isExported && (
+
+                    {/* Value cell */}
                     <span
-                      style={{
-                        color: THEME.colors.syntax.keyword,
-                        fontSize: 10,
-                        marginLeft: 2,
-                      }}
-                      title="Exported"
+                      className="flex items-center justify-end"
+                      style={{ minWidth: 0, flexShrink: 1 }}
                     >
-                      ↗
+                      <EntryValue
+                        entry={entry}
+                        isPointerHighlighted={isPointerHighlighted}
+                      />
                     </span>
-                  )}
-                </span>
-                <EntryValue
-                  entry={entry}
-                  isPointerHighlighted={isPointerHighlighted}
-                />
-              </div>
-            );
-          })}
-        </div>
-      )}
+                  </div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }
