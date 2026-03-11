@@ -358,8 +358,19 @@ function HeapCardShell({
   children?: React.ReactNode;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
   const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
+
+  const handleMouseEnter = () => {
+    setHoveredPointerId(obj.id);
+    setHoveredHeapId(obj.id);
+  };
+
+  const handleMouseLeave = () => {
+    setHoveredPointerId(null);
+    setHoveredHeapId(null);
+  };
 
   return (
     <motion.div
@@ -377,8 +388,8 @@ function HeapCardShell({
         overflow: "hidden",
         cursor: "pointer",
       }}
-      onMouseEnter={() => setHoveredHeapId(obj.id)}
-      onMouseLeave={() => setHoveredHeapId(null)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
       {/* Card header */}
       <div

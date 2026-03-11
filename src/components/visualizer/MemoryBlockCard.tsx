@@ -61,7 +61,22 @@ function EntryValue({
   isPointerHighlighted: boolean;
 }) {
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+  const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
+
+  const handleMouseEnter = () => {
+    if (entry.heapReferenceId) {
+      setHoveredPointerId(entry.heapReferenceId);
+      setHoveredHeapId(entry.heapReferenceId);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (entry.heapReferenceId) {
+      setHoveredPointerId(null);
+      setHoveredHeapId(null);
+    }
+  };
 
   if (entry.valueType === "function") {
     const isGenerator = entry.displayValue === "ⓕ*";
@@ -84,10 +99,8 @@ function EntryValue({
             : {}
         }
         transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
-        onMouseEnter={() =>
-          entry.heapReferenceId && setHoveredPointerId(entry.heapReferenceId)
-        }
-        onMouseLeave={() => entry.heapReferenceId && setHoveredPointerId(null)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <span style={{ color: THEME.colors.syntax.function, fontWeight: 600 }}>
           ƒ
@@ -117,25 +130,21 @@ function EntryValue({
           fontSize: 11,
           cursor: entry.heapReferenceId ? "pointer" : "default",
         }}
-        animate={{
-          textShadow:
-            isPointerHighlighted && entry.pointerColor
-              ? `0 0 8px ${entry.pointerColor}`
-              : "0 0 0px transparent",
-        }}
-        transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
-        onMouseEnter={() =>
-          entry.heapReferenceId && setHoveredPointerId(entry.heapReferenceId)
+        animate={
+          isPointerHighlighted && entry.pointerColor
+            ? {
+                textShadow: `0 0 8px ${entry.pointerColor}, 0 0 20px ${entry.pointerColor}, 0 0 40px ${entry.pointerColor}, 0 0 60px ${entry.pointerColor}`,
+                backgroundColor: `${entry.pointerColor}40`,
+                padding: "0 3px",
+                borderRadius: 2,
+              }
+            : {}
         }
-        onMouseLeave={() => entry.heapReferenceId && setHoveredPointerId(null)}
+        transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
-        <span
-          style={{
-            color: THEME.colors.text.muted,
-            fontSize: 10,
-            fontStyle: "italic",
-          }}
-        >
+        <span style={{ color: THEME.colors.syntax.function, fontWeight: 600 }}>
           ref
         </span>
         {entry.pointerColor && (
@@ -296,8 +305,8 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
             <div style={{ padding: "4px 8px 6px" }}>
               {block.entries.map((entry, idx) => {
                 const isPointerHighlighted =
+                  entry.heapReferenceId !== undefined &&
                   entry.heapReferenceId === hoveredHeapId;
-                console.log({ hoveredHeapId }, entry.heapReferenceId);
                 const isThis = entry.name === "this";
                 const isLast = idx === block.entries.length - 1;
 
