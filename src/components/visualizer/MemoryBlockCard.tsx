@@ -215,10 +215,10 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
       }}
       transition={{ duration: shouldReduceMotion ? 0 : duration.medium }}
       style={{
-        border: `1px solid ${isFrameHighlighted ? accentColor : `${accentColor}28`}`,
-        borderLeftWidth: 2,
-        borderLeftColor: accentColor,
-        borderLeftStyle: borderStyle,
+        borderTop: `1px solid ${isFrameHighlighted ? accentColor : `${accentColor}28`}`,
+        borderRight: `1px solid ${isFrameHighlighted ? accentColor : `${accentColor}28`}`,
+        borderBottom: `1px solid ${isFrameHighlighted ? accentColor : `${accentColor}28`}`,
+        borderLeft: `2px ${borderStyle} ${accentColor}`,
         borderRadius: THEME.radius.sm,
         backgroundColor: THEME.colors.bg.elevated,
         overflow: "hidden",
