@@ -73,12 +73,16 @@ function EntryValue({
           fontSize: 11,
           cursor: entry.heapReferenceId ? "pointer" : "default",
         }}
-        animate={{
-          textShadow:
-            isPointerHighlighted && entry.pointerColor
-              ? `0 0 8px ${entry.pointerColor}`
-              : "0 0 0px transparent",
-        }}
+        animate={
+          isPointerHighlighted && entry.pointerColor
+            ? {
+                textShadow: `0 0 8px ${entry.pointerColor}, 0 0 20px ${entry.pointerColor}, 0 0 40px ${entry.pointerColor}, 0 0 60px ${entry.pointerColor}`,
+                backgroundColor: `${entry.pointerColor}40`,
+                padding: "0 3px",
+                borderRadius: 2,
+              }
+            : {}
+        }
         transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
         onMouseEnter={() =>
           entry.heapReferenceId && setHoveredPointerId(entry.heapReferenceId)
@@ -89,9 +93,7 @@ function EntryValue({
           ƒ
         </span>
         {isGenerator && (
-          <span
-            style={{ color: THEME.colors.syntax.keyword, fontWeight: 600 }}
-          >
+          <span style={{ color: THEME.colors.syntax.keyword, fontWeight: 600 }}>
             *
           </span>
         )}
@@ -188,7 +190,11 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
   const suspendedColor = THEME.colors.status.pending;
 
   const accentColor = isSuspended ? suspendedColor : block.color;
-  const borderStyle = isSuspended ? "dashed" : isModuleScope ? "dotted" : "solid";
+  const borderStyle = isSuspended
+    ? "dashed"
+    : isModuleScope
+      ? "dotted"
+      : "solid";
 
   return (
     <motion.div
@@ -276,7 +282,9 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
             initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0 : duration.fast ?? 0.12 }}
+            transition={{
+              duration: shouldReduceMotion ? 0 : (duration.fast ?? 0.12),
+            }}
             style={{ overflow: "hidden" }}
           >
             <div
@@ -289,6 +297,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
               {block.entries.map((entry, idx) => {
                 const isPointerHighlighted =
                   entry.heapReferenceId === hoveredHeapId;
+                console.log({ hoveredHeapId }, entry.heapReferenceId);
                 const isThis = entry.name === "this";
                 const isLast = idx === block.entries.length - 1;
 
