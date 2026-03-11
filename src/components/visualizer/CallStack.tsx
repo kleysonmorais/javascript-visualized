@@ -76,10 +76,10 @@ export function CallStack({
                   className="px-3 py-2 rounded"
                   style={{
                     backgroundColor: THEME.colors.bg.elevated,
-                    border: `1px solid ${isHovered ? color : `${color}44`}`,
-                    borderLeftWidth: 3,
-                    borderLeftColor: isSuspended ? suspendedColor : color,
-                    borderLeftStyle: isSuspended ? "dashed" : "solid",
+                    borderTop: `1px solid ${isHovered ? color : `${color}44`}`,
+                    borderRight: `1px solid ${isHovered ? color : `${color}44`}`,
+                    borderBottom: `1px solid ${isHovered ? color : `${color}44`}`,
+                    borderLeft: `3px ${isSuspended ? "dashed" : "solid"} ${isSuspended ? suspendedColor : color}`,
                     color: THEME.colors.text.primary,
                     cursor: "pointer",
                   }}
