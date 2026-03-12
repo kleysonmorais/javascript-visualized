@@ -7,6 +7,22 @@ import path from "path";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  build: {
+    // Chunk splitting for better caching
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          monaco: ["@monaco-editor/react"],
+          framer: ["framer-motion"],
+          vendor: ["react", "react-dom", "zustand"],
+        },
+      },
+    },
+    // Source maps for debugging (optional, can disable for smaller build)
+    sourcemap: false,
+    // Target modern browsers
+    target: "es2020",
+  },
   resolve: {
     alias: {
       "@/components": path.resolve(__dirname, "src/components"),
