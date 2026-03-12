@@ -3271,6 +3271,16 @@ export class Interpreter {
       });
     }
 
+    // Snapshot the update operation as an assignment
+    const operatorDesc = node.operator === "++" ? "+ 1" : "- 1";
+    const code = extractSource(this.sourceCode, node);
+    this.snapshot(
+      this.getLine(node),
+      this.getColumn(node),
+      `Assigning ${name} = ${name} ${operatorDesc}`,
+      code,
+    );
+
     return returnValue;
   }
 

@@ -211,6 +211,27 @@ describe("Code Examples", () => {
       expect(values[0]).toBeLessThan(values[1]);
       expect(values[1]).toBeLessThan(values[2]);
     });
+
+    it("assigning count++", () => {
+      const assignedStep = {
+        index: 8,
+        line: 4,
+        column: 4,
+        description: "Assigning count = count + 1",
+        code: "count++",
+      };
+      const steps = run(example.code);
+      const step = steps.find((s) => s.index === assignedStep.index);
+      expect(step!.description).toBe(assignedStep.description);
+      expect(step!.line).toBe(assignedStep.line);
+      expect(step!.column).toBe(assignedStep.column);
+    });
+
+    it("total of steps", () => {
+      const steps = run(example.code);
+
+      expect(steps.length).toBe(26);
+    });
   });
 
   // ─── setTimeout Ordering ──────────────────────────────

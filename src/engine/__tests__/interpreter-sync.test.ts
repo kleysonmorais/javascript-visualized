@@ -34,7 +34,8 @@ describe("Interpreter — Synchronous Execution", () => {
       // Generate a lot of steps with a long loop
       const code = "for (let i = 0; i < 10000; i++) { i; }";
       const steps = run(code);
-      expect(steps.length).toBeLessThanOrEqual(2000);
+      // MAX_STEPS is 2000, plus 1 for the "limit reached" message
+      expect(steps.length).toBeLessThanOrEqual(2001);
     });
   });
 
