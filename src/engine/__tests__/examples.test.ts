@@ -217,7 +217,7 @@ describe("Code Examples", () => {
         index: 8,
         line: 4,
         column: 4,
-        description: "Assigning count = count + 1",
+        description: "Assigning **count** = count + 1. The variable is updated in-place in the Variable Environment.",
         code: "count++",
       };
       const steps = run(example.code);

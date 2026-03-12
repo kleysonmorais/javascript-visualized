@@ -673,7 +673,7 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      "All synchronous code executed — checking for async tasks",
+      description.checkingMicrotaskQueue(),
       "",
     );
 
@@ -697,7 +697,7 @@ export class Interpreter {
       this.snapshot(
         0,
         0,
-        "Checking Microtask Queue after synchronous code",
+        description.checkingMicrotaskQueue(),
         "",
       );
       this.drainMicrotaskQueue();
@@ -720,7 +720,7 @@ export class Interpreter {
             phase: "checking-microtasks",
             description: "fetch resolved — draining Microtask Queue",
           };
-          this.snapshot(0, 0, "fetch resolved — checking Microtask Queue", "");
+          this.snapshot(0, 0, description.fetchCheckingMicrotasks(), "");
           this.drainMicrotaskQueue();
         }
         iteration++;
@@ -748,7 +748,7 @@ export class Interpreter {
         this.snapshot(
           0,
           0,
-          "Microtasks pending — draining before next task",
+          description.microtasksPending(),
           "",
         );
         this.drainMicrotaskQueue();
@@ -771,7 +771,7 @@ export class Interpreter {
           phase: "checking-microtasks",
           description: "Checking Microtask Queue...",
         };
-        this.snapshot(0, 0, "Callback done — checking Microtask Queue", "");
+        this.snapshot(0, 0, description.callbackCheckingMicrotasks(), "");
         this.drainMicrotaskQueue();
       }
 
@@ -796,7 +796,7 @@ export class Interpreter {
       this.microtaskQueue.length > 0 || this.pendingMicrotasks.length > 0;
     if (hasAnyTimers || hadMicrotasks) {
       this.eventLoop = { phase: "idle", description: "All tasks completed" };
-      this.snapshot(0, 0, "Execution complete — all tasks processed", "");
+      this.snapshot(0, 0, description.executionComplete(), "");
     }
   }
 
@@ -852,7 +852,7 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      `${timer.delay}ms timer completed — callback ready`,
+      description.timerFired({ delay: timer.delay }),
       "",
     );
 
@@ -867,7 +867,7 @@ export class Interpreter {
       sourceId: timer.id,
     };
     this.taskQueue.push(taskItem);
-    this.snapshot(0, 0, "Callback moved from Web APIs to Task Queue", "");
+    this.snapshot(0, 0, description.callbackMovedToTaskQueue(), "");
 
     // Step 3: Event Loop picks task
     this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
@@ -880,7 +880,7 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      "Event Loop: Call Stack is empty → picking task from Task Queue",
+      description.eventLoopPickingTask(),
       "",
     );
 
@@ -927,7 +927,7 @@ export class Interpreter {
       phase: "checking-tasks",
       description: "Callback done — checking for more tasks",
     };
-    this.snapshot(0, 0, "Callback execution completed — Call Stack empty", "");
+    this.snapshot(0, 0, description.callbackExecutionCompleted(), "");
 
     // Step 5: For setInterval, re-register if under iteration limit
     if (timer.type === "setInterval" && !timer.cancelled) {
@@ -955,11 +955,11 @@ export class Interpreter {
         this.snapshot(
           0,
           0,
-          `setInterval(callback, ${timer.delay}ms) — interval registered in Web APIs`,
+          description.intervalRegistered({ delay: timer.delay }),
           "",
         );
       } else {
-        this.snapshot(0, 0, "setInterval iteration limit reached (3 max)", "");
+        this.snapshot(0, 0, description.setIntervalLimitReached(), "");
       }
     }
   }
@@ -1821,11 +1821,10 @@ export class Interpreter {
       });
     }
 
-    const exportPrefix = isExported ? "export " : "";
     this.snapshot(
       this.getLine(declarator),
       this.getColumn(declarator),
-      `Declaring ${exportPrefix}${kind} ${name} = ${resolved.displayValue}`,
+      description.declaringVariable({ kind, name, displayValue: resolved.displayValue, isExported }),
       code,
     );
   }
@@ -1888,7 +1887,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(prop),
           this.getColumn(prop),
-          `Destructuring ...${restName} — collecting remaining properties`,
+          description.destructuringRest({ restName, kind: "object" }),
           code,
         );
         continue;
@@ -1990,7 +1989,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(prop),
         this.getColumn(prop),
-        `Destructuring ${varName} = ${resolved.displayValue} from ${sourceName}`,
+        description.destructuringVariable({ varName, displayValue: resolved.displayValue, sourceName }),
         code,
       );
     }
@@ -2058,7 +2057,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(element),
           this.getColumn(element),
-          `Destructuring ...${restName} — collecting remaining elements`,
+          description.destructuringRest({ restName, kind: "array" }),
           code,
         );
         break; // Rest must be last
@@ -2127,7 +2126,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(element),
         this.getColumn(element),
-        `Destructuring ${varName} = ${resolved.displayValue}`,
+        description.destructuringVariable({ varName, displayValue: resolved.displayValue }),
         code,
       );
     }
@@ -2181,7 +2180,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(prop),
           this.getColumn(prop),
-          `Destructuring ...${restName} — collecting remaining properties`,
+          description.destructuringRest({ restName, kind: "object" }),
           code,
         );
         continue;
@@ -2255,7 +2254,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(prop),
         this.getColumn(prop),
-        `Destructuring ${varName} = ${resolved.displayValue}`,
+        description.destructuringVariable({ varName, displayValue: resolved.displayValue }),
         code,
       );
     }
@@ -2712,11 +2711,10 @@ export class Interpreter {
       });
     }
 
-    const extendsStr = superClassName ? ` extends ${superClassName}` : "";
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Declaring class ${name}${extendsStr}`,
+      description.declaringClass({ name, superClassName }),
       code,
     );
   }
@@ -2777,7 +2775,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `import { ${specifierNames} } from '${source}' — module import (simulated)`,
+      description.importDeclaration({ specifierNames, source }),
       code,
     );
   }
@@ -2823,7 +2821,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `export { ${exportedNames} }`,
+        description.exportNamedDeclaration({ exportedNames }),
         code,
       );
     }
@@ -2841,7 +2839,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `export default function ${name}`,
+        description.exportDefaultFunction({ name }),
         code,
       );
       return;
@@ -2855,7 +2853,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `export default class ${name}`,
+        description.exportDefaultClass({ name }),
         code,
       );
       return;
@@ -2883,7 +2881,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `export default ${resolved.displayValue}`,
+      description.exportDefaultValue({ displayValue: resolved.displayValue }),
       code,
     );
   }
@@ -2910,7 +2908,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node.test),
       this.getColumn(node.test),
-      `Evaluating if condition: ${displayValue(testResult)}`,
+      description.evaluatingIfCondition({ result: displayValue(testResult) }),
       code,
     );
 
@@ -2946,7 +2944,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `For loop iteration ${iteration}`,
+        description.forLoopIteration({ iteration }),
         code,
       );
 
@@ -2999,7 +2997,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `While loop iteration ${iteration}`,
+        description.whileLoopIteration({ iteration }),
         code,
       );
 
@@ -3049,7 +3047,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Returning ${displayValue(value)} from ${funcName}`,
+      description.returningValue({ funcName, displayValue: displayValue(value) }),
       code,
     );
   }
@@ -3270,12 +3268,11 @@ export class Interpreter {
     }
 
     // Snapshot the update operation as an assignment
-    const operatorDesc = node.operator === "++" ? "+ 1" : "- 1";
     const code = extractSource(this.sourceCode, node);
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Assigning ${name} = ${name} ${operatorDesc}`,
+      description.incrementDecrement({ name, operator: node.operator as "++" | "--" }),
       code,
     );
 
@@ -3350,7 +3347,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Assigning ${objLabel}.${propName} = ${displayValue(rightValue)}`,
+        description.assigningProperty({ objLabel, propName, displayValue: displayValue(rightValue) }),
         code,
       );
 
@@ -3390,7 +3387,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Assigning ${name} = ${resolved.displayValue}`,
+      description.assigningVariable({ name, displayValue: resolved.displayValue }),
       code,
     );
 
@@ -3632,7 +3629,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Calling console.${methodName}`,
+      description.callingConsole({ methodName }),
       code,
     );
 
@@ -3645,7 +3642,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `console.${methodName}(${args.join(", ")})`,
+      description.consoleOutput({ methodName, args }),
       code,
     );
   }
@@ -3667,7 +3664,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `${timerName}: callback is not a function — skipped`,
+        description.timerInvalidCallback({ timerName }),
         code,
       );
       return numId;
@@ -3684,7 +3681,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `${timerName}: callback is not a function — skipped`,
+        description.timerInvalidCallback({ timerName }),
         code,
       );
       return numId;
@@ -3720,11 +3717,10 @@ export class Interpreter {
     };
     this.pendingTimers.push(timer);
 
-    const descDelay = `${delay}ms`;
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `${timerName}(callback, ${descDelay}) — timer registered in Web APIs`,
+      description.timerRegistered({ timerName, delay: `${delay}ms` }),
       code,
     );
 
@@ -3757,7 +3753,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          `${calleeName}(${numericId}) — timer cancelled`,
+          description.timerCancelled({ calleeName }),
           code,
         );
         return;
@@ -3767,7 +3763,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `${calleeName} called`,
+      description.timerCancelled({ calleeName }),
       code,
     );
   }
@@ -3817,7 +3813,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `fetch("${url}") — network request registered in Web APIs`,
+      description.fetchRegistered({ url }),
       code,
     );
 
@@ -3868,7 +3864,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `response.json() — parsing response body`,
+      description.responseJson(),
       code,
     );
 
@@ -3891,7 +3887,7 @@ export class Interpreter {
       this.snapshot(
         0,
         0,
-        `fetch completed — Response received (status 200)`,
+        description.fetchCompleted(),
         "",
       );
 
@@ -4175,8 +4171,8 @@ export class Interpreter {
     }
 
     const returnDescription = hasClosure
-      ? `${funcName} returned — local memory removed, but inner function's [[Scope]] retains captured variables`
-      : `${funcName} returned ${displayValue(returnVal)}`;
+      ? description.returningWithClosure({ funcName })
+      : description.returningValue({ funcName, displayValue: displayValue(returnVal) });
 
     this.snapshot(
       this.getLine(node),
@@ -4265,7 +4261,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Calling ${classVal.name}.${methodName}(${argsDisplay})`,
+      description.callingMethod({ className: classVal.name, methodName, argsDisplay }),
       code,
     );
 
@@ -4282,7 +4278,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `${classVal.name}.${methodName} returned ${displayValue(returnVal)}`,
+      description.methodReturned({ className: classVal.name, methodName, displayValue: displayValue(returnVal) }),
       code,
     );
 
@@ -4661,7 +4657,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `new ${callee.type === "Identifier" ? (callee as IdentifierNode).name : "?"} (not supported)`,
+      description.unsupportedNew({ name: callee.type === "Identifier" ? (callee as IdentifierNode).name : "?" }),
       code,
     );
     return undefined;
@@ -4705,7 +4701,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `new ${classVal.name}(${args.map((a) => displayValue(a)).join(", ")}) — creating instance`,
+      description.instantiatingClass({ className: classVal.name, argsDisplay: args.map((a) => displayValue(a)).join(", ") }),
       code,
     );
 
@@ -4785,7 +4781,7 @@ export class Interpreter {
     this.snapshot(
       callNode.loc?.start.line ?? 0,
       callNode.loc?.start.column ?? 0,
-      `Executing ${classVal.name}.constructor`,
+      description.executingConstructor({ className: classVal.name }),
       code,
     );
 
@@ -4807,7 +4803,7 @@ export class Interpreter {
     this.snapshot(
       callNode.loc?.start.line ?? 0,
       callNode.loc?.start.column ?? 0,
-      `${classVal.name} constructor completed — instance created`,
+      description.constructorCompleted({ className: classVal.name }),
       code,
     );
   }
@@ -4874,7 +4870,7 @@ export class Interpreter {
           this.snapshot(
             this.getLine(stmt),
             this.getColumn(stmt),
-            `Setting this.${propName} = ${displayValue(val)}`,
+            description.assigningThisProperty({ propName, displayValue: displayValue(val) }),
             stmtCode,
           );
           continue;
@@ -4911,7 +4907,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(callExpr),
       this.getColumn(callExpr),
-      `super(${superArgs.map((a) => displayValue(a)).join(", ")}) — calling parent constructor ${parentClassName}`,
+      description.callingSuperConstructor({ parentClassName, argsDisplay: superArgs.map((a) => displayValue(a)).join(", ") }),
       code,
     );
 
@@ -4946,7 +4942,7 @@ export class Interpreter {
     this.snapshot(
       callExpr.loc?.start.line ?? 0,
       callExpr.loc?.start.column ?? 0,
-      `Executing ${parentClassName}.constructor`,
+      description.executingParentConstructor({ parentClassName }),
       code,
     );
 
@@ -5002,7 +4998,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `new Promise() — executor will run immediately`,
+      description.newPromise(),
       code,
     );
 
@@ -5055,7 +5051,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(executorNode),
       this.getColumn(executorNode),
-      "Executing Promise executor — runs synchronously",
+      description.executingPromiseExecutor(),
       executorSource,
     );
 
@@ -5102,7 +5098,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise.resolve(${displayValue(value)}) — creates fulfilled Promise`,
+        description.promiseResolveStatic({ displayValue: displayValue(value) }),
         code,
       );
       return wrapper;
@@ -5120,7 +5116,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `Promise.reject(${displayValue(reason)}) — creates rejected Promise`,
+        description.promiseRejectStatic({ displayValue: displayValue(reason) }),
         code,
       );
       return wrapper;
@@ -5141,7 +5137,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Promise.${methodName} (not supported)`,
+      description.promiseMethodNotSupported({ methodName }),
       code,
     );
     return undefined;
@@ -5154,14 +5150,12 @@ export class Interpreter {
     const code = extractSource(this.sourceCode, node);
     const { promise: resultPromise, wrapper } = this.createInternalPromise();
 
-    const label = settled ? "Promise.allSettled" : "Promise.all";
-
     if (node.arguments.length === 0) {
       this.resolvePromise(resultPromise, []);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `${label}([]) — resolved with []`,
+        settled ? description.promiseAllSettledEmpty() : description.promiseAllEmpty(),
         code,
       );
       return wrapper;
@@ -5175,7 +5169,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `${label}: argument not iterable`,
+        description.promiseNotIterable({ method: settled ? "allSettled" : "all" }),
         code,
       );
       return wrapper;
@@ -5217,7 +5211,9 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `${label}([${iterableArg.length} promises]) — ${hasRejected ? "rejected" : `resolved with [${values.length} values]`}`,
+      settled
+        ? description.promiseAllSettled({ count: iterableArg.length, hasRejected, values: values.length })
+        : description.promiseAll({ count: iterableArg.length, hasRejected, values: values.length }),
       code,
     );
     return wrapper;
@@ -5231,7 +5227,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        "Promise.race([]) — forever pending",
+        description.promiseRaceEmpty(),
         code,
       );
       return wrapper;
@@ -5244,7 +5240,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        "Promise.race: argument not iterable",
+        description.promiseNotIterable({ method: "race" }),
         code,
       );
       return wrapper;
@@ -5270,7 +5266,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Promise.race([${iterableArg.length} promises]) — ${resultPromise.state === "pending" ? "all pending" : `${resultPromise.state} with ${displayValue(resultPromise.result)}`}`,
+      description.promiseRace({
+        count: iterableArg.length,
+        state: resultPromise.state,
+        displayValue: resultPromise.state !== "pending" ? displayValue(resultPromise.result) : undefined,
+      }),
       code,
     );
     return wrapper;
@@ -5423,33 +5423,33 @@ export class Interpreter {
     }
 
     // Generate educational description for the step
-    let description: string;
+    let chainDesc: string;
     if (method === "then") {
       if (sourcePromise.state === "fulfilled") {
-        description = `.then() — Promise already fulfilled, callback → Microtask Queue`;
+        chainDesc = description.thenRegistered();
       } else if (sourcePromise.state === "rejected") {
-        description = `.then() skipped — Promise is rejected`;
+        chainDesc = description.thenSkipped();
       } else {
-        description = `.then() registered — callback queued when Promise settles`;
+        chainDesc = description.thenRegistered();
       }
     } else if (method === "catch") {
       if (sourcePromise.state === "rejected") {
-        description = `.catch() — Promise rejected, callback → Microtask Queue`;
+        chainDesc = description.catchQueued();
       } else if (sourcePromise.state === "fulfilled") {
-        description = `.catch() skipped — Promise is fulfilled`;
+        chainDesc = description.catchSkipped();
       } else {
-        description = `.catch() registered — will handle rejection`;
+        chainDesc = description.catchRegistered();
       }
     } else {
       // finally
       if (sourcePromise.state !== "pending") {
-        description = `.finally() — callback → Microtask Queue (will run on settle)`;
+        chainDesc = description.finallyQueued();
       } else {
-        description = `.finally() registered — will run on settle`;
+        chainDesc = description.finallyRegistered();
       }
     }
 
-    this.snapshot(this.getLine(node), this.getColumn(node), description, code);
+    this.snapshot(this.getLine(node), this.getColumn(node), chainDesc, code);
 
     return resultWrapper;
   }
@@ -5500,7 +5500,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(callbackNode),
       this.getColumn(callbackNode),
-      `Executing .then()/.catch()/.finally() callback with value: ${displayValue(microtask.resolveValue)}`,
+      description.executingMicrotask({ displayValue: displayValue(microtask.resolveValue) }),
       microtask.callbackSource,
     );
 
@@ -5582,7 +5582,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `resolve(${displayValue(value)}) — Promise fulfilled`,
+        description.promiseResolveCallback({ displayValue: displayValue(value) }),
         code,
       );
     } else {
@@ -5590,7 +5590,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `reject(${displayValue(value)}) — Promise rejected`,
+        description.promiseRejectCallback({ displayValue: displayValue(value) }),
         code,
       );
     }
@@ -5900,7 +5900,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(callNode),
       this.getColumn(callNode),
-      `Calling async ${funcName}() — returns Promise (pending)`,
+      description.callingAsyncFunction({ funcName }),
       code,
     );
 
@@ -5928,7 +5928,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(callNode),
           this.getColumn(callNode),
-          `async ${funcName} threw — Promise rejected with ${displayValue((returnVal as ThrownError).reason)}`,
+          description.asyncFunctionThrew({ funcName, displayValue: displayValue((returnVal as ThrownError).reason) }),
           code,
         );
       } else {
@@ -5936,7 +5936,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(callNode),
           this.getColumn(callNode),
-          `async ${funcName} completed — Promise resolved with ${displayValue(returnVal)}`,
+          description.asyncFunctionCompleted({ funcName, displayValue: displayValue(returnVal) }),
           code,
         );
       }
@@ -5993,7 +5993,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(stmt),
           this.getColumn(stmt),
-          `await — checking if Promise is settled`,
+          description.awaitCheckingPromise(),
           awaitCode,
         );
 
@@ -6006,7 +6006,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(stmt),
           this.getColumn(stmt),
-          `async ${funcName} suspended at await — yielding execution`,
+          description.asyncFunctionSuspended({ funcName }),
           awaitCode,
         );
 
@@ -6180,7 +6180,7 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      `async ${continuation.functionName} resumed — await resolved with ${displayValue(resolvedValue)}`,
+      description.asyncFunctionResumed({ funcName: continuation.functionName, displayValue: displayValue(resolvedValue) }),
       "",
     );
 
@@ -6223,7 +6223,7 @@ export class Interpreter {
         this.snapshot(
           0,
           0,
-          `async ${continuation.functionName} — await rejected, Promise rejected with ${displayValue(resolvedValue)}`,
+          description.asyncContinuationRejected({ funcName: continuation.functionName, displayValue: displayValue(resolvedValue) }),
           "",
         );
       }
@@ -6254,7 +6254,7 @@ export class Interpreter {
           this.snapshot(
             0,
             0,
-            `async ${continuation.functionName} threw — Promise rejected`,
+            description.asyncContinuationThrew({ funcName: continuation.functionName }),
             "",
           );
         } else {
@@ -6262,7 +6262,7 @@ export class Interpreter {
           this.snapshot(
             0,
             0,
-            `async ${continuation.functionName} completed — Promise resolved with ${displayValue(returnVal)}`,
+            description.asyncContinuationCompleted({ funcName: continuation.functionName, displayValue: displayValue(returnVal) }),
             "",
           );
         }
@@ -6417,7 +6417,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(catchClause.body),
         this.getColumn(catchClause.body),
-        `Error caught: ${displayValue(thrownError.reason)} — entering catch block`,
+        description.errorCaught({ displayValue: displayValue(thrownError.reason) }),
         catchCode,
       );
 
@@ -6457,7 +6457,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node.finalizer),
         this.getColumn(node.finalizer),
-        "Entering finally block",
+        description.enteringFinally(),
         finallyCode,
       );
       const savedAgain = this.hasReturned;
@@ -6494,7 +6494,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `throw ${displayValue(value)}`,
+      description.throwStatement({ displayValue: displayValue(value) }),
       code,
     );
     this.returnValue = this.makeThrownError(value);
@@ -6506,7 +6506,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      "break — exiting loop",
+      description.breakStatement(),
       code,
     );
     throw new BreakSignal();
@@ -6517,7 +6517,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      "continue — next iteration",
+      description.continueStatement(),
       code,
     );
     throw new ContinueSignal();
@@ -6601,7 +6601,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(callNode),
       this.getColumn(callNode),
-      `${funcName}(${argsDisplay}) — generator object created (suspended)`,
+      description.generatorCreated({ funcName, argsDisplay }),
       code,
     );
 
@@ -6629,7 +6629,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        `gen.${method}() — generator already closed`,
+        description.generatorAlreadyClosed({ method }),
         code,
       );
       return { value: undefined, done: true };
@@ -6677,7 +6677,7 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        "Generator closed — max iterations reached",
+        description.generatorMaxIterations(),
         code,
       );
       return { value: undefined, done: true };
@@ -6777,7 +6777,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `gen.next(${inputValue !== undefined ? displayValue(inputValue) : ""}) — resuming generator`,
+      description.generatorNext({ inputValue: inputValue !== undefined ? displayValue(inputValue) : undefined }),
       code,
     );
 
@@ -6850,7 +6850,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(stmt),
           this.getColumn(stmt),
-          `yield ${displayValue(yieldedValue)} — generator suspended, returned { value: ${displayValue(yieldedValue)}, done: false }`,
+          description.yieldStatement({ displayValue: displayValue(yieldedValue) }),
           yieldCode,
         );
 
@@ -6910,7 +6910,7 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      `Generator ${funcName} completed — returned { value: ${displayValue(returnValue)}, done: true }`,
+      description.generatorCompleted({ funcName, displayValue: displayValue(returnValue) }),
       "",
     );
 
@@ -6950,7 +6950,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `gen.return(${displayValue(value)}) — generator closed`,
+      description.generatorReturn({ displayValue: displayValue(value) }),
       code,
     );
 
@@ -6991,7 +6991,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `gen.throw(${displayValue(error)}) — generator closed with error`,
+      description.generatorThrow({ displayValue: displayValue(error) }),
       code,
     );
 
@@ -7137,7 +7137,7 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `for...of — iterating over ${this.isGeneratorWrapper(iterableValue) ? "generator" : "iterable"}`,
+      description.forOfStart({ isGenerator: this.isGeneratorWrapper(iterableValue) }),
       code,
     );
 
@@ -7196,7 +7196,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          `for...of — received ${displayValue(result.value)} from generator`,
+          description.forOfGeneratorValue({ displayValue: displayValue(result.value) }),
           code,
         );
 
@@ -7257,7 +7257,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          `for...of iteration ${i + 1} — ${varName} = ${resolved.displayValue}`,
+          description.forOfIteration({ iteration: i + 1, varName, displayValue: resolved.displayValue }),
           code,
         );
 
@@ -7313,7 +7313,7 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          `for...of iteration ${i + 1} — ${varName} = ${resolved.displayValue}`,
+          description.forOfIteration({ iteration: i + 1, varName, displayValue: resolved.displayValue }),
           code,
         );
 

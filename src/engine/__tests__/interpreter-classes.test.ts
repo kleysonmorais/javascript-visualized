@@ -153,7 +153,7 @@ describe("Interpreter — Classes", () => {
 
   it("class declaration step description includes class name", () => {
     const steps = run("class Foo {}");
-    const declStep = steps.find((s) => s.description.includes("Declaring class Foo"));
+    const declStep = steps.find((s) => s.description.includes("Declaring class **Foo**"));
     expect(declStep).toBeDefined();
   });
 
