@@ -19,6 +19,21 @@ import type { PlaybackSpeed } from "@/types";
 
 const SPEEDS: PlaybackSpeed[] = [0.5, 1, 1.5, 2, 3];
 
+function renderBoldText(text: string) {
+  return text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
+    i % 2 === 1 ? (
+      <strong
+        key={i}
+        style={{ color: THEME.colors.syntax.string, fontWeight: 600 }}
+      >
+        {part}
+      </strong>
+    ) : (
+      part
+    ),
+  );
+}
+
 function StepDescription() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -59,7 +74,9 @@ function StepDescription() {
           <RefreshCw size={14} color={THEME.colors.text.accent} />
         )}
       </span>
-      <span className="min-w-0 wrap-break-word">{displayText}</span>
+      <span className="min-w-0 wrap-break-word">
+        {renderBoldText(displayText)}
+      </span>
     </div>
   );
 }

@@ -32,6 +32,7 @@ import type {
   PendingMicrotask,
   PromiseReaction,
 } from "./promise";
+import description from "@/utils/stepDescriptions";
 
 // ESTree node types (extending acorn.Node)
 interface BaseNode {
@@ -1063,12 +1064,7 @@ export class Interpreter {
       description: "Executing synchronous code",
     };
 
-    this.snapshot(
-      1,
-      0,
-      isModule ? "Starting module execution" : "Starting program execution",
-      "",
-    );
+    this.snapshot(1, 0, description.startingExecution(isModule), "");
   }
 
   private pushFrame(
@@ -2551,12 +2547,14 @@ export class Interpreter {
       });
     }
 
-    const asyncPrefix = node.async ? "async " : "";
-    const generatorPrefix = isGenerator ? "generator function* " : "function ";
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      `Declaring ${asyncPrefix}${generatorPrefix}${name}`,
+      description.declaringFunction({
+        name,
+        isAsync: node.async,
+        isGenerator,
+      }),
       code,
     );
   }
@@ -4138,9 +4136,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      receiver !== null
-        ? `Calling ${funcName}(${argsDisplay}) on instance`
-        : `Calling ${funcName}(${argsDisplay})`,
+      description.callingFunction({
+        name: funcName,
+        argsDisplay,
+        receiver,
+      }),
       code,
     );
 
