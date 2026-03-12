@@ -8,7 +8,7 @@ interface CodeEditorProps {
   highlightedLine?: number;
 }
 
-const THEME_NAME = "js-visualizer-dark";
+const THEME_NAME = "javascript-visualized-dark";
 
 function defineEditorTheme(monaco: typeof Monaco) {
   monaco.editor.defineTheme(THEME_NAME, {

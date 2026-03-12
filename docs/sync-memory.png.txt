@@ -1,0 +1,8 @@
+# TODO: Capture a screenshot showing:
+# - Synchronous execution example
+# - Function call with Local Memory visible
+# - Call Stack with multiple colored frames
+# - Memory panel showing primitives, ⓕ, and [Pointer] references
+# Resolution: 1400x900px recommended
+
+Replace this file with sync-memory.png after capturing.
