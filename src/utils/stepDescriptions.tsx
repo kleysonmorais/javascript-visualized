@@ -122,7 +122,13 @@ const callingFunction = ({
   argsDisplay: string;
 }) => {
   if (receiver) {
-    return `Calling ${argsDisplay ? `**${name}** with arguments (${argsDisplay})` : `**${name}()**`} on receiver ${JSON.stringify(receiver)}. A new Execution Context is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.`;
+    let receiverDisplay: string;
+    try {
+      receiverDisplay = JSON.stringify(receiver);
+    } catch {
+      receiverDisplay = "[Object]";
+    }
+    return `Calling ${argsDisplay ? `**${name}** with arguments (${argsDisplay})` : `**${name}()**`} on receiver ${receiverDisplay}. A new Execution Context is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.`;
   }
   return `Calling ${argsDisplay ? `**${name}** with arguments (${argsDisplay})` : `**${name}()**`}. A new **Execution Context** is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.`;
 };
