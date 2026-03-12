@@ -1,5 +1,4 @@
 import { parseCode } from "./parser";
-import type { SourceType } from "./parser";
 import { Interpreter } from "./interpreter";
 import type { ExecutionStep } from "@/types";
 
