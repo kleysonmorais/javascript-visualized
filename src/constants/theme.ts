@@ -24,7 +24,7 @@ export const THEME = {
       primary: "#e5e7eb",
       secondary: "#9ca3af",
       muted: "#6b7280",
-      accent: "#22d3ee", // cyan for highlights
+      accent: "#F8E019", // bright yellow for highlights and accents
     },
     // Syntax highlighting accents
     syntax: {
