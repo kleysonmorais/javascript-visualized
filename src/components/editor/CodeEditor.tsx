@@ -117,7 +117,7 @@ export function CodeEditor({ highlightedLine }: CodeEditorProps) {
 
     // Register hover provider for variable values during execution
     monaco.languages.registerHoverProvider("javascript", {
-      provideHover: (model, position) => {
+      provideHover: (model: Monaco.editor.ITextModel, position: Monaco.Position) => {
         const state = useVisualizerStore.getState();
         const currentStep = state.currentStep;
 
