@@ -1,6 +1,7 @@
-import { Github } from "lucide-react";
+import GitHubButton from "react-github-btn";
 import { THEME } from "@/constants/theme";
 import { ExamplesDropdown } from "./ExamplesDropdown";
+import { FaJsSquare } from "react-icons/fa";
 
 export function Navbar() {
   return (
@@ -11,7 +12,6 @@ export function Navbar() {
         borderBottom: `1px solid ${THEME.colors.border.editor}`,
       }}
     >
-      {/* Left side - Logo/Title */}
       <div
         className="flex items-center gap-2 text-base sm:text-lg font-semibold"
         style={{
@@ -19,40 +19,23 @@ export function Navbar() {
           fontFamily: THEME.fonts.ui,
         }}
       >
-        <span style={{ color: THEME.colors.text.accent }}>&lt;/&gt;</span>
-        <span className="hidden sm:inline">JS Visualizer</span>
+        <FaJsSquare size={25} style={{ color: THEME.colors.text.accent }} />
+        <span className="hidden sm:inline">Visualized</span>
         <span className="sm:hidden">JS Viz</span>
       </div>
 
-      {/* Center - Examples Dropdown */}
       <ExamplesDropdown />
 
-      {/* Right side - GitHub link */}
-      <a
+      <GitHubButton
         href="https://github.com/kleysonmorais/javascript-visualized"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg transition-colors min-h-9 min-w-9 justify-center"
-        style={{
-          border: `1px solid ${THEME.colors.border.editor}`,
-          backgroundColor: "transparent",
-          color: THEME.colors.text.secondary,
-          fontFamily: THEME.fonts.ui,
-          fontSize: 13,
-          textDecoration: "none",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = THEME.colors.text.accent;
-          e.currentTarget.style.color = THEME.colors.text.primary;
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = THEME.colors.border.editor;
-          e.currentTarget.style.color = THEME.colors.text.secondary;
-        }}
+        data-color-scheme="no-preference: light; light: light; dark: dark;"
+        data-icon="octicon-star"
+        data-size="large"
+        data-show-count="true"
+        aria-label="Star kleysonmorais/javascript-visualized on GitHub"
       >
-        <Github size={16} />
-        <span className="hidden sm:inline">★ Star</span>
-      </a>
+        Star
+      </GitHubButton>
     </nav>
   );
 }
