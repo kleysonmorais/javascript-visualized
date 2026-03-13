@@ -6,7 +6,8 @@ export const CLOSURES_EXAMPLES: CodeExample[] = [
     title: "Closures",
     description: "Variables survive beyond their scope through [[Scope]]",
     category: "closures",
-    code: `function createCounter() {
+    code: `// Closures
+function createCounter() {
   let count = 0;
   return function increment() {
     count++;

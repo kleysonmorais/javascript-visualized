@@ -6,7 +6,8 @@ export const ASYNC_EXAMPLES: CodeExample[] = [
     title: "setTimeout Ordering",
     description: "Understand why shorter delays execute first",
     category: "async",
-    code: `console.log("Start");
+    code: `// setTimeout Ordering
+console.log("Start");
 
 setTimeout(() => {
   console.log("Timeout 2000ms");
@@ -27,7 +28,8 @@ console.log("End");`,
     title: "Promise vs setTimeout",
     description: "Microtasks always run before macrotasks — the classic quiz",
     category: "async",
-    code: `console.log("1");
+    code: `// Promise vs setTimeout
+console.log("1");
 
 setTimeout(() => console.log("2"), 0);
 
@@ -44,7 +46,8 @@ console.log("5");`,
     title: "Async/Await Flow",
     description: "Watch async functions suspend and resume with fetch",
     category: "async",
-    code: `console.log("Start");
+    code: `// Async/Await Flow
+console.log("Start");
 
 async function fetchData() {
   console.log("Fetching...");
@@ -65,7 +68,8 @@ console.log("End");`,
     title: "Event Loop Quiz",
     description: "Can you predict the output order? (Try before running!)",
     category: "async",
-    code: `console.log("A");
+    code: `// Event Loop Quiz
+console.log("A");
 
 setTimeout(() => console.log("B"), 0);
 
@@ -85,7 +89,8 @@ console.log("G");`,
     title: "Microtask vs Macrotask",
     description: "See why Promises execute before setTimeout(0)",
     category: "async",
-    code: `function logA() { console.log('A') }
+    code: `// Microtask vs Macrotask
+function logA() { console.log('A') }
 function logB() { console.log('B') }
 function logC() { console.log('C') }
 function logD() { console.log('D') }
@@ -100,7 +105,8 @@ logD();`,
     title: "Timer Race",
     description: "Timers with different delays — who wins?",
     category: "async",
-    code: `setTimeout(function a() {}, 1000);
+    code: `// Timer Race
+setTimeout(function a() {}, 1000);
 
 setTimeout(function b() {}, 500);
 

@@ -7,7 +7,8 @@ export const SYNC_EXAMPLES: CodeExample[] = [
     description:
       "See how primitives, objects, and functions are stored in memory",
     category: "sync",
-    code: `const myName = "Joe";
+    code: `// Variables & Memory
+const myName = "Joe";
 const age = 23;
 const person = { name: "Joe", age: 23 };
 const person2 = person;
@@ -23,7 +24,8 @@ console.log(message);`,
     description:
       "Two variables pointing to the same object — same color, same reference",
     category: "sync",
-    code: `const original = { x: 1, y: 2 };
+    code: `// Reference vs Value
+const original = { x: 1, y: 2 };
 const copy = original;
 copy.x = 99;
 console.log("original.x:", original.x);
@@ -35,7 +37,8 @@ console.log("Same object?", original === copy);`,
     title: "Function Calls & Scope",
     description: "Watch local memory appear and disappear with the call stack",
     category: "sync",
-    code: `function multiply(a, b) {
+    code: `// Function Calls & Scope
+function multiply(a, b) {
   const result = a * b;
   return result;
 }
@@ -53,7 +56,8 @@ console.log(answer);`,
     title: "Deep Call Stack",
     description: "Watch the call stack grow with 10 nested function calls",
     category: "sync",
-    code: `function tenth() { }
+    code: `// Deep Call Stack
+function tenth() { }
 
 function ninth() { tenth() }
 

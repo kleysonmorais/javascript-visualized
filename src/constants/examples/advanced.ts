@@ -6,7 +6,8 @@ export const ADVANCED_EXAMPLES: CodeExample[] = [
     title: "Blocking Computation",
     description: "A long-running loop blocks the entire event loop",
     category: "advanced",
-    code: `function isPrime(n) {
+    code: `// Blocking Computation
+function isPrime(n) {
   for (let i = 2; i < n; i++) {
     if (n % i === 0) return false;
   }
@@ -29,7 +30,8 @@ computePrimes(prime => {
     title: "Chunked with setTimeout",
     description: "Break work into chunks using macrotasks to stay responsive",
     category: "advanced",
-    code: `function isPrime(n) {
+    code: `// Chunked with setTimeout
+function isPrime(n) {
   for (let i = 2; i < n; i++) {
     if (n % i === 0) return false;
   }
@@ -55,7 +57,8 @@ computePrimes(prime => {
     title: "Chunked with Promise",
     description: "Break work using microtasks — faster but still blocking",
     category: "advanced",
-    code: `function isPrime(n) {
+    code: `// Chunked with Promise
+function isPrime(n) {
   for (let i = 2; i < n; i++) {
     if (n % i === 0) return false;
   }

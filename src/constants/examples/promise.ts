@@ -7,7 +7,8 @@ export const PROMISE_EXAMPLES: CodeExample[] = [
     description:
       "Create a Promise, resolve it, and handle the value with .then()",
     category: "promise",
-    code: `const p = new Promise((resolve) => {
+    code: `// Promise Basics
+const p = new Promise((resolve) => {
   resolve(42);
 });
 
@@ -22,7 +23,8 @@ console.log("sync done");`,
     title: "Promise Chaining",
     description: "Transform values through a chain of .then() microtasks",
     category: "promise",
-    code: `Promise.resolve(1)
+    code: `// Promise Chaining
+Promise.resolve(1)
   .then((v) => v + 1)
   .then((v) => v * 3)
   .then((v) => {
@@ -36,7 +38,8 @@ console.log("chain started");`,
     title: "Promise Reject & Catch",
     description: "Reject a Promise and recover with .catch()",
     category: "promise",
-    code: `Promise.reject("something went wrong")
+    code: `// Promise Reject & Catch
+Promise.reject("something went wrong")
   .catch((reason) => {
     console.log("caught:", reason);
     return "recovered";
@@ -53,7 +56,8 @@ console.log("sync");`,
     description:
       "Run multiple Promises concurrently and collect all results",
     category: "promise",
-    code: `const p1 = Promise.resolve(10);
+    code: `// Promise.all
+const p1 = Promise.resolve(10);
 const p2 = Promise.resolve(20);
 const p3 = Promise.resolve(30);
 
