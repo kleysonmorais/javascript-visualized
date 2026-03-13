@@ -1,9 +1,0 @@
-# TODO: Capture a screenshot of the app showing:
-# - Code editor with the "Async/Await Flow" example
-# - Call Stack with colored frames
-# - Memory panel with Global Memory + ⓕ + [Pointer]
-# - Heap showing Promise internals
-# - Console with output
-# Resolution: 1400x900px recommended
-
-Replace this file with screenshot.png after capturing.

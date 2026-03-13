@@ -1,7 +1,0 @@
-# TODO: Capture a screenshot showing:
-# - Closure example with [[Scope]] visible
-# - Function in Heap with captured variables
-# - Memory showing closure persisting beyond its original frame
-# Resolution: 1400x900px recommended
-
-Replace this file with closures.png after capturing.

@@ -2,7 +2,7 @@
 
 > An interactive educational tool that visualizes JavaScript execution step-by-step — including Call Stack, Memory (local, global, heap), Event Loop, Task Queue, Microtask Queue, and Promises.
 
-![Screenshot of the app](./docs/screenshot.png)
+![Screenshot of the app](./docs/execution-context.gif)
 
 ## ✨ What makes this different?
 

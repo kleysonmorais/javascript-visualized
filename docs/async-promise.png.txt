@@ -1,8 +1,0 @@
-# TODO: Capture a screenshot showing:
-# - Async execution with Promise vs setTimeout
-# - Microtask Queue with Promise callbacks
-# - Task Queue with setTimeout callbacks
-# - Event Loop indicator showing current phase
-# Resolution: 1400x900px recommended
-
-Replace this file with async-promise.png after capturing.
