@@ -52,7 +52,7 @@ console.log(answer);`,
     id: "closures",
     title: "Closures",
     description: "Variables survive beyond their scope through [[Scope]]",
-    category: "sync",
+    category: "closures",
     code: `function createCounter() {
   let count = 0;
   return function increment() {

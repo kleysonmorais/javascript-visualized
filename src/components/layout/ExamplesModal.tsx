@@ -27,7 +27,7 @@ const EXAMPLE_GROUPS: ExampleGroup[] = [
     label: "Closures",
     description: "Lexical scope and closure patterns",
     color: "#22c55e", // green
-    categories: ["sync"], // closures are sync category for now
+    categories: ["closures"],
   },
   {
     id: "promises",

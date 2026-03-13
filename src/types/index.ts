@@ -169,5 +169,5 @@ export interface CodeExample {
   title: string;
   description: string;
   code: string;
-  category: "sync" | "async" | "promise" | "advanced";
+  category: "sync" | "async" | "promise" | "advanced" | "closures";
 }
