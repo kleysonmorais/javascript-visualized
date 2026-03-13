@@ -14,15 +14,7 @@ const TYPE_LABELS: Record<CallStackFrame["type"], string> = {
   generator: "gen",
 };
 
-interface CallStackProps {
-  collapsible?: boolean;
-  defaultCollapsed?: boolean;
-}
-
-export function CallStack({
-  collapsible,
-  defaultCollapsed,
-}: CallStackProps = {}) {
+export function CallStack() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
   const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
@@ -33,12 +25,7 @@ export function CallStack({
   const reversed = [...frames].reverse();
 
   return (
-    <Panel
-      title="Call Stack"
-      className="flex-1 min-h-0"
-      collapsible={collapsible}
-      defaultCollapsed={defaultCollapsed}
-    >
+    <Panel title="Call Stack" className="flex-1 min-h-0">
       {reversed.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span

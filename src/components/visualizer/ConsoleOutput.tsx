@@ -13,15 +13,7 @@ const METHOD_COLORS: Record<ConsoleMethod, string> = {
   error: THEME.colors.status.error,
 };
 
-interface ConsoleOutputProps {
-  collapsible?: boolean;
-  defaultCollapsed?: boolean;
-}
-
-export function ConsoleOutput({
-  collapsible,
-  defaultCollapsed,
-}: ConsoleOutputProps = {}) {
+export function ConsoleOutput() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const { duration, shouldReduceMotion } = useAnimationConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -38,12 +30,7 @@ export function ConsoleOutput({
   }, [entries]);
 
   return (
-    <Panel
-      title="console"
-      className="shrink-0"
-      collapsible={collapsible}
-      defaultCollapsed={defaultCollapsed}
-    >
+    <Panel title="console" className="shrink-0">
       <div
         ref={scrollRef}
         className="flex flex-col gap-1 h-full overflow-y-auto min-h-40 

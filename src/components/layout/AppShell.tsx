@@ -13,7 +13,6 @@ import { Navbar } from "@/components/layout/Navbar";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useIsMobile } from "@/hooks/useMediaQuery";
 import { ExamplesButton } from "./ExamplesModal";
 
 export function AppShell() {
@@ -25,8 +24,6 @@ export function AppShell() {
   const clearError = useVisualizerStore((s) => s.clearError);
 
   const hasSteps = steps.length > 0;
-
-  const isMobile = useIsMobile();
 
   useAutoPlay();
   useKeyboardShortcuts();
@@ -167,17 +164,17 @@ export function AppShell() {
 
         <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
           <div className="flex flex-col lg:flex-row gap-2 lg:flex-1 lg:min-h-0">
-            <CallStack collapsible={isMobile} />
-            <MemoryPanel collapsible={isMobile} />
+            <CallStack />
+            <MemoryPanel />
           </div>
 
-          <WebAPIs collapsible={isMobile} defaultCollapsed={isMobile} />
+          <WebAPIs />
 
           <MicrotaskQueue />
           <TaskQueue />
 
           <div className="lg:hidden">
-            <ConsoleOutput collapsible={isMobile} />
+            <ConsoleOutput />
           </div>
         </div>
       </main>

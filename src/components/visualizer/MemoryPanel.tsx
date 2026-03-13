@@ -6,15 +6,7 @@ import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import { MemoryBlockCard } from "./MemoryBlockCard";
 import { HeapSection } from "./HeapSection";
 
-interface MemoryPanelProps {
-  collapsible?: boolean;
-  defaultCollapsed?: boolean;
-}
-
-export function MemoryPanel({
-  collapsible,
-  defaultCollapsed,
-}: MemoryPanelProps = {}) {
+export function MemoryPanel() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const memoryBlocks = currentStep?.memoryBlocks ?? [];
   const heap = currentStep?.heap ?? [];
@@ -26,12 +18,7 @@ export function MemoryPanel({
   const isEmpty = reversed.length === 0 && heap.length === 0;
 
   return (
-    <Panel
-      title="Memory"
-      className="flex-1 min-h-0"
-      collapsible={collapsible}
-      defaultCollapsed={defaultCollapsed}
-    >
+    <Panel title="Memory" className="flex-1 min-h-0">
       {isEmpty ? (
         <div className="flex items-center justify-center h-full">
           <span
