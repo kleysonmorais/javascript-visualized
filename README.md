@@ -1,4 +1,4 @@
-# JavaScript Visualized
+# <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg" width="32" height="32" style="vertical-align:middle"> JS Visualized
 
 > An interactive educational tool that visualizes JavaScript execution step-by-step — including Call Stack, Memory (local, global, heap), Event Loop, Task Queue, Microtask Queue, and Promises.
 
