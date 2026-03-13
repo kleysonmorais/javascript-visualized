@@ -4,7 +4,7 @@
 
 ![Screenshot of the app](./docs/execution-context.gif)
 
-## Why?
+## 🤔 Why?
 
 JavaScript's execution model — call stack, closures, event loop, promises — is notoriously hard to reason about from text alone. Most developers learn it once, forget half of it, and look it up again when something breaks. This tool exists to make that mental model stick by letting you *see* it in motion, step by step.
 
