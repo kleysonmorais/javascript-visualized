@@ -181,7 +181,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
               </div>
               <button
                 onClick={onClose}
-                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
+                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors cursor-pointer"
                 style={{
                   backgroundColor: "transparent",
                   border: `1px solid ${THEME.colors.border.editor}`,
@@ -316,20 +316,21 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
   );
 }
 
-export function ExamplesDropdown() {
+export function ExamplesButton() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <>
       <button
         onClick={() => setIsModalOpen(true)}
-        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors min-h-9 lg:min-h-0"
         style={{
+          backgroundColor: THEME.colors.bg.elevated,
           border: `1px solid ${THEME.colors.border.editor}`,
-          backgroundColor: "transparent",
           color: THEME.colors.text.secondary,
           fontFamily: THEME.fonts.ui,
-          fontSize: 13,
+          fontSize: 12,
+          cursor: "pointer",
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.borderColor = THEME.colors.text.accent;

@@ -1,6 +1,5 @@
 import GitHubButton from "react-github-btn";
 import { THEME } from "@/constants/theme";
-import { ExamplesDropdown } from "./ExamplesDropdown";
 import { FaJsSquare } from "react-icons/fa";
 
 export function Navbar() {
@@ -23,8 +22,6 @@ export function Navbar() {
         <span className="hidden sm:inline">JS Visualized</span>
         <span className="sm:hidden">JS Viz</span>
       </div>
-
-      <ExamplesDropdown />
 
       <GitHubButton
         href="https://github.com/kleysonmorais/javascript-visualized"

@@ -14,6 +14,7 @@ import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+import { ExamplesButton } from "./ExamplesModal";
 
 export function AppShell() {
   const isRunning = useVisualizerStore((s) => s.isRunning);
@@ -50,8 +51,11 @@ export function AppShell() {
             title="Code"
             className="flex-1 min-h-0 lg:min-h-50"
             scrollable={false}
-            collapsible={isMobile}
-            defaultCollapsed={isMobile}
+            headerLeft={
+              <div className="flex items-center gap-2">
+                <ExamplesButton />
+              </div>
+            }
             headerRight={
               <div className="flex items-center gap-2">
                 {hasSteps && (
