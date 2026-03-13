@@ -2294,6 +2294,24 @@ export class Interpreter {
         this.destructureObjectParam(paramNode as ObjectPatternNode, argValue);
       } else if (paramNode.type === "ArrayPattern") {
         this.destructureArrayParam(paramNode as ArrayPatternNode, argValue);
+      } else if (paramNode.type === "AssignmentPattern" && argValue === undefined) {
+        // Default parameter: apply default value when argument is missing/undefined
+        const assignPattern = paramNode as AssignmentPatternNode;
+        const varName = (assignPattern.left as IdentifierNode).name;
+        const defaultValue = this.evaluateExpression(assignPattern.right);
+        this.setVariable(varName, defaultValue, true);
+        // Update memory block entry to reflect the default value
+        const resolved = this.resolveValueForMemory(defaultValue);
+        const currentBlock = this.memoryBlocks[this.memoryBlocks.length - 1];
+        if (currentBlock) {
+          const entry = currentBlock.entries.find((e) => e.name === varName);
+          if (entry) {
+            entry.valueType = resolved.valueType;
+            entry.displayValue = resolved.displayValue;
+            entry.heapReferenceId = resolved.heapReferenceId;
+            entry.pointerColor = resolved.pointerColor;
+          }
+        }
       }
       // Identifier params are already handled by pushFrame
     }
@@ -5608,6 +5626,10 @@ export class Interpreter {
     for (const p of node.params) {
       if (p.type === "Identifier") {
         params.push((p as IdentifierNode).name);
+      } else if (p.type === "AssignmentPattern") {
+        // Default parameter: extract the variable name from the left side
+        const left = (p as AssignmentPatternNode).left;
+        params.push(left.type === "Identifier" ? (left as IdentifierNode).name : `__pattern_${params.length}`);
       } else {
         // Placeholder name for pattern params - actual binding happens at call time
         params.push(`__pattern_${params.length}`);
@@ -5640,6 +5662,10 @@ export class Interpreter {
     for (const p of node.params) {
       if (p.type === "Identifier") {
         params.push((p as IdentifierNode).name);
+      } else if (p.type === "AssignmentPattern") {
+        // Default parameter: extract the variable name from the left side
+        const left = (p as AssignmentPatternNode).left;
+        params.push(left.type === "Identifier" ? (left as IdentifierNode).name : `__pattern_${params.length}`);
       } else {
         params.push(`__pattern_${params.length}`);
       }
