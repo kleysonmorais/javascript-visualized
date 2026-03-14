@@ -15,6 +15,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@tailwindcss/vite": "^4.2.1",
+    "@vercel/analytics": "^2.0.1",
     "acorn": "^8.16.0",
     "framer-motion": "^12.35.0",
     "lucide-react": "^0.577.0",
