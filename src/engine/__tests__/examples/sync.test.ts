@@ -9,6 +9,7 @@ import {
   frameNames,
 } from "../helpers";
 import { SYNC_EXAMPLES } from "@/constants/examples";
+import stepDescriptions from "@/utils/stepDescriptions";
 
 describe("Sync Examples", () => {
   describe("all sync examples execute successfully", () => {
@@ -76,6 +77,11 @@ describe("Sync Examples", () => {
       const entry = getMemoryEntry(step, "message");
       expect(entry).toBeDefined();
       expect(entry!.displayValue).toContain("Hello Joe");
+    });
+
+    it("description execution complete", () => {
+      const step = lastStep(example.code);
+      expect(step.description).toBe(stepDescriptions.executionComplete());
     });
   });
 

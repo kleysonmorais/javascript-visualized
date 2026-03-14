@@ -63,7 +63,7 @@ describe("Closures Examples", () => {
     it("assigning count++", () => {
       const assignedStep = {
         index: 8,
-        line: 4,
+        line: 5,
         column: 4,
         description:
           "Assigning **count** = count + 1. The variable is updated in-place in the Variable Environment.",

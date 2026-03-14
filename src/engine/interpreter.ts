@@ -666,6 +666,11 @@ export class Interpreter {
       this.envStack.push(this.globalEnv);
     }
 
+    const hasAsyncWork =
+      this.pendingMicrotasks.length > 0 ||
+      this.pendingTimers.filter((t) => !t.cancelled).length > 0 ||
+      this.pendingFetches.filter((f) => !f.processed).length > 0;
+
     this.eventLoop = {
       phase: "checking-tasks",
       description: "All synchronous code executed — checking for async tasks",
@@ -673,9 +678,13 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      description.checkingMicrotaskQueue(),
+      hasAsyncWork
+        ? description.checkingMicrotaskQueue()
+        : description.executionComplete(),
       "",
     );
+
+    if (!hasAsyncWork) return this.steps;
 
     // Phase 2: Process async callbacks (supports nested timers via iteration)
     this.processAsyncCallbacks();
@@ -791,13 +800,8 @@ export class Interpreter {
       this.webAPIs = this.webAPIs.filter((w) => !cancelledIds.has(w.id));
     }
 
-    const hasAnyTimers = this.pendingTimers.length > 0;
-    const hadMicrotasks =
-      this.microtaskQueue.length > 0 || this.pendingMicrotasks.length > 0;
-    if (hasAnyTimers || hadMicrotasks) {
-      this.eventLoop = { phase: "idle", description: "All tasks completed" };
-      this.snapshot(0, 0, description.executionComplete(), "");
-    }
+    this.eventLoop = { phase: "idle", description: "All tasks completed" };
+    this.snapshot(0, 0, description.executionComplete(), "");
   }
 
   private drainMicrotaskQueue(): void {
