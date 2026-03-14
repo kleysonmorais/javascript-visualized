@@ -3349,13 +3349,28 @@ export class Interpreter {
 
         resolvedObj[propName] = finalValue;
 
-        // If this was a `this.prop` assignment, sync the heap object
-        if (isThisExpr) {
-          const heapId = this.objectHeapMap.get(resolvedObj);
-          const heapObj = heapId
-            ? this.heap.find((h) => h.id === heapId)
-            : undefined;
-          if (heapObj) this.syncInstanceHeapObject(heapObj, resolvedObj);
+        // Sync the heap object for any object property assignment
+        const heapId = this.objectHeapMap.get(resolvedObj);
+        const heapObj = heapId
+          ? this.heap.find((h) => h.id === heapId)
+          : undefined;
+        if (heapObj) {
+          if (isThisExpr) {
+            this.syncInstanceHeapObject(heapObj, resolvedObj);
+          } else {
+            const newProps: HeapObjectProperty[] = [];
+            for (const [key, val] of Object.entries(resolvedObj)) {
+              const propResolved = this.resolveValueForMemoryShallow(val);
+              newProps.push({
+                key,
+                displayValue: propResolved.displayValue,
+                valueType: propResolved.valueType,
+                heapReferenceId: propResolved.heapReferenceId,
+                pointerColor: propResolved.pointerColor,
+              });
+            }
+            heapObj.properties = newProps;
+          }
         }
       }
 
