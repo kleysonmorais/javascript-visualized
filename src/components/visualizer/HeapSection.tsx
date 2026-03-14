@@ -183,25 +183,82 @@ function PropRow({
 // ─── closure scope section ────────────────────────────────────────────────────
 
 function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
+  const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
+  const setHoveredHeapId = useVisualizerStore((s) => s.setHoveredHeapId);
+  const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
+  const { duration, shouldReduceMotion } = useAnimationConfig();
+
+  const isHighlighted =
+    variable.heapReferenceId !== undefined &&
+    variable.heapReferenceId === hoveredHeapId;
+
+  const handleMouseEnter = () => {
+    if (variable.heapReferenceId) {
+      setHoveredPointerId(variable.heapReferenceId);
+      setHoveredHeapId(variable.heapReferenceId);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (variable.heapReferenceId) {
+      setHoveredPointerId(null);
+      setHoveredHeapId(null);
+    }
+  };
+
   const renderValue = () => {
     if (variable.valueType === "function") {
       return (
-        <span
+        <motion.span
           className="flex items-center gap-0.5"
-          style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}
+          style={{
+            fontFamily: THEME.fonts.code,
+            fontSize: 11,
+            cursor: variable.heapReferenceId ? "pointer" : "default",
+          }}
+          animate={
+            isHighlighted && variable.pointerColor
+              ? {
+                  textShadow: `0 0 8px ${variable.pointerColor}, 0 0 20px ${variable.pointerColor}`,
+                  backgroundColor: `${variable.pointerColor}40`,
+                  padding: "0 3px",
+                  borderRadius: 2,
+                }
+              : {}
+          }
+          transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <span style={{ color: THEME.colors.syntax.function }}>ƒ</span>
           {variable.pointerColor && (
             <span style={{ color: variable.pointerColor, fontSize: 8 }}>●</span>
           )}
-        </span>
+        </motion.span>
       );
     }
     if (variable.valueType === "object") {
       return (
-        <span
+        <motion.span
           className="flex items-center gap-0.5"
-          style={{ fontFamily: THEME.fonts.code, fontSize: 10 }}
+          style={{
+            fontFamily: THEME.fonts.code,
+            fontSize: 10,
+            cursor: variable.heapReferenceId ? "pointer" : "default",
+          }}
+          animate={
+            isHighlighted && variable.pointerColor
+              ? {
+                  textShadow: `0 0 8px ${variable.pointerColor}, 0 0 20px ${variable.pointerColor}`,
+                  backgroundColor: `${variable.pointerColor}40`,
+                  padding: "0 3px",
+                  borderRadius: 2,
+                }
+              : {}
+          }
+          transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <span style={{ color: THEME.colors.text.muted, fontStyle: "italic" }}>
             ref
@@ -209,7 +266,7 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
           {variable.pointerColor && (
             <span style={{ color: variable.pointerColor, fontSize: 8 }}>●</span>
           )}
-        </span>
+        </motion.span>
       );
     }
     return (
