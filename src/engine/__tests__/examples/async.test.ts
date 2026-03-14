@@ -133,6 +133,105 @@ describe("Async Examples", () => {
     });
   });
 
+  // ─── Microtask vs Macrotask ───────────────────────────
+
+  describe("microtask-vs-macrotask example", () => {
+    const example = ASYNC_EXAMPLES.find(
+      (e) => e.id === "microtask-vs-macrotask",
+    )!;
+
+    it("synchronous calls (A, D) execute first", () => {
+      const output = consoleOutput(example.code);
+      expect(output[0]).toBe("A");
+      expect(output[1]).toBe("D");
+    });
+
+    it("Promise microtask (C) runs before setTimeout macrotask (B)", () => {
+      const output = consoleOutput(example.code);
+      const cIndex = output.indexOf("C");
+      const bIndex = output.indexOf("B");
+      expect(cIndex).toBeLessThan(bIndex);
+    });
+
+    it("complete output order is A, D, C, B", () => {
+      const output = consoleOutput(example.code);
+      expect(output).toEqual(["A", "D", "C", "B"]);
+    });
+
+    it("setTimeout callback appears in task queue", () => {
+      const steps = run(example.code);
+      const stepWithTask = steps.find((s) => s.taskQueue.length > 0);
+      expect(stepWithTask).toBeDefined();
+    });
+
+    it("Promise callback appears in microtask queue", () => {
+      const steps = run(example.code);
+      const stepWithMicrotask = steps.find((s) => s.microtaskQueue.length > 0);
+      expect(stepWithMicrotask).toBeDefined();
+    });
+
+    it("logA and logD frames appear on call stack", () => {
+      const steps = run(example.code);
+      const logAStep = steps.find((s) =>
+        s.callStack.some((f) => f.name === "logA"),
+      );
+      const logDStep = steps.find((s) =>
+        s.callStack.some((f) => f.name === "logD"),
+      );
+      expect(logAStep).toBeDefined();
+      expect(logDStep).toBeDefined();
+    });
+  });
+
+  // ─── Timer Race ───────────────────────────────────────
+
+  describe("timer-race example", () => {
+    const example = ASYNC_EXAMPLES.find((e) => e.id === "timer-race")!;
+
+    it("registers three timers in Web APIs", () => {
+      const steps = run(example.code);
+      const maxWebAPIs = Math.max(...steps.map((s) => s.webAPIs.length));
+      expect(maxWebAPIs).toBe(3);
+    });
+
+    it("d() is called synchronously (frame appears on call stack)", () => {
+      const steps = run(example.code);
+      const dStep = steps.find((s) =>
+        s.callStack.some((f) => f.name === "d"),
+      );
+      expect(dStep).toBeDefined();
+    });
+
+    it("timers fire into the task queue", () => {
+      const steps = run(example.code);
+      const stepWithTask = steps.find((s) => s.taskQueue.length > 0);
+      expect(stepWithTask).toBeDefined();
+    });
+
+    it("callbacks execute in delay order: c (0ms) before b (500ms) before a (1000ms)", () => {
+      const steps = run(example.code);
+      const cStep = steps.findIndex((s) =>
+        s.callStack.some((f) => f.name === "c"),
+      );
+      const bStep = steps.findIndex((s) =>
+        s.callStack.some((f) => f.name === "b"),
+      );
+      const aStep = steps.findIndex((s) =>
+        s.callStack.some((f) => f.name === "a"),
+      );
+      expect(cStep).toBeGreaterThan(-1);
+      expect(bStep).toBeGreaterThan(-1);
+      expect(aStep).toBeGreaterThan(-1);
+      expect(cStep).toBeLessThan(bStep);
+      expect(bStep).toBeLessThan(aStep);
+    });
+
+    it("produces no console output (no console.log calls)", () => {
+      const output = consoleOutput(example.code);
+      expect(output).toHaveLength(0);
+    });
+  });
+
   // ─── Event Loop Quiz ──────────────────────────────────
 
   describe("event-loop-quiz example", () => {

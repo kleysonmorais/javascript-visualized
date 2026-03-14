@@ -532,6 +532,7 @@ interface PendingTimer {
   intervalCount: number;
   processed: boolean; // true once picked up by processAsyncCallbacks
   capturedEnvStack: Record<string, unknown>[]; // closure envs captured at registration time
+  resolvedFnValue?: FunctionValue; // set when callback is passed as an identifier reference
 }
 
 // Internal fetch tracking — resolves a promise when delay elapses
@@ -890,9 +891,10 @@ export class Interpreter {
     );
 
     // Step 4: Execute the callback body
-    const callbackNode = timer.callbackNode as
-      | FunctionExpressionNode
-      | ArrowFunctionExpressionNode;
+    const resolvedFn = timer.resolvedFnValue;
+    const callbackNode = resolvedFn
+      ? null
+      : (timer.callbackNode as FunctionExpressionNode | ArrowFunctionExpressionNode);
 
     const iterationLabel =
       timer.type === "setInterval"
@@ -900,18 +902,30 @@ export class Interpreter {
         : "";
     const execDescription = `Executing ${timer.type} callback${iterationLabel}`;
 
+    // Determine frame name: use named function id, or identifier name, or "callback"
+    const fnIdName =
+      resolvedFn != null
+        ? (timer.callbackSource) // identifier name (e.g. "logB")
+        : ((callbackNode as FunctionExpressionNode)?.id?.name ?? "callback");
+
     // Inject captured closure envs so the callback can access closed-over variables.
     const capturedCount = timer.capturedEnvStack.length;
     if (capturedCount > 0) {
       this.envStack.splice(1, 0, ...timer.capturedEnvStack);
     }
 
-    this.pushFrame(
-      "callback",
-      callbackNode.loc?.start.line ?? 0,
-      callbackNode.loc?.start.column ?? 0,
-      [],
-    );
+    // Also inject closure envs from FunctionValue itself (for identifier references)
+    const fnCapturedMeta = resolvedFn?.capturedEnvMeta ?? [];
+    const fnCapturedEnvs = fnCapturedMeta.map((m) => m.env);
+    const fnCapturedCount = fnCapturedEnvs.length;
+    if (fnCapturedCount > 0) {
+      this.envStack.splice(1, 0, ...fnCapturedEnvs);
+    }
+
+    const lineNum = callbackNode ? (callbackNode.loc?.start.line ?? 0) : 0;
+    const colNum = callbackNode ? (callbackNode.loc?.start.column ?? 0) : 0;
+
+    this.pushFrame(fnIdName, lineNum, colNum, []);
     this.eventLoop = {
       phase: "executing-task",
       description: "Executing callback",
@@ -921,13 +935,17 @@ export class Interpreter {
     this.hasReturned = false;
     this.returnValue = undefined;
 
-    if (
-      callbackNode.type === "ArrowFunctionExpression" &&
-      callbackNode.expression
-    ) {
-      this.evaluateExpression(callbackNode.body as ExpressionNode);
-    } else {
-      this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+    if (callbackNode) {
+      if (
+        callbackNode.type === "ArrowFunctionExpression" &&
+        callbackNode.expression
+      ) {
+        this.evaluateExpression(callbackNode.body as ExpressionNode);
+      } else {
+        this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+      }
+    } else if (resolvedFn) {
+      this.visitBlockStatement(resolvedFn.body as BlockStatementNode);
     }
 
     this.hasReturned = false;
@@ -935,7 +953,10 @@ export class Interpreter {
 
     this.popFrame();
 
-    // Remove injected closure envs
+    // Remove injected closure envs (fn-value envs first, then captured envs)
+    if (fnCapturedCount > 0) {
+      this.envStack.splice(1, fnCapturedCount);
+    }
     if (capturedCount > 0) {
       this.envStack.splice(1, capturedCount);
     }
@@ -3757,17 +3778,22 @@ export class Interpreter {
     const callbackNode: BaseNode = node.arguments[0] as BaseNode;
     const callbackSource = extractSource(this.sourceCode, callbackNode);
 
-    // If it's an identifier, look up the function value but we can't get the AST node back;
-    // for now we only support inline function/arrow expressions
+    // If it's an identifier, resolve to FunctionValue — store on the timer
+    let resolvedTimerFn: FunctionValue | undefined;
     if (callbackNode.type === "Identifier") {
-      const numId = this.timerIdCounter++;
-      this.snapshot(
-        this.getLine(node),
-        this.getColumn(node),
-        description.timerInvalidCallback({ timerName }),
-        code,
-      );
-      return numId;
+      const val = this.lookupVariable((callbackNode as IdentifierNode).name);
+      if (val !== undefined && this.isFunctionValue(val)) {
+        resolvedTimerFn = val;
+      } else {
+        const numId = this.timerIdCounter++;
+        this.snapshot(
+          this.getLine(node),
+          this.getColumn(node),
+          description.timerInvalidCallback({ timerName }),
+          code,
+        );
+        return numId;
+      }
     }
 
     // Get delay (default 0)
@@ -3800,6 +3826,7 @@ export class Interpreter {
       // Capture live env references (skip global at index 0) so the callback
       // can close over variables from enclosing scopes (e.g. onPrime, currNum).
       capturedEnvStack: this.envStack.slice(1),
+      resolvedFnValue: resolvedTimerFn,
     };
     this.pendingTimers.push(timer);
 
@@ -4703,6 +4730,7 @@ export class Interpreter {
       resultPromiseId: reaction.resultPromiseId,
       capturedEnvStack: this.envStack.map((env) => ({ ...env })),
       preserveValue: reaction.preserveValue,
+      resolvedFnValue: reaction.resolvedFnValue,
     };
     this.pendingMicrotasks.push(microtask);
 
@@ -5376,16 +5404,30 @@ export class Interpreter {
     const { promise: resultPromise, wrapper: resultWrapper } =
       this.createInternalPromise();
 
-    const getCallbackNode = (index: number) => {
+    const getCallbackNode = (
+      index: number,
+    ): {
+      node: FunctionExpressionNode | ArrowFunctionExpressionNode | null;
+      fnValue: FunctionValue | null;
+    } => {
       const arg = node.arguments[index];
-      if (!arg) return null;
+      if (!arg) return { node: null, fnValue: null };
       if (
         arg.type === "FunctionExpression" ||
         arg.type === "ArrowFunctionExpression"
       ) {
-        return arg as FunctionExpressionNode | ArrowFunctionExpressionNode;
+        return {
+          node: arg as FunctionExpressionNode | ArrowFunctionExpressionNode,
+          fnValue: null,
+        };
       }
-      return null;
+      if (arg.type === "Identifier") {
+        const val = this.lookupVariable((arg as IdentifierNode).name);
+        if (val !== undefined && this.isFunctionValue(val)) {
+          return { node: null, fnValue: val };
+        }
+      }
+      return { node: null, fnValue: null };
     };
 
     const getCallbackSource = (index: number): string => {
@@ -5395,16 +5437,19 @@ export class Interpreter {
     };
 
     if (method === "then") {
-      const onFulfilledNode = getCallbackNode(0);
-      const onRejectedNode = getCallbackNode(1);
+      const { node: onFulfilledNode, fnValue: onFulfilledFn } =
+        getCallbackNode(0);
+      const { node: onRejectedNode, fnValue: onRejectedFn } =
+        getCallbackNode(1);
 
-      if (onFulfilledNode) {
+      if (onFulfilledNode || onFulfilledFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
           type: "fulfill",
           callbackNode: onFulfilledNode,
           callbackSource: getCallbackSource(0),
           resultPromiseId: resultPromise.id,
+          resolvedFnValue: onFulfilledFn ?? undefined,
         };
 
         if (sourcePromise.state === "fulfilled") {
@@ -5437,13 +5482,14 @@ export class Interpreter {
         }
       }
 
-      if (onRejectedNode) {
+      if (onRejectedNode || onRejectedFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
           type: "reject",
           callbackNode: onRejectedNode,
           callbackSource: getCallbackSource(1),
           resultPromiseId: resultPromise.id,
+          resolvedFnValue: onRejectedFn ?? undefined,
         };
 
         if (sourcePromise.state === "rejected") {
@@ -5453,15 +5499,17 @@ export class Interpreter {
         }
       }
     } else if (method === "catch") {
-      const onRejectedNode = getCallbackNode(0);
+      const { node: onRejectedNode, fnValue: onRejectedFn } =
+        getCallbackNode(0);
 
-      if (onRejectedNode) {
+      if (onRejectedNode || onRejectedFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
           type: "reject",
           callbackNode: onRejectedNode,
           callbackSource: getCallbackSource(0),
           resultPromiseId: resultPromise.id,
+          resolvedFnValue: onRejectedFn ?? undefined,
         };
 
         if (sourcePromise.state === "rejected") {
@@ -5474,10 +5522,10 @@ export class Interpreter {
         }
       }
     } else if (method === "finally") {
-      const onFinallyNode = getCallbackNode(0);
+      const { node: onFinallyNode, fnValue: onFinallyFn } = getCallbackNode(0);
       const finallySource = getCallbackSource(0);
 
-      if (onFinallyNode) {
+      if (onFinallyNode || onFinallyFn) {
         // Both fulfill and reject call the same callback, then propagate original value
         const fulfillReaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
@@ -5486,6 +5534,7 @@ export class Interpreter {
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
           preserveValue: true, // .finally() preserves original value
+          resolvedFnValue: onFinallyFn ?? undefined,
         };
         const rejectReaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
@@ -5494,6 +5543,7 @@ export class Interpreter {
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
           preserveValue: true, // .finally() preserves original value
+          resolvedFnValue: onFinallyFn ?? undefined,
         };
 
         if (sourcePromise.state === "fulfilled") {
@@ -5558,10 +5608,20 @@ export class Interpreter {
 
     const callbackNode = microtask.callbackNode as
       | FunctionExpressionNode
-      | ArrowFunctionExpressionNode;
+      | ArrowFunctionExpressionNode
+      | null;
 
-    const params = callbackNode.params.map((p) => (p as IdentifierNode).name);
-    const resolveParamName = params[0];
+    // Support callbacks passed as identifier references (FunctionValue)
+    const resolvedFn = microtask.resolvedFnValue as FunctionValue | undefined;
+
+    let resolveParamName: string | undefined;
+    if (callbackNode) {
+      resolveParamName = callbackNode.params
+        .map((p) => (p as IdentifierNode).name)
+        .at(0);
+    } else if (resolvedFn) {
+      resolveParamName = resolvedFn.params[0];
+    }
 
     const frameParams =
       resolveParamName !== undefined
@@ -5575,14 +5635,22 @@ export class Interpreter {
       this.envStack.splice(1, 0, ...capturedEnvs);
     }
 
-    this.pushFrame(
+    // Also inject closure envs from FunctionValue itself (for fn references)
+    const fnCapturedMeta = resolvedFn?.capturedEnvMeta ?? [];
+    const fnCapturedEnvs = fnCapturedMeta.map((m) => m.env);
+    const fnCapturedCount = fnCapturedEnvs.length;
+    if (fnCapturedCount > 0) {
+      this.envStack.splice(1, 0, ...fnCapturedEnvs);
+    }
+
+    const displaySource =
       microtask.callbackSource.length > 20
         ? microtask.callbackSource.slice(0, 20) + "..."
-        : microtask.callbackSource,
-      this.getLine(callbackNode),
-      this.getColumn(callbackNode),
-      frameParams,
-    );
+        : microtask.callbackSource;
+    const lineNum = callbackNode ? this.getLine(callbackNode) : 0;
+    const colNum = callbackNode ? this.getColumn(callbackNode) : 0;
+
+    this.pushFrame(displaySource, lineNum, colNum, frameParams);
 
     this.eventLoop = {
       phase: "draining-microtasks",
@@ -5591,8 +5659,8 @@ export class Interpreter {
     };
 
     this.snapshot(
-      this.getLine(callbackNode),
-      this.getColumn(callbackNode),
+      lineNum,
+      colNum,
       description.executingMicrotask({ displayValue: displayValue(microtask.resolveValue) }),
       microtask.callbackSource,
     );
@@ -5600,16 +5668,20 @@ export class Interpreter {
     this.hasReturned = false;
     this.returnValue = undefined;
 
-    if (
-      callbackNode.type === "ArrowFunctionExpression" &&
-      (callbackNode as ArrowFunctionExpressionNode).expression
-    ) {
-      this.returnValue = this.evaluateExpression(
-        (callbackNode as ArrowFunctionExpressionNode).body as ExpressionNode,
-      );
-      this.hasReturned = true;
-    } else {
-      this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+    if (callbackNode) {
+      if (
+        callbackNode.type === "ArrowFunctionExpression" &&
+        (callbackNode as ArrowFunctionExpressionNode).expression
+      ) {
+        this.returnValue = this.evaluateExpression(
+          (callbackNode as ArrowFunctionExpressionNode).body as ExpressionNode,
+        );
+        this.hasReturned = true;
+      } else {
+        this.visitBlockStatement(callbackNode.body as BlockStatementNode);
+      }
+    } else if (resolvedFn) {
+      this.visitBlockStatement(resolvedFn.body as BlockStatementNode);
     }
 
     const returnVal = this.returnValue;
@@ -5618,7 +5690,10 @@ export class Interpreter {
 
     this.popFrame();
 
-    // Remove injected closure envs
+    // Remove injected closure envs (fn-value envs first, then captured envs)
+    if (fnCapturedCount > 0) {
+      this.envStack.splice(1, fnCapturedCount);
+    }
     if (capturedCount > 0) {
       this.envStack.splice(1, capturedCount);
     }

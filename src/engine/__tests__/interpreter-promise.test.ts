@@ -339,13 +339,14 @@ describe("Interpreter — Promises", () => {
 
     it("enforces microtask drain limit", () => {
       // This would be infinite without limit
+      // +1 accounts for the "Execution limit reached" sentinel step added by snapshot()
       const steps = run(`
         function loop() {
           Promise.resolve().then(loop);
         }
         loop();
       `);
-      expect(steps.length).toBeLessThanOrEqual(2000);
+      expect(steps.length).toBeLessThanOrEqual(2001);
     });
 
     it("empty Promise executor does not crash", () => {

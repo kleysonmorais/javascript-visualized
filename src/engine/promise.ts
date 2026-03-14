@@ -10,6 +10,7 @@ export interface PromiseReaction {
   callbackSource: string; // source code for display
   resultPromiseId: string; // the promise returned by .then()
   preserveValue?: boolean; // for .finally(): preserve original value after callback
+  resolvedFnValue?: unknown; // FunctionValue when callback is an identifier reference
 }
 
 export interface InternalPromise {
@@ -30,4 +31,5 @@ export interface PendingMicrotask {
   resultPromiseId?: string; // promise to resolve with callback's return value
   capturedEnvStack: Record<string, unknown>[]; // environment snapshot for closures
   preserveValue?: boolean; // for .finally(): resolve resultPromise with resolveValue, not return value
+  resolvedFnValue?: unknown; // FunctionValue when callback is an identifier reference
 }
