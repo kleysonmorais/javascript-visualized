@@ -2942,7 +2942,19 @@ export class Interpreter {
   }
 
   private visitForStatement(node: ForStatementNode): void {
-    // Visit init
+    // Determine if the init uses block-scoped let/const (requires per-iteration scope)
+    const initDecl =
+      node.init?.type === "VariableDeclaration"
+        ? (node.init as VariableDeclarationNode)
+        : null;
+    const isBlockScoped =
+      initDecl?.kind === "let" || initDecl?.kind === "const";
+    const iteratorNames: string[] =
+      isBlockScoped && initDecl
+        ? initDecl.declarations.map((d) => (d.id as IdentifierNode).name)
+        : [];
+
+    // Visit init (declares variable in the current env)
     if (node.init) {
       if (node.init.type === "VariableDeclaration") {
         this.visitVariableDeclaration(node.init as VariableDeclarationNode);
@@ -2954,7 +2966,7 @@ export class Interpreter {
     let iteration = 0;
 
     while (iteration < MAX_LOOP_ITERATIONS && this.stepIndex < MAX_STEPS) {
-      // Test condition
+      // Test condition (evaluated in outer env so the iterator var is visible)
       if (node.test) {
         const testResult = this.evaluateExpression(node.test);
         if (!testResult) break;
@@ -2962,6 +2974,23 @@ export class Interpreter {
 
       iteration++;
       const code = extractSource(this.sourceCode, node);
+
+      // For let/const: push a per-iteration env that holds a snapshot of the
+      // iterator variable(s). Closures created inside the body will capture
+      // this fresh env rather than the shared outer one.
+      let iterEnv: Record<string, unknown> | null = null;
+      if (isBlockScoped && iteratorNames.length > 0) {
+        const outerEnv = this.getCurrentEnv();
+        iterEnv = {};
+        const iterKinds: Record<string, VariableKind | "param" | "function"> =
+          {};
+        for (const name of iteratorNames) {
+          iterEnv[name] = outerEnv[name];
+          iterKinds[name] = (initDecl!.kind as VariableKind) ?? "let";
+        }
+        this.envStack.push(iterEnv);
+        this.envKindsMap.set(iterEnv, iterKinds);
+      }
 
       this.snapshot(
         this.getLine(node),
@@ -2972,15 +3001,27 @@ export class Interpreter {
 
       // Execute body
       let didBreak = false;
-      let didContinue = false;
       try {
         this.visitStatement(node.body as StatementNode);
       } catch (e) {
         if (e instanceof BreakSignal) {
           didBreak = true;
-        } else if (e instanceof ContinueSignal) {
-          didContinue = true;
-        } else throw e;
+        } else if (!(e instanceof ContinueSignal)) {
+          throw e;
+        }
+      }
+
+      // Pop the per-iteration env before running the update (update writes to
+      // the outer loop env so the next iteration's test/init sees it)
+      if (iterEnv !== null) {
+        // Sync any mutation of the iterator vars back to the outer env
+        const outerEnv = this.envStack[this.envStack.length - 2];
+        if (outerEnv) {
+          for (const name of iteratorNames) {
+            outerEnv[name] = iterEnv[name];
+          }
+        }
+        this.envStack.pop();
       }
 
       if (didBreak) break;
@@ -2988,16 +3029,9 @@ export class Interpreter {
       // Check for return
       if (this.hasReturned) break;
 
-      if (!didContinue) {
-        // Update
-        if (node.update) {
-          this.evaluateExpression(node.update);
-        }
-      } else {
-        // Still run the update for continue (matches JS semantics)
-        if (node.update) {
-          this.evaluateExpression(node.update);
-        }
+      // Update (runs in outer env)
+      if (node.update) {
+        this.evaluateExpression(node.update);
       }
     }
 
@@ -5710,34 +5744,37 @@ export class Interpreter {
    * Also registers each captured env in envCapturedBy for return-description lookup.
    */
   private captureEnclosingScopes(): CapturedEnvMeta[] | undefined {
-    // envStack[0] = global, envStack[1..] = local frames
-    // callStack mirrors envStack: callStack[i] corresponds to envStack[i].
+    // envStack[0] = global, envStack[1..] = local frames (and any block envs
+    // pushed mid-loop for per-iteration let/const scoping).
+    // callStack[i] corresponds to envStack[i] for function frames, but block
+    // envs pushed inside a loop body have no callStack entry.
     const result: CapturedEnvMeta[] = [];
 
     for (let i = 1; i < this.envStack.length; i++) {
       const env = this.envStack[i];
-      const actualFrame = this.callStack[i];
-      if (!actualFrame) continue;
 
-      const block = this.memoryBlocks.find((b) => b.frameId === actualFrame.id);
+      // callStack[i] exists for function frames. Block envs pushed mid-loop
+      // (for per-iteration let/const scoping) have no own callStack entry;
+      // associate them with the innermost function frame instead.
+      const frameForEntry = this.callStack[i] ?? this.callStack[this.callStack.length - 1];
+      if (!frameForEntry) continue;
+
+      const block = this.memoryBlocks.find((b) => b.frameId === frameForEntry.id);
       if (!block) continue;
 
       const kinds = this.envKindsMap.get(env) ?? {};
 
       result.push({
-        scopeName: actualFrame.name,
-        scopeColor: actualFrame.color,
+        scopeName: frameForEntry.name,
+        scopeColor: frameForEntry.color,
         kinds,
         env,
       });
 
       // Register this env as captured so we can generate the closure return description
       const existing = this.envCapturedBy.get(env) ?? [];
-      if (!existing.includes(actualFrame.name)) {
-        // We'll store the enclosing scope name (not the inner function name, since
-        // we don't know it yet). findClosureNamesCapturing will use this to confirm
-        // the current frame's env is being captured by some closure.
-        existing.push(actualFrame.name);
+      if (!existing.includes(frameForEntry.name)) {
+        existing.push(frameForEntry.name);
         this.envCapturedBy.set(env, existing);
       }
     }

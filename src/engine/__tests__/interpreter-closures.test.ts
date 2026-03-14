@@ -223,4 +223,128 @@ describe('Interpreter — Closures', () => {
     expect(output).toContain('3');
   });
 
+  // ── Loop closure trap ──────────────────────────────────────────────────────
+
+  it('loop closure trap: var closures all share the same binding', () => {
+    const output = consoleOutput(`
+      const fns = [];
+      for (var i = 0; i < 3; i++) {
+        fns.push(function() { return i; });
+      }
+      console.log(fns[0]());
+      console.log(fns[1]());
+      console.log(fns[2]());
+    `);
+    // After the loop, i === 3 for all closures
+    expect(output[0]).toContain('3');
+    expect(output[1]).toContain('3');
+    expect(output[2]).toContain('3');
+  });
+
+  it('loop closure trap: let closures capture a fresh binding per iteration', () => {
+    const output = consoleOutput(`
+      const fns = [];
+      for (let j = 0; j < 3; j++) {
+        fns.push(function() { return j; });
+      }
+      console.log(fns[0]());
+      console.log(fns[1]());
+      console.log(fns[2]());
+    `);
+    // Each closure captured its own j
+    expect(output[0]).toContain('0');
+    expect(output[1]).toContain('1');
+    expect(output[2]).toContain('2');
+  });
+
+  it('loop closure trap: let closures each capture a distinct j value', () => {
+    // Each call should return the j value at the time the closure was created,
+    // not the final value of j after the loop (which would be 3 with var).
+    const output = consoleOutput(`
+      const fns = [];
+      for (let j = 0; j < 3; j++) {
+        fns.push(function() { return j; });
+      }
+      // Verify each closure captured a distinct snapshot
+      const results = [];
+      results.push(fns[0]());
+      results.push(fns[1]());
+      results.push(fns[2]());
+      console.log(results[0] !== results[1]);
+      console.log(results[1] !== results[2]);
+    `);
+    expect(output[0]).toContain('true');
+    expect(output[1]).toContain('true');
+  });
+
+  // ── Memoization via closure ────────────────────────────────────────────────
+
+  it('memoize: first call computes and caches the result', () => {
+    const output = consoleOutput(`
+      function memoize(fn) {
+        const cache = {};
+        return function(n) {
+          if (cache[n] !== undefined) {
+            return cache[n];
+          }
+          const result = fn(n);
+          cache[n] = result;
+          return result;
+        };
+      }
+      function double(x) { return x * 2; }
+      const memoDouble = memoize(double);
+      console.log(memoDouble(6));
+      console.log(memoDouble(6));
+    `);
+    expect(output[0]).toContain('12');
+    expect(output[1]).toContain('12');
+  });
+
+  it('memoize: cache object lives in [[Scope]] of the returned function', () => {
+    const step = lastStep(`
+      function memoize(fn) {
+        const cache = {};
+        return function(n) {
+          if (cache[n] !== undefined) return cache[n];
+          const result = fn(n);
+          cache[n] = result;
+          return result;
+        };
+      }
+      function square(x) { return x * x; }
+      const memoSquare = memoize(square);
+    `);
+    const entry = getMemoryEntry(step, 'memoSquare');
+    expect(entry).toBeDefined();
+    const heapObj = getHeapObject(step, entry!.heapReferenceId!);
+    expect(heapObj!.closureScope).toBeDefined();
+    const capturedVars = heapObj!.closureScope!.flatMap((s) => s.variables);
+    // 'cache' should be captured in [[Scope]]
+    const cacheVar = capturedVars.find((v) => v.name === 'cache');
+    expect(cacheVar).toBeDefined();
+  });
+
+  it('memoize: calling with different args returns independent results', () => {
+    const output = consoleOutput(`
+      function memoize(fn) {
+        const cache = {};
+        return function(n) {
+          if (cache[n] !== undefined) return cache[n];
+          const result = fn(n);
+          cache[n] = result;
+          return result;
+        };
+      }
+      function square(x) { return x * x; }
+      const memoSquare = memoize(square);
+      console.log(memoSquare(3));
+      console.log(memoSquare(4));
+      console.log(memoSquare(3));
+    `);
+    expect(output[0]).toContain('9');
+    expect(output[1]).toContain('16');
+    expect(output[2]).toContain('9');
+  });
+
 });
