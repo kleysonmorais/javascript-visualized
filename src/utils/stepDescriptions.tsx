@@ -156,7 +156,7 @@ const consoleOutput = ({
   methodName: string;
   args: string[];
 }) => {
-  return `**console.${methodName}(${args.join(", ")})** — output written to the console. The console frame is popped from the Call Stack.`;
+  return `**console.${methodName}(${args.map((arg) => `"${arg}"`).join(", ")})** — output written to the console. The console frame is popped from the Call Stack.`;
 };
 
 const returningValue = ({
@@ -459,7 +459,7 @@ const finallyRegistered = () => {
 };
 
 const executingMicrotask = ({ displayValue }: { displayValue: string }) => {
-  return `Executing **.then()/.catch()/.finally()** callback with value: **${displayValue}**. The microtask is dequeued, a new Execution Context is pushed, and the callback body runs.`;
+  return `Executing **.then().catch().finally()** callback with value: **${displayValue}**. The microtask is dequeued, a new Execution Context is pushed, and the callback body runs.`;
 };
 
 const promiseAll = ({
@@ -607,13 +607,8 @@ const generatorCreated = ({
   return `**${funcName}(${argsDisplay})** — generator object created (suspended). Calling a generator function does NOT execute its body; it returns a **Generator** object in the **suspended** state.`;
 };
 
-const generatorNext = ({
-  inputValue,
-}: {
-  inputValue?: string;
-}) => {
-  const inputStr =
-    inputValue !== undefined ? `**${inputValue}**` : "undefined";
+const generatorNext = ({ inputValue }: { inputValue?: string }) => {
+  const inputStr = inputValue !== undefined ? `**${inputValue}**` : "undefined";
   return `**gen.next(${inputValue ?? ""})** — resuming generator with value ${inputStr}. Execution continues from the last **yield** point; the input value becomes the result of the yield expression inside the generator.`;
 };
 
