@@ -3,21 +3,17 @@ import type { ExecutionStep, PlaybackSpeed } from "@/types";
 import { generateSteps } from "@/engine";
 import { mockSteps } from "@/lib/mockSteps";
 
-const DEFAULT_SOURCE_CODE = `console.log("Start");
+const DEFAULT_SOURCE_CODE = `// Can you guess the exact console output order?
 
-async function fetchData() {
-  console.log("Fetching...");
-  const response = await fetch("https://api.example.com/data");
-  const data = await response.json();
-  console.log("Data:", data);
-  return data;
-}
+function logA() { console.log('A') }
+function logB() { console.log('B') }
+function logC() { console.log('C') }
+function logD() { console.log('D') }
 
-fetchData().then(result => {
-  console.log("Complete:", result);
-});
-
-console.log("End");`;
+logA();
+setTimeout(logB, 0);
+Promise.resolve().then(logC);
+logD();`;
 
 interface VisualizerStore {
   // Source code
