@@ -21,7 +21,7 @@ Unlike other JS visualizers, this tool shows **how memory actually works**:
 
 ## 🚀 Try it
 
-**Live:** [https://javascript-visualized.vercel.app](https://javascript-visualized.vercel.app)
+**Live:** [https://javascriptvisualized.com](https://javascriptvisualized.com)
 
 Or run locally:
 
