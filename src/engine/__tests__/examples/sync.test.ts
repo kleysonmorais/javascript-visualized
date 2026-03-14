@@ -113,7 +113,6 @@ describe("Sync Examples", () => {
       const entry = getMemoryEntry(step, "original");
       const heap = getHeapObject(step, entry!.heapReferenceId!);
       expect(heap).toBeDefined();
-      console.log(heap);
       const xProp = heap!.properties?.find((p) => p.key === "x");
       const yProp = heap!.properties?.find((p) => p.key === "y");
       expect(xProp).toBeDefined();

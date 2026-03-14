@@ -531,6 +531,7 @@ interface PendingTimer {
   cancelled: boolean;
   intervalCount: number;
   processed: boolean; // true once picked up by processAsyncCallbacks
+  capturedEnvStack: Record<string, unknown>[]; // closure envs captured at registration time
 }
 
 // Internal fetch tracking — resolves a promise when delay elapses
@@ -899,6 +900,12 @@ export class Interpreter {
         : "";
     const execDescription = `Executing ${timer.type} callback${iterationLabel}`;
 
+    // Inject captured closure envs so the callback can access closed-over variables.
+    const capturedCount = timer.capturedEnvStack.length;
+    if (capturedCount > 0) {
+      this.envStack.splice(1, 0, ...timer.capturedEnvStack);
+    }
+
     this.pushFrame(
       "callback",
       callbackNode.loc?.start.line ?? 0,
@@ -927,6 +934,11 @@ export class Interpreter {
     this.returnValue = undefined;
 
     this.popFrame();
+
+    // Remove injected closure envs
+    if (capturedCount > 0) {
+      this.envStack.splice(1, capturedCount);
+    }
     this.eventLoop = {
       phase: "checking-tasks",
       description: "Callback done — checking for more tasks",
@@ -3785,6 +3797,9 @@ export class Interpreter {
       cancelled: false,
       intervalCount: 0,
       processed: false,
+      // Capture live env references (skip global at index 0) so the callback
+      // can close over variables from enclosing scopes (e.g. onPrime, currNum).
+      capturedEnvStack: this.envStack.slice(1),
     };
     this.pendingTimers.push(timer);
 
@@ -5553,6 +5568,13 @@ export class Interpreter {
         ? [{ name: resolveParamName, value: microtask.resolveValue }]
         : [];
 
+    // Inject captured closure envs so the callback can access closed-over variables.
+    const capturedEnvs = microtask.capturedEnvStack ?? [];
+    const capturedCount = capturedEnvs.length;
+    if (capturedCount > 0) {
+      this.envStack.splice(1, 0, ...capturedEnvs);
+    }
+
     this.pushFrame(
       microtask.callbackSource.length > 20
         ? microtask.callbackSource.slice(0, 20) + "..."
@@ -5595,6 +5617,11 @@ export class Interpreter {
     this.returnValue = undefined;
 
     this.popFrame();
+
+    // Remove injected closure envs
+    if (capturedCount > 0) {
+      this.envStack.splice(1, capturedCount);
+    }
 
     // Resolve the result promise with the callback's return value
     // (or original value if preserveValue is set, e.g. for .finally())
