@@ -415,19 +415,19 @@ const executingPromiseExecutor = () => {
 };
 
 const promiseResolveStatic = ({ displayValue }: { displayValue: string }) => {
-  return `**Promise.resolve(${displayValue})** — creates a fulfilled **Promise**. If the value is itself a Promise or thenable, the new Promise adopts its state; otherwise it resolves immediately with the given value.`;
+  return `**Promise.resolve(${displayValue && displayValue !== "undefined" ? displayValue : ""})** — creates a fulfilled **Promise**. If the value is itself a Promise or thenable, the new Promise adopts its state; otherwise it resolves immediately with the given value.`;
 };
 
 const promiseRejectStatic = ({ displayValue }: { displayValue: string }) => {
-  return `**Promise.reject(${displayValue})** — creates a rejected **Promise** with the given reason. Any attached \`.catch()\` handlers will be queued in the Microtask Queue.`;
+  return `**Promise.reject(${displayValue && displayValue !== "undefined" ? displayValue : ""})** — creates a rejected **Promise** with the given reason. Any attached \`.catch()\` handlers will be queued in the Microtask Queue.`;
 };
 
 const promiseResolveCallback = ({ displayValue }: { displayValue: string }) => {
-  return `**resolve(${displayValue})** — Promise fulfilled. The Promise transitions from **pending** to **fulfilled** and any registered \`.then()\` callbacks are queued in the **Microtask Queue**.`;
+  return `**resolve(${displayValue && displayValue !== "undefined" ? displayValue : ""})** — Promise fulfilled. The Promise transitions from **pending** to **fulfilled** and any registered \`.then()\` callbacks are queued in the **Microtask Queue**.`;
 };
 
 const promiseRejectCallback = ({ displayValue }: { displayValue: string }) => {
-  return `**reject(${displayValue})** — Promise rejected. The Promise transitions from **pending** to **rejected** and any registered \`.catch()\` callbacks are queued in the **Microtask Queue**.`;
+  return `**reject(${displayValue && displayValue !== "undefined" ? displayValue : ""})** — Promise rejected. The Promise transitions from **pending** to **rejected** and any registered \`.catch()\` callbacks are queued in the **Microtask Queue**.`;
 };
 
 const thenRegistered = () => {
