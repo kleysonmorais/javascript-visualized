@@ -43,7 +43,7 @@
     "step": "Passo "
   },
   "callStack": {
-    "title": "Pilha de Chamadas",
+    "title": "Pilha de Chamadas (Call Stack)",
     "empty": "Execute o código para ver a Pilha de Chamadas",
     "suspended": "suspenso",
     "line": "linha",
@@ -95,11 +95,11 @@
     }
   },
   "taskQueue": {
-    "title": "Fila de Tarefas",
+    "title": "Fila de Tarefas (Task Queue)",
     "empty": "Callbacks das Web APIs serão enfileirados aqui"
   },
   "microtaskQueue": {
-    "title": "Fila de Microtarefas",
+    "title": "Fila de Microtarefas (Microtask Queue)",
     "empty": "Nenhuma microtarefa",
     "promise": "Promise"
   },
