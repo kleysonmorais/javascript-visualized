@@ -284,7 +284,10 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                                   margin: 0,
                                 }}
                               >
-                                {example.title}
+                                {t(
+                                  `examples.items.${example.id}.title`,
+                                  example.title,
+                                )}
                               </h4>
                               <div
                                 className="w-2 h-2 rounded-full shrink-0 mt-1.5 opacity-60 group-hover:opacity-100 transition-opacity"
@@ -301,7 +304,10 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                                 margin: 0,
                               }}
                             >
-                              {example.description}
+                              {t(
+                                `examples.items.${example.id}.description`,
+                                example.description,
+                              )}
                             </p>
                           </button>
                         ))}

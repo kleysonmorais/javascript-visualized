@@ -30,6 +30,88 @@
         "label": "Advanced",
         "description": "Complex patterns and edge cases"
       }
+    },
+    "items": {
+      "variables-memory": {
+        "title": "Variables & Memory",
+        "description": "See how primitives, objects, and functions are stored in memory"
+      },
+      "reference-vs-value": {
+        "title": "Reference vs Value",
+        "description": "Two variables pointing to the same object — same color, same reference"
+      },
+      "function-scope": {
+        "title": "Function Calls & Scope",
+        "description": "Watch local memory appear and disappear with the call stack"
+      },
+      "deep-call-stack": {
+        "title": "Deep Call Stack",
+        "description": "Watch the call stack grow with 10 nested function calls"
+      },
+      "closures": {
+        "title": "Closures",
+        "description": "Variables survive beyond their scope through [[Scope]]"
+      },
+      "closures-loop-trap": {
+        "title": "Loop Closure Trap",
+        "description": "var shares one binding; let creates a fresh scope each iteration"
+      },
+      "closures-memoize": {
+        "title": "Memoization via Closure",
+        "description": "A closure over a cache object remembers previous results"
+      },
+      "settimeout-ordering": {
+        "title": "setTimeout Ordering",
+        "description": "Understand why shorter delays execute first"
+      },
+      "promise-vs-settimeout": {
+        "title": "Promise vs setTimeout",
+        "description": "Microtasks always run before macrotasks — the classic quiz"
+      },
+      "async-await-flow": {
+        "title": "Async/Await Flow",
+        "description": "Watch async functions suspend and resume with fetch"
+      },
+      "event-loop-quiz": {
+        "title": "Event Loop Quiz",
+        "description": "Can you predict the output order? (Try before running!)"
+      },
+      "microtask-vs-macrotask": {
+        "title": "Microtask vs Macrotask",
+        "description": "See why Promises execute before setTimeout(0)"
+      },
+      "timer-race": {
+        "title": "Timer Race",
+        "description": "Timers with different delays — who wins?"
+      },
+      "promise-basics": {
+        "title": "Promise Basics",
+        "description": "Create a Promise, resolve it, and handle the value with .then()"
+      },
+      "promise-chain": {
+        "title": "Promise Chaining",
+        "description": "Transform values through a chain of .then() microtasks"
+      },
+      "promise-reject-catch": {
+        "title": "Promise Reject & Catch",
+        "description": "Reject a Promise and recover with .catch()"
+      },
+      "promise-all": {
+        "title": "Promise.all",
+        "description": "Run multiple Promises concurrently and collect all results"
+      },
+      "blocking-computation": {
+        "title": "Blocking Computation",
+        "description": "A long-running loop blocks the entire event loop"
+      },
+      "chunked-setTimeout": {
+        "title": "Chunked with setTimeout",
+        "description": "Break work into chunks using macrotasks to stay responsive"
+      },
+      "chunked-promise": {
+        "title": "Chunked with Promise",
+        "description": "Break work using microtasks — faster but still blocking"
+      }
     }
   },
   "transport": {

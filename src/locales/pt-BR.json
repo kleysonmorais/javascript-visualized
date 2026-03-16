@@ -30,6 +30,88 @@
         "label": "Avançado",
         "description": "Padrões complexos e casos extremos"
       }
+    },
+    "items": {
+      "variables-memory": {
+        "title": "Variáveis e Memória",
+        "description": "Veja como primitivos, objetos e funções são armazenados na memória"
+      },
+      "reference-vs-value": {
+        "title": "Referência vs Valor",
+        "description": "Duas variáveis apontando para o mesmo objeto — mesma cor, mesma referência"
+      },
+      "function-scope": {
+        "title": "Chamadas de Função e Escopo",
+        "description": "Observe a memória local aparecer e desaparecer junto com a pilha de chamadas"
+      },
+      "deep-call-stack": {
+        "title": "Pilha de Chamadas Profunda",
+        "description": "Veja a pilha de chamadas crescer com 10 chamadas de função aninhadas"
+      },
+      "closures": {
+        "title": "Closures",
+        "description": "Variáveis sobrevivem além do seu escopo por meio do [[Scope]]"
+      },
+      "closures-loop-trap": {
+        "title": "Armadilha de Closure em Loop",
+        "description": "var compartilha um único vínculo; let cria um novo escopo a cada iteração"
+      },
+      "closures-memoize": {
+        "title": "Memoização via Closure",
+        "description": "Uma closure sobre um objeto de cache que lembra resultados anteriores"
+      },
+      "settimeout-ordering": {
+        "title": "Ordem do setTimeout",
+        "description": "Entenda por que atrasos menores são executados primeiro"
+      },
+      "promise-vs-settimeout": {
+        "title": "Promise vs setTimeout",
+        "description": "Microtarefas sempre executam antes de macrotarefas — o quiz clássico"
+      },
+      "async-await-flow": {
+        "title": "Fluxo Async/Await",
+        "description": "Observe funções async suspendendo e retomando com fetch"
+      },
+      "event-loop-quiz": {
+        "title": "Quiz do Event Loop",
+        "description": "Você consegue prever a ordem de saída? (Tente antes de executar!)"
+      },
+      "microtask-vs-macrotask": {
+        "title": "Microtarefa vs Macrotarefa",
+        "description": "Veja por que Promises executam antes de setTimeout(0)"
+      },
+      "timer-race": {
+        "title": "Corrida de Temporizadores",
+        "description": "Temporizadores com atrasos diferentes — quem vence?"
+      },
+      "promise-basics": {
+        "title": "Fundamentos de Promise",
+        "description": "Crie uma Promise, resolva-a e trate o valor com .then()"
+      },
+      "promise-chain": {
+        "title": "Encadeamento de Promises",
+        "description": "Transforme valores por uma cadeia de microtarefas .then()"
+      },
+      "promise-reject-catch": {
+        "title": "Rejeição e Captura de Promise",
+        "description": "Rejeite uma Promise e recupere com .catch()"
+      },
+      "promise-all": {
+        "title": "Promise.all",
+        "description": "Execute várias Promises simultaneamente e colete todos os resultados"
+      },
+      "blocking-computation": {
+        "title": "Computação Bloqueante",
+        "description": "Um loop de longa duração bloqueia todo o event loop"
+      },
+      "chunked-setTimeout": {
+        "title": "Dividido com setTimeout",
+        "description": "Divida o trabalho em partes usando macrotarefas para manter a responsividade"
+      },
+      "chunked-promise": {
+        "title": "Dividido com Promise",
+        "description": "Divida o trabalho com microtarefas — mais rápido, mas ainda bloqueante"
+      }
     }
   },
   "transport": {
