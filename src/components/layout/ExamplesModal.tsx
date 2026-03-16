@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Code2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { THEME } from "@/constants/theme";
 import { CODE_EXAMPLES } from "@/constants/examples";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -17,36 +18,36 @@ interface ExampleGroup {
 const EXAMPLE_GROUPS: ExampleGroup[] = [
   {
     id: "basics",
-    label: "Basics",
-    description: "Variables, scope, and fundamental concepts",
+    label: "basics",
+    description: "basics",
     color: "#3b82f6", // blue
     categories: ["sync"],
   },
   {
     id: "closures",
-    label: "Closures",
-    description: "Lexical scope and closure patterns",
+    label: "closures",
+    description: "closures",
     color: "#22c55e", // green
     categories: ["closures"],
   },
   {
     id: "promises",
-    label: "Promises",
-    description: "Promise chains and async patterns",
+    label: "promises",
+    description: "promises",
     color: "#a855f7", // purple
     categories: ["promise"],
   },
   {
     id: "async",
-    label: "Async/Await",
-    description: "Timers, event loop, and async operations",
+    label: "async",
+    description: "async",
     color: "#f59e0b", // amber
     categories: ["async"],
   },
   {
     id: "advanced",
-    label: "Advanced",
-    description: "Complex patterns and edge cases",
+    label: "advanced",
+    description: "advanced",
     color: "#ef4444", // red
     categories: ["advanced"],
   },
@@ -58,6 +59,7 @@ interface ExamplesModalProps {
 }
 
 function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
+  const { t } = useTranslation();
   const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
   const reset = useVisualizerStore((s) => s.reset);
 
@@ -165,7 +167,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                       margin: 0,
                     }}
                   >
-                    Code Examples
+                    {t("examples.modalTitle")}
                   </h2>
                   <p
                     style={{
@@ -175,7 +177,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                       margin: 0,
                     }}
                   >
-                    Select an example to visualize JavaScript execution
+                    {t("examples.modalSubtitle")}
                   </p>
                 </div>
               </div>
@@ -226,7 +228,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                               margin: 0,
                             }}
                           >
-                            {group.label}
+                            {t(`examples.groups.${group.id}.label`)}
                           </h3>
                           <p
                             style={{
@@ -236,7 +238,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                               margin: 0,
                             }}
                           >
-                            {group.description}
+                            {t(`examples.groups.${group.id}.description`)}
                           </p>
                         </div>
                       </div>
@@ -317,6 +319,7 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
 }
 
 export function ExamplesButton() {
+  const { t } = useTranslation();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
@@ -342,7 +345,7 @@ export function ExamplesButton() {
         }}
       >
         <Code2 size={14} />
-        <span>Examples</span>
+        <span>{t("examples.button")}</span>
       </button>
 
       <ExamplesModal

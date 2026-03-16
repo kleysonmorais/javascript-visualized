@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Globe } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -13,6 +14,7 @@ function statusBorderColor(status: WebAPIEntry["status"]): string {
 }
 
 function StatusDot({ status }: { status: WebAPIEntry["status"] }) {
+  const { t } = useTranslation();
   const color =
     status === "running"
       ? THEME.colors.status.running
@@ -28,13 +30,14 @@ function StatusDot({ status }: { status: WebAPIEntry["status"] }) {
           textDecoration: status === "cancelled" ? "line-through" : "none",
         }}
       >
-        {status}
+        {t(`webAPIs.status.${status}`)}
       </span>
     </span>
   );
 }
 
 export function WebAPIs() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const activeEntries = currentStep?.webAPIs ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
@@ -42,7 +45,7 @@ export function WebAPIs() {
   if (activeEntries.length === 0) return null;
 
   return (
-    <Panel title="Web APIs" className="shrink-0" scrollable={false}>
+    <Panel title={t("webAPIs.title")} className="shrink-0" scrollable={false}>
       {activeEntries.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
@@ -52,7 +55,7 @@ export function WebAPIs() {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            Web APIs will appear here when the code uses setTimeout, fetch, etc.
+            {t("webAPIs.empty")}
           </span>
         </div>
       ) : (
@@ -121,7 +124,7 @@ export function WebAPIs() {
                           flexShrink: 0,
                         }}
                       >
-                        {isFetch ? "url" : "callback"}
+                        {isFetch ? t("webAPIs.url") : t("webAPIs.callback")}
                       </span>
                       <span
                         style={{
@@ -150,7 +153,7 @@ export function WebAPIs() {
                             flexShrink: 0,
                           }}
                         >
-                          delay
+                          {t("webAPIs.delay")}
                         </span>
                         <span
                           style={{
@@ -230,7 +233,7 @@ export function WebAPIs() {
                             fontFamily: THEME.fonts.code,
                           }}
                         >
-                          elapsed: {entry.elapsed}ms
+                          {t("webAPIs.elapsed")} {entry.elapsed}ms
                         </span>
                       )}
                     <div className="ml-auto">

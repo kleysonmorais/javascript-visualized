@@ -1,20 +1,22 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Pause } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { CallStackFrame } from "@/types";
 
-const TYPE_LABELS: Record<CallStackFrame["type"], string> = {
-  global: "global",
-  function: "fn",
-  method: "method",
-  async: "async",
-  generator: "gen",
+const FRAME_TYPE_KEYS: Record<CallStackFrame["type"], string> = {
+  global: "callStack.types.global",
+  function: "callStack.types.function",
+  method: "callStack.types.method",
+  async: "callStack.types.async",
+  generator: "callStack.types.generator",
 };
 
 export function CallStack() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
   const setHoveredFrameId = useVisualizerStore((s) => s.setHoveredFrameId);
@@ -25,7 +27,7 @@ export function CallStack() {
   const reversed = [...frames].reverse();
 
   return (
-    <Panel title="Call Stack" className="flex-1 min-h-0">
+    <Panel title={t("callStack.title")} className="flex-1 min-h-0">
       {reversed.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
@@ -35,7 +37,7 @@ export function CallStack() {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            Run code to see the Call Stack
+            {t("callStack.empty")}
           </span>
         </div>
       ) : (
@@ -104,7 +106,7 @@ export function CallStack() {
                               flexShrink: 0,
                             }}
                           >
-                            suspended
+                            {t("callStack.suspended")}
                           </span>
                         </>
                       )}
@@ -120,7 +122,7 @@ export function CallStack() {
                         flexShrink: 0,
                       }}
                     >
-                      {TYPE_LABELS[frame.type]}
+                      {t(FRAME_TYPE_KEYS[frame.type])}
                     </span>
                   </div>
                   <div
@@ -131,7 +133,7 @@ export function CallStack() {
                       fontFamily: THEME.fonts.code,
                     }}
                   >
-                    line {frame.line}, col {frame.column}
+                    {t("callStack.line")} {frame.line}, {t("callStack.col")} {frame.column}
                   </div>
                 </motion.div>
               );

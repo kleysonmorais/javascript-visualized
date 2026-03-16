@@ -19,8 +19,7 @@ export function Navbar() {
         }}
       >
         <FaJsSquare size={25} style={{ color: THEME.colors.text.accent }} />
-        <span className="hidden sm:inline">JS Visualized</span>
-        <span className="sm:hidden">JS Viz</span>
+        <span className="">JS Visualized</span>
       </div>
 
       <GitHubButton
@@ -31,7 +30,7 @@ export function Navbar() {
         data-show-count="true"
         aria-label="Star kleysonmorais/javascript-visualized on GitHub"
       >
-        Star
+        Star on GitHub
       </GitHubButton>
     </nav>
   );

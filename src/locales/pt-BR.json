@@ -1,0 +1,222 @@
+{
+  "appShell": {
+    "code": "Código",
+    "edit": "Editar",
+    "run": "Executar",
+    "parsing": "Analisando..."
+  },
+  "examples": {
+    "button": "Exemplos",
+    "modalTitle": "Exemplos de Código",
+    "modalSubtitle": "Selecione um exemplo para visualizar a execução do JavaScript",
+    "groups": {
+      "basics": {
+        "label": "Básico",
+        "description": "Variáveis, escopo e conceitos fundamentais"
+      },
+      "closures": {
+        "label": "Closures",
+        "description": "Escopo léxico e padrões de closure"
+      },
+      "promises": {
+        "label": "Promises",
+        "description": "Encadeamento de promises e padrões assíncronos"
+      },
+      "async": {
+        "label": "Async/Await",
+        "description": "Temporizadores, event loop e operações assíncronas"
+      },
+      "advanced": {
+        "label": "Avançado",
+        "description": "Padrões complexos e casos extremos"
+      }
+    }
+  },
+  "transport": {
+    "goToStart": "Ir ao início (Home)",
+    "stepBack": "Voltar passo (←)",
+    "play": "Reproduzir (Espaço)",
+    "pause": "Pausar (Espaço)",
+    "stepForward": "Avançar passo (→)",
+    "goToEnd": "Ir ao fim (End)",
+    "speed": "Velocidade:",
+    "step": "Passo "
+  },
+  "callStack": {
+    "title": "Pilha de Chamadas",
+    "empty": "Execute o código para ver a Pilha de Chamadas",
+    "suspended": "suspenso",
+    "line": "linha",
+    "col": "col",
+    "types": {
+      "global": "global",
+      "function": "fn",
+      "method": "método",
+      "async": "async",
+      "generator": "gen"
+    }
+  },
+  "memory": {
+    "title": "Memória",
+    "empty": "Execute o código para ver a alocação de Memória",
+    "emptyBlock": "vazio",
+    "suspended": "suspenso",
+    "destructured": "Desestruturado",
+    "exported": "Exportado",
+    "var_one": "{{count}} var",
+    "var_other": "{{count}} vars"
+  },
+  "heap": {
+    "title": "Heap",
+    "empty": "Nenhum objeto no heap",
+    "groups": {
+      "objects": "Objetos",
+      "generators": "Generators",
+      "promises": "Promises"
+    },
+    "lastYield": "último yield",
+    "chips": {
+      "async": "async",
+      "gen": "gen*",
+      "fn": "fn"
+    }
+  },
+  "webAPIs": {
+    "title": "Web APIs",
+    "empty": "As Web APIs aparecerão aqui quando o código usar setTimeout, fetch, etc.",
+    "url": "url",
+    "callback": "callback",
+    "delay": "atraso",
+    "elapsed": "decorrido:",
+    "status": {
+      "running": "executando",
+      "cancelled": "cancelado",
+      "completed": "concluído"
+    }
+  },
+  "taskQueue": {
+    "title": "Fila de Tarefas",
+    "empty": "Callbacks das Web APIs serão enfileirados aqui"
+  },
+  "microtaskQueue": {
+    "title": "Fila de Microtarefas",
+    "empty": "Nenhuma microtarefa",
+    "promise": "Promise"
+  },
+  "console": {
+    "title": "console"
+  },
+  "eventLoop": {
+    "title": "Event Loop",
+    "microtasks": "Microtarefas",
+    "tasks": "Tarefas"
+  },
+  "stepDescriptions": {
+    "startingExecution": "O motor JavaScript começa a executar o script. Um novo **Contexto de Execução Global** é criado e empilhado na Pilha de Chamadas. A memória global (o Ambiente de Variáveis) é inicializada.",
+    "startingExecutionModule": "Iniciando execução do módulo",
+    "declaringVariable": "Declarando {{exportPrefix}}{{kind}} **{{name}}** = {{displayValue}}. O identificador é adicionado ao Ambiente de Variáveis do escopo atual e o valor é armazenado na memória.",
+    "destructuringVariableFrom": "Desestruturando **{{varName}}** = {{displayValue}} de **{{sourceName}}**. O valor é extraído do objeto/array de origem e vinculado ao novo identificador no escopo atual.",
+    "destructuringVariable": "Desestruturando **{{varName}}** = {{displayValue}}. O valor é extraído e vinculado ao novo identificador no escopo atual.",
+    "destructuringRestObject": "Desestruturando **...{{restName}}** — coletando as propriedades restantes em um novo objeto e vinculando a **{{restName}}** no escopo atual.",
+    "destructuringRestArray": "Desestruturando **...{{restName}}** — coletando os elementos restantes em um novo array e vinculando a **{{restName}}** no escopo atual.",
+    "assigningVariable": "Atribuindo **{{name}}** = {{displayValue}}. O vínculo existente no Ambiente de Variáveis é atualizado com o novo valor.",
+    "assigningProperty": "Atribuindo **{{objLabel}}.{{propName}}** = {{displayValue}}. A propriedade no objeto no Heap é atualizada com o novo valor.",
+    "assigningThisProperty": "Definindo **this.{{propName}}** = {{displayValue}}. A propriedade é escrita na instância atual no Heap por meio do vínculo **this**.",
+    "incrementDecrement": "Atribuindo **{{name}}** = {{name}} {{operatorDesc}}. A variável é atualizada no local no Ambiente de Variáveis.",
+    "declaringFunction": "Declarando {{asyncPrefix}}{{generatorPrefix}}**{{name}}**. Um novo objeto de função é criado e armazenado na memória. O nome, os parâmetros e o corpo da função são registrados. A função é adicionada ao escopo atual para que possa ser chamada depois.",
+    "callingFunctionWithArgs": "Chamando **{{name}}** com argumentos ({{argsDisplay}}) no receptor {{receiverDisplay}}. Um novo Contexto de Execução é criado para esta chamada e empilhado na Pilha de Chamadas.",
+    "callingFunctionNoArgs": "Chamando **{{name}}()** no receptor {{receiverDisplay}}. Um novo Contexto de Execução é criado para esta chamada e empilhado na Pilha de Chamadas.",
+    "callingFunctionWithArgsNoReceiver": "Chamando **{{name}}** com argumentos ({{argsDisplay}}). Um novo **Contexto de Execução** é criado para esta chamada e empilhado na Pilha de Chamadas.",
+    "callingFunctionNoArgsNoReceiver": "Chamando **{{name}}()**. Um novo **Contexto de Execução** é criado para esta chamada e empilhado na Pilha de Chamadas.",
+    "callingMethod": "Chamando **{{className}}.{{methodName}}({{argsDisplay}})**. Um novo Contexto de Execução é criado para esta chamada de método. O vínculo **this** aponta para a instância receptora.",
+    "callingConsole": "Chamando **console.{{methodName}}**. Um Contexto de Execução temporário é empilhado para lidar com a operação de saída do console.",
+    "consoleOutput": "**console.{{methodName}}({{args}})** — saída escrita no console. O frame do console é removido da Pilha de Chamadas.",
+    "returningValue": "Retornando **{{displayValue}}** de **{{funcName}}**. O Contexto de Execução é removido da Pilha de Chamadas e o valor de retorno é passado de volta ao chamador. As variáveis locais são descartadas.",
+    "returningWithClosure": "**{{funcName}}** retornou — memória local removida, mas o **[[Scope]]** da função interna retém as variáveis capturadas. O closure mantém esses vínculos vivos no Heap mesmo após o frame externo ter sido removido.",
+    "declaringClass": "Declarando a classe **{{name}}**{{extendsStr}}. A classe é registrada na memória com seu construtor, métodos de instância e membros estáticos.",
+    "instantiatingClass": "**new {{className}}({{argsDisplay}})** — criando uma nova instância. Um novo objeto é alocado no Heap. Seu **[[Prototype]]** é vinculado a **{{className}}.prototype** para herdar os métodos de instância.",
+    "executingConstructor": "Executando **{{className}}.constructor**. Um novo Contexto de Execução é empilhado para o corpo do construtor. O vínculo **this** aponta para a nova instância no Heap.",
+    "executingParentConstructor": "Executando **{{parentClassName}}.constructor**. O construtor pai é executado com a mesma instância como **this**, permitindo que ele inicialize propriedades herdadas no Heap.",
+    "callingSuperConstructor": "**super({{argsDisplay}})** — chamando o construtor pai **{{parentClassName}}**. A lógica de inicialização do pai é executada antes que a classe filha possa acessar **this**.",
+    "constructorCompleted": "Construtor de **{{className}}** concluído — instância totalmente inicializada no Heap. O frame do construtor é removido e a referência da nova instância é retornada.",
+    "methodReturned": "**{{className}}.{{methodName}}** retornou **{{displayValue}}**. O Contexto de Execução do método é removido da Pilha de Chamadas e o valor de retorno é passado ao chamador.",
+    "evaluatingIfConditionTrue": "Avaliando condição **if**: {{result}}. A expressão foi completamente avaliada — o motor entrará no bloco **if**.",
+    "evaluatingIfConditionFalse": "Avaliando condição **if**: {{result}}. A expressão foi completamente avaliada — o motor pulará o bloco **if** e verificará a ramificação **else**.",
+    "forLoopIteration": "Iteração **{{iteration}}** do laço **for**. A condição do laço é reavaliada e o corpo executa nesta iteração. A expressão de atualização será executada ao final.",
+    "whileLoopIteration": "Iteração **{{iteration}}** do laço **while**. A condição avaliou como verdadeira — o corpo do laço executa novamente.",
+    "forOfIteration": "Iteração **{{iteration}}** do **for...of** — **{{varName}}** = {{displayValue}}. O próximo valor é obtido do iterável e vinculado à variável do laço no escopo atual.",
+    "forOfStartGenerator": "**for...of** — iterando sobre **generator**. O protocolo de iterador é invocado e o motor chamará `.next()` em cada iteração.",
+    "forOfStartIterable": "**for...of** — iterando sobre **iterável**. O protocolo de iterador é invocado e o motor chamará `.next()` em cada iteração.",
+    "forOfGeneratorValue": "**for...of** — recebeu **{{displayValue}}** do generator. O generator produziu este valor e agora está suspenso, aguardando a próxima chamada `.next()`.",
+    "breakStatement": "**break** — saindo do laço atual. O controle salta para a primeira instrução após o corpo do laço.",
+    "continueStatement": "**continue** — pulando o restante do corpo do laço atual. O controle salta para a expressão de atualização do laço.",
+    "throwStatement": "**throw** {{displayValue}} — uma exceção é lançada. O motor percorre a Pilha de Chamadas em busca do bloco **try...catch** mais próximo para tratá-la.",
+    "errorCaught": "Erro capturado: {{displayValue}} — entrando no bloco **catch**. O valor lançado é vinculado ao parâmetro do catch e o corpo começa a executar.",
+    "enteringFinally": "Entrando no bloco **finally**. Este código sempre é executado, independentemente de ter ocorrido ou não uma exceção — usado para ações de limpeza.",
+    "importDeclaration": "**import { {{specifierNames}} } from '{{source}}'** — importação de módulo (simulada). Os vínculos nomeados são resolvidos do mapa de exportação do módulo e adicionados ao escopo atual como vínculos **const**.",
+    "exportNamedDeclaration": "**export { {{exportedNames}} }** — os identificadores listados são adicionados ao mapa de exportação deste módulo e disponibilizados para outros módulos importarem.",
+    "exportDefaultFunction": "**export default function {{name}}** — a função é declarada e simultaneamente definida como exportação padrão deste módulo.",
+    "exportDefaultClass": "**export default class {{name}}** — a classe é declarada e simultaneamente definida como exportação padrão deste módulo.",
+    "exportDefaultValue": "**export default** {{displayValue}} — o valor é definido como exportação padrão deste módulo e acessível por importação padrão.",
+    "timerRegistered": "**{{timerName}}(callback, {{delay}})** — temporizador registrado nas **Web APIs**. O callback será movido para a Fila de Tarefas após o atraso decorrer e a Pilha de Chamadas estiver vazia.",
+    "timerInvalidCallback": "**{{timerName}}**: o callback não é uma função — ignorado. O primeiro argumento deve ser uma função para que o temporizador seja registrado.",
+    "timerFired": "Temporizador de **{{delay}}ms** concluído — callback pronto. A Web API move o callback para a **Fila de Tarefas** onde aguarda a Pilha de Chamadas ficar vazia.",
+    "intervalRegistered": "**setInterval(callback, {{delay}}ms)** — intervalo registrado nas **Web APIs**. O callback será enfileirado repetidamente na Fila de Tarefas a cada {{delay}}ms.",
+    "timerCancelled": "**{{calleeName}}(id)** — temporizador cancelado. O callback pendente é removido das Web APIs e não será mais enfileirado na Fila de Tarefas.",
+    "fetchRegistered": "**fetch(\"{{url}}\")** — requisição de rede registrada nas **Web APIs**. A requisição HTTP é executada fora da thread principal; uma **Promise** pendente é retornada imediatamente.",
+    "fetchCompleted": "**fetch** concluído — resposta recebida (status 200). A Web API resolve a Promise do fetch e enfileira os callbacks `.then()` na **Fila de Microtarefas**.",
+    "responseJson": "**response.json()** — analisando o corpo da resposta. O stream é lido e analisado como JSON, retornando uma nova **Promise** que resolve com os dados analisados.",
+    "checkingMicrotaskQueue": "Verificando a **Fila de Microtarefas** após o código síncrono. Antes do Event Loop selecionar a próxima Tarefa, todas as microtarefas pendentes (callbacks de Promise) devem ser drenadas.",
+    "microtasksPending": "Microtarefas pendentes — drenando antes da próxima tarefa. A **Fila de Microtarefas** é totalmente esvaziada antes do Event Loop retornar à Fila de Tarefas.",
+    "eventLoopPickingTask": "**Event Loop**: Pilha de Chamadas vazia → selecionando tarefa da **Fila de Tarefas**. O callback mais antigo é removido da fila e empilhado na Pilha de Chamadas para execução.",
+    "callbackMovedToTaskQueue": "Callback movido das **Web APIs** para a **Fila de Tarefas**. O callback de temporizador ou E/S está agora na fila e executará na próxima rodada do Event Loop.",
+    "callbackExecutionCompleted": "Execução do callback concluída — Pilha de Chamadas vazia. O motor verificará a Fila de Microtarefas novamente e então procurará a próxima tarefa.",
+    "executionComplete": "Execução concluída — todas as tarefas processadas. A Pilha de Chamadas, a Fila de Microtarefas e a Fila de Tarefas estão todas vazias. O programa terminou de executar.",
+    "fetchCheckingMicrotasks": "Fetch resolvido — verificando a **Fila de Microtarefas**. Todos os callbacks de Promise enfileirados pelo fetch resolvido estão prestes a ser drenados.",
+    "callbackCheckingMicrotasks": "Callback concluído — verificando a **Fila de Microtarefas**. As microtarefas enfileiradas durante a execução do callback serão drenadas antes do Event Loop prosseguir.",
+    "setIntervalLimitReached": "Limite de iterações do **setInterval** atingido (máx. 3). O visualizador limita os callbacks de intervalo a 3 iterações para evitar laços infinitos durante a visualização.",
+    "newPromise": "**new Promise()** — o executor será executado imediatamente. A Promise é criada no estado **pendente** e a função executora é chamada sincronamente agora.",
+    "executingPromiseExecutor": "Executando o **executor da Promise** — executa sincronamente. O corpo do executor é executado na Pilha de Chamadas. Chamar **resolve()** ou **reject()** liquidará a Promise.",
+    "promiseResolveStatic": "**Promise.resolve({{value}})** — cria uma **Promise** cumprida. Se o valor for uma Promise ou thenable, a nova Promise adota seu estado; caso contrário, resolve imediatamente.",
+    "promiseRejectStatic": "**Promise.reject({{value}})** — cria uma **Promise** rejeitada com o motivo fornecido. Quaisquer handlers `.catch()` anexados serão enfileirados na Fila de Microtarefas.",
+    "promiseResolveCallback": "**resolve({{value}})** — Promise cumprida. A Promise transita de **pendente** para **cumprida** e quaisquer callbacks `.then()` registrados são enfileirados na **Fila de Microtarefas**.",
+    "promiseRejectCallback": "**reject({{value}})** — Promise rejeitada. A Promise transita de **pendente** para **rejeitada** e quaisquer callbacks `.catch()` registrados são enfileirados na **Fila de Microtarefas**.",
+    "thenRegistered": "**.then()** registrado — callback enfileirado quando a Promise for liquidada. Se já estiver cumprida, o callback é enfileirado imediatamente na **Fila de Microtarefas**.",
+    "thenSkipped": "**.then()** ignorado — Promise está **rejeitada**. O handler de cumprimento é ignorado e a rejeição propaga pela cadeia até o próximo `.catch()`.",
+    "catchQueued": "**.catch()** — Promise rejeitada, callback → **Fila de Microtarefas**. O handler de rejeição é enfileirado e executará na próxima drenagem de microtarefas.",
+    "catchSkipped": "**.catch()** ignorado — Promise está **cumprida**. O handler de rejeição é ignorado e o valor resolvido propaga pela cadeia.",
+    "catchRegistered": "**.catch()** registrado — tratará a rejeição. Se já estiver rejeitada, o handler é enfileirado imediatamente na **Fila de Microtarefas**.",
+    "finallyQueued": "**.finally()** — callback → **Fila de Microtarefas** (executará ao liquidar). O handler finally sempre é executado, independentemente de cumprimento ou rejeição.",
+    "finallyRegistered": "**.finally()** registrado — executará ao liquidar. O callback é enfileirado na **Fila de Microtarefas** assim que a Promise for liquidada, executando incondicionalmente.",
+    "executingMicrotask": "Executando callback **.then().catch().finally()** com valor: **{{displayValue}}**. A microtarefa é removida da fila, um novo Contexto de Execução é empilhado e o corpo do callback é executado.",
+    "promiseAllRejected": "**Promise.all([{{count}} promises])** — rejeitada. Uma ou mais Promises foram rejeitadas; **Promise.all** curto-circuita e a Promise resultante rejeita imediatamente.",
+    "promiseAllResolved": "**Promise.all([{{count}} promises])** — resolvida com [{{values}} valores]. Todas as Promises foram cumpridas; a Promise resultante resolve com um array de seus valores.",
+    "promiseAllSettledRejected": "**Promise.allSettled([{{count}} promises])** — algumas rejeitadas. Ao contrário de `Promise.all`, aguarda todas as Promises se liquidarem e retorna um array de objetos **{ status, value/reason }**.",
+    "promiseAllSettledResolved": "**Promise.allSettled([{{count}} promises])** — resolvida com [{{values}} valores]. Todas as Promises foram liquidadas; a Promise resultante resolve com o array de status.",
+    "promiseRacePending": "**Promise.race([{{count}} promises])** — todas pendentes. A Promise resultante adotará o estado da primeira que se liquidar.",
+    "promiseRaceSettled": "**Promise.race([{{count}} promises])** — {{state}} com {{displayValue}}. A primeira Promise a se liquidar determinou o resultado; as demais são ignoradas.",
+    "promiseAllEmpty": "**Promise.all([])** — resolvida com []. Um array de entrada vazio significa que as zero Promises são imediatamente cumpridas, então o resultado resolve sincronamente com um array vazio.",
+    "promiseAllSettledEmpty": "**Promise.allSettled([])** — resolvida com []. Um array de entrada vazio significa que a Promise resultante resolve sincronamente com um array de status vazio.",
+    "promiseRaceEmpty": "**Promise.race([])** — pendente para sempre. Um array vazio significa que nenhuma Promise se liquidará, então a Promise resultante permanece no estado **pendente** indefinidamente.",
+    "promiseNotIterable": "**Promise.{{method}}**: argumento não é iterável. O argumento passado a `Promise.{{method}}` deve ser um iterável (ex.: um array); um TypeError seria lançado em tempo de execução.",
+    "promiseMethodNotSupported": "**Promise.{{methodName}}** (não suportado). Este método estático de Promise não está implementado no motor de execução do visualizador.",
+    "callingAsyncFunction": "Chamando **async {{funcName}}()** — retorna **Promise** (pendente). Uma função async sempre retorna uma Promise. O corpo começa a executar sincronamente até o primeiro **await**.",
+    "asyncFunctionCompleted": "**async {{funcName}}** concluída — Promise resolvida com **{{displayValue}}**. A Promise retornada é cumprida e quaisquer callbacks `.then()` são enfileirados na Fila de Microtarefas.",
+    "asyncFunctionThrew": "**async {{funcName}}** lançou — Promise rejeitada com **{{displayValue}}**. Uma exceção não tratada dentro de uma função async faz com que sua Promise retornada seja rejeitada.",
+    "asyncFunctionSuspended": "**async {{funcName}}** suspensa no **await** — cedendo execução. A função é pausada e seu estado é salvo. O controle retorna ao chamador enquanto a Promise aguardada é liquidada.",
+    "awaitCheckingPromise": "**await** — verificando se a Promise está liquidada. Se já estiver resolvida, a função será retomada imediatamente na Fila de Microtarefas; caso contrário, aguarda.",
+    "asyncFunctionResumed": "**async {{funcName}}** retomada — await resolvido com **{{displayValue}}**. O estado salvo da função é restaurado, a expressão await avalia para o valor resolvido e a execução continua.",
+    "asyncContinuationCompleted": "**async {{funcName}}** concluída — Promise resolvida com **{{displayValue}}**. Todos os awaits foram liquidados e a Promise retornada pela função async está agora cumprida.",
+    "asyncContinuationThrew": "**async {{funcName}}** lançou — Promise rejeitada. Uma exceção ocorreu durante a execução retomada e a Promise retornada pela função é rejeitada com esse erro.",
+    "asyncContinuationRejected": "**async {{funcName}}** — await rejeitado, Promise rejeitada com **{{displayValue}}**. A Promise aguardada foi rejeitada e não há try/catch envolvendo dentro da função async.",
+    "generatorCreated": "**{{funcName}}({{argsDisplay}})** — objeto generator criado (suspenso). Chamar uma função generator NÃO executa seu corpo; retorna um objeto **Generator** no estado **suspenso**.",
+    "generatorNext": "**gen.next({{inputValue}})** — retomando o generator com o valor {{inputStr}}. A execução continua a partir do último ponto **yield**; o valor de entrada torna-se o resultado da expressão yield.",
+    "generatorReturn": "**gen.return({{displayValue}})** — generator encerrado. O generator é encerrado à força e retorna **{ value: {{displayValue}}, done: true }** independentemente dos pontos yield restantes.",
+    "generatorThrow": "**gen.throw({{displayValue}})** — generator encerrado com erro. O erro é lançado no último ponto de suspensão dentro do generator; se não tratado, o generator é encerrado.",
+    "generatorAlreadyClosed": "**gen.{{method}}()** — generator já encerrado. O generator já terminou (done: true) ou foi encerrado; chamar métodos em um generator encerrado não tem efeito.",
+    "yieldStatement": "**yield {{displayValue}}** — generator suspenso, retornou **{ value: {{displayValue}}, done: false }**. A execução é pausada aqui e o valor produzido é passado de volta ao chamador via `.next()`.",
+    "generatorCompleted": "Generator **{{funcName}}** concluído — retornou **{ value: {{displayValue}}, done: true }**. O corpo da função generator foi executado até o fim; o generator está agora encerrado.",
+    "generatorMaxIterations": "Generator encerrado — limite máximo de iterações atingido. O visualizador limita as retomadas do generator para evitar laços infinitos durante a visualização.",
+    "unsupportedNew": "**new {{name}}** (não suportado). Esta chamada de construtor não está implementada no motor de execução do visualizador e será ignorada."
+  }
+}

@@ -1,0 +1,222 @@
+{
+  "appShell": {
+    "code": "Code",
+    "edit": "Edit",
+    "run": "Run",
+    "parsing": "Parsing..."
+  },
+  "examples": {
+    "button": "Examples",
+    "modalTitle": "Code Examples",
+    "modalSubtitle": "Select an example to visualize JavaScript execution",
+    "groups": {
+      "basics": {
+        "label": "Basics",
+        "description": "Variables, scope, and fundamental concepts"
+      },
+      "closures": {
+        "label": "Closures",
+        "description": "Lexical scope and closure patterns"
+      },
+      "promises": {
+        "label": "Promises",
+        "description": "Promise chains and async patterns"
+      },
+      "async": {
+        "label": "Async/Await",
+        "description": "Timers, event loop, and async operations"
+      },
+      "advanced": {
+        "label": "Advanced",
+        "description": "Complex patterns and edge cases"
+      }
+    }
+  },
+  "transport": {
+    "goToStart": "Go to start (Home)",
+    "stepBack": "Step back (←)",
+    "play": "Play (Space)",
+    "pause": "Pause (Space)",
+    "stepForward": "Step forward (→)",
+    "goToEnd": "Go to end (End)",
+    "speed": "Speed:",
+    "step": "Step "
+  },
+  "callStack": {
+    "title": "Call Stack",
+    "empty": "Run code to see the Call Stack",
+    "suspended": "suspended",
+    "line": "line",
+    "col": "col",
+    "types": {
+      "global": "global",
+      "function": "fn",
+      "method": "method",
+      "async": "async",
+      "generator": "gen"
+    }
+  },
+  "memory": {
+    "title": "Memory",
+    "empty": "Run code to see Memory allocation",
+    "emptyBlock": "empty",
+    "suspended": "suspended",
+    "destructured": "Destructured",
+    "exported": "Exported",
+    "var_one": "{{count}} var",
+    "var_other": "{{count}} vars"
+  },
+  "heap": {
+    "title": "Heap",
+    "empty": "No heap objects",
+    "groups": {
+      "objects": "Objects",
+      "generators": "Generators",
+      "promises": "Promises"
+    },
+    "lastYield": "last yield",
+    "chips": {
+      "async": "async",
+      "gen": "gen*",
+      "fn": "fn"
+    }
+  },
+  "webAPIs": {
+    "title": "Web APIs",
+    "empty": "Web APIs will appear here when the code uses setTimeout, fetch, etc.",
+    "url": "url",
+    "callback": "callback",
+    "delay": "delay",
+    "elapsed": "elapsed:",
+    "status": {
+      "running": "running",
+      "cancelled": "cancelled",
+      "completed": "completed"
+    }
+  },
+  "taskQueue": {
+    "title": "Task Queue",
+    "empty": "Callbacks from Web APIs will queue here"
+  },
+  "microtaskQueue": {
+    "title": "Microtask Queue",
+    "empty": "No microtasks",
+    "promise": "Promise"
+  },
+  "console": {
+    "title": "console"
+  },
+  "eventLoop": {
+    "title": "Event Loop",
+    "microtasks": "Microtasks",
+    "tasks": "Tasks"
+  },
+  "stepDescriptions": {
+    "startingExecution": "The JavaScript engine begins executing the script. A new **Global Execution Context** is created and pushed onto the Call Stack. Global memory (the Variable Environment) is initialized.",
+    "startingExecutionModule": "Starting module execution",
+    "declaringVariable": "Declaring {{exportPrefix}}{{kind}} **{{name}}** = {{displayValue}}. The identifier is added to the current scope's Variable Environment and the value is stored in memory.",
+    "destructuringVariableFrom": "Destructuring **{{varName}}** = {{displayValue}} from **{{sourceName}}**. The value is extracted from the source object/array and bound to the new identifier in the current scope.",
+    "destructuringVariable": "Destructuring **{{varName}}** = {{displayValue}}. The value is extracted and bound to the new identifier in the current scope.",
+    "destructuringRestObject": "Destructuring **...{{restName}}** — collecting remaining properties into a new object and binding it to **{{restName}}** in the current scope.",
+    "destructuringRestArray": "Destructuring **...{{restName}}** — collecting remaining elements into a new array and binding it to **{{restName}}** in the current scope.",
+    "assigningVariable": "Assigning **{{name}}** = {{displayValue}}. The existing binding in the Variable Environment is updated with the new value.",
+    "assigningProperty": "Assigning **{{objLabel}}.{{propName}}** = {{displayValue}}. The property on the object in the Heap is updated with the new value.",
+    "assigningThisProperty": "Setting **this.{{propName}}** = {{displayValue}}. The property is written onto the current instance object in the Heap via the **this** binding.",
+    "incrementDecrement": "Assigning **{{name}}** = {{name}} {{operatorDesc}}. The variable is updated in-place in the Variable Environment.",
+    "declaringFunction": "Declaring {{asyncPrefix}}{{generatorPrefix}}**{{name}}**. A new function object is created and stored in memory. The function's name, parameters, and body are recorded. The function is added to the current scope (Global or Function) so it can be called later.",
+    "callingFunctionWithArgs": "Calling **{{name}}** with arguments ({{argsDisplay}}) on receiver {{receiverDisplay}}. A new Execution Context is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.",
+    "callingFunctionNoArgs": "Calling **{{name}}()** on receiver {{receiverDisplay}}. A new Execution Context is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.",
+    "callingFunctionWithArgsNoReceiver": "Calling **{{name}}** with arguments ({{argsDisplay}}). A new **Execution Context** is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.",
+    "callingFunctionNoArgsNoReceiver": "Calling **{{name}}()**. A new **Execution Context** is created for this function call and pushed onto the Call Stack. The function's parameters are evaluated and stored in the new Execution Context's Variable Environment. The function body begins executing.",
+    "callingMethod": "Calling **{{className}}.{{methodName}}({{argsDisplay}})**. A new Execution Context is created for this method call and pushed onto the Call Stack. The **this** binding is set to the receiver instance.",
+    "callingConsole": "Calling **console.{{methodName}}**. A temporary Execution Context is pushed onto the Call Stack to handle the built-in console output operation.",
+    "consoleOutput": "**console.{{methodName}}({{args}})** — output written to the console. The console frame is popped from the Call Stack.",
+    "returningValue": "Returning **{{displayValue}}** from **{{funcName}}**. The Execution Context is popped off the Call Stack and the return value is passed back to the caller. Local variables are discarded.",
+    "returningWithClosure": "**{{funcName}}** returned — local memory removed, but the inner function's **[[Scope]]** retains captured variables. The closure keeps those bindings alive on the Heap even after the outer frame is gone.",
+    "declaringClass": "Declaring class **{{name}}**{{extendsStr}}. The class is registered in memory with its constructor, instance methods, and static members. The class object is stored in the current scope.",
+    "instantiatingClass": "**new {{className}}({{argsDisplay}})** — creating a new instance. A fresh object is allocated on the Heap. Its **[[Prototype]]** is linked to **{{className}}.prototype** so it can inherit instance methods.",
+    "executingConstructor": "Executing **{{className}}.constructor**. A new Execution Context is pushed onto the Call Stack for the constructor body. The **this** binding points to the newly created instance on the Heap.",
+    "executingParentConstructor": "Executing **{{parentClassName}}.constructor**. The parent constructor runs with the same instance as **this**, allowing it to initialize inherited properties on the Heap object.",
+    "callingSuperConstructor": "**super({{argsDisplay}})** — calling parent constructor **{{parentClassName}}**. The parent's initialization logic runs before the child class can access **this**.",
+    "constructorCompleted": "**{{className}}** constructor completed — instance fully initialized on the Heap. The constructor frame is popped from the Call Stack and the new instance reference is returned.",
+    "methodReturned": "**{{className}}.{{methodName}}** returned **{{displayValue}}**. The method's Execution Context is popped off the Call Stack and the return value is passed back to the caller.",
+    "evaluatingIfConditionTrue": "Evaluating **if** condition: {{result}}. The condition expression is fully evaluated — the engine will enter the **if** block.",
+    "evaluatingIfConditionFalse": "Evaluating **if** condition: {{result}}. The condition expression is fully evaluated — the engine will skip the **if** block and check for an **else** branch.",
+    "forLoopIteration": "**for** loop iteration **{{iteration}}**. The loop condition is re-evaluated and the loop body executes for this iteration. The update expression will run at the end of this iteration.",
+    "whileLoopIteration": "**while** loop iteration **{{iteration}}**. The loop condition evaluated to true — the loop body executes again.",
+    "forOfIteration": "**for...of** iteration **{{iteration}}** — **{{varName}}** = {{displayValue}}. The next value is pulled from the iterable and bound to the loop variable in the current scope.",
+    "forOfStartGenerator": "**for...of** — iterating over **generator**. The iterator protocol is invoked and the engine will call `.next()` on each iteration to advance through the values.",
+    "forOfStartIterable": "**for...of** — iterating over **iterable**. The iterator protocol is invoked and the engine will call `.next()` on each iteration to advance through the values.",
+    "forOfGeneratorValue": "**for...of** — received **{{displayValue}}** from generator. The generator yielded this value and is now suspended, waiting for the next `.next()` call.",
+    "breakStatement": "**break** — exiting the current loop. Control jumps to the first statement after the loop body.",
+    "continueStatement": "**continue** — skipping the rest of the current loop body. Control jumps to the loop's update expression (or condition check for **while**).",
+    "throwStatement": "**throw** {{displayValue}} — an exception is thrown. The engine unwinds the Call Stack looking for the nearest enclosing **try...catch** block to handle it.",
+    "errorCaught": "Error caught: {{displayValue}} — entering **catch** block. The thrown value is bound to the catch parameter and the catch body begins executing.",
+    "enteringFinally": "Entering **finally** block. This code always executes regardless of whether an exception was thrown or caught — it is used to perform cleanup actions.",
+    "importDeclaration": "**import { {{specifierNames}} } from '{{source}}'** — module import (simulated). Named bindings are resolved from the module's export map and added to the current scope as **const** bindings.",
+    "exportNamedDeclaration": "**export { {{exportedNames}} }** — the listed identifiers are added to this module's export map and made available for other modules to import.",
+    "exportDefaultFunction": "**export default function {{name}}** — the function is declared and simultaneously set as this module's default export.",
+    "exportDefaultClass": "**export default class {{name}}** — the class is declared and simultaneously set as this module's default export.",
+    "exportDefaultValue": "**export default** {{displayValue}} — the value is set as this module's default export and is accessible when the module is imported with a default import.",
+    "timerRegistered": "**{{timerName}}(callback, {{delay}})** — timer registered in **Web APIs**. The callback will be moved to the Task Queue once the delay elapses and the Call Stack is empty.",
+    "timerInvalidCallback": "**{{timerName}}**: callback is not a function — skipped. The first argument must be a function expression or reference for the timer to be registered.",
+    "timerFired": "**{{delay}}ms** timer completed — callback is ready. The Web API moves the callback to the **Task Queue** where it waits for the Call Stack to be empty.",
+    "intervalRegistered": "**setInterval(callback, {{delay}}ms)** — interval registered in **Web APIs**. The callback will be repeatedly queued in the Task Queue at every {{delay}}ms interval.",
+    "timerCancelled": "**{{calleeName}}(id)** — timer cancelled. The pending callback is removed from the Web APIs and will no longer be queued in the Task Queue.",
+    "fetchRegistered": "**fetch(\"{{url}}\")** — network request registered in **Web APIs**. The HTTP request runs off the main thread; a pending **Promise** is returned immediately so execution can continue.",
+    "fetchCompleted": "**fetch** completed — Response received (status 200). The Web API resolves the fetch Promise and queues the `.then()` callbacks in the **Microtask Queue**.",
+    "responseJson": "**response.json()** — parsing response body. The response stream is read and parsed as JSON, returning a new **Promise** that resolves with the parsed data.",
+    "checkingMicrotaskQueue": "Checking **Microtask Queue** after synchronous code. Before the Event Loop picks the next Task, all pending microtasks (Promise callbacks) must be drained first.",
+    "microtasksPending": "Microtasks pending — draining before next task. The **Microtask Queue** is flushed completely (including any microtasks added during this flush) before the Event Loop returns to the Task Queue.",
+    "eventLoopPickingTask": "**Event Loop**: Call Stack is empty → picking task from **Task Queue**. The oldest callback in the Task Queue is dequeued and pushed onto the Call Stack for execution.",
+    "callbackMovedToTaskQueue": "Callback moved from **Web APIs** to **Task Queue**. The timer or I/O callback is now queued and will run on the next Event Loop turn when the Call Stack is empty.",
+    "callbackExecutionCompleted": "Callback execution completed — Call Stack empty. The engine will check the Microtask Queue again, then look for the next task.",
+    "executionComplete": "Execution complete — all tasks processed. The Call Stack, Microtask Queue, and Task Queue are all empty. The program has finished running.",
+    "fetchCheckingMicrotasks": "Fetch resolved — checking **Microtask Queue**. All Promise callbacks enqueued by the resolved fetch are about to be drained.",
+    "callbackCheckingMicrotasks": "Callback done — checking **Microtask Queue**. Any microtasks queued during the callback execution will be drained before the Event Loop proceeds.",
+    "setIntervalLimitReached": "**setInterval** iteration limit reached (3 max). The visualizer caps interval callbacks at 3 iterations to prevent infinite loops during visualization.",
+    "newPromise": "**new Promise()** — executor will run immediately. The Promise is created in a **pending** state and the executor function is called synchronously right now.",
+    "executingPromiseExecutor": "Executing **Promise executor** — runs synchronously. The executor body executes on the Call Stack. Calling **resolve()** or **reject()** will settle the Promise.",
+    "promiseResolveStatic": "**Promise.resolve({{value}})** — creates a fulfilled **Promise**. If the value is itself a Promise or thenable, the new Promise adopts its state; otherwise it resolves immediately with the given value.",
+    "promiseRejectStatic": "**Promise.reject({{value}})** — creates a rejected **Promise** with the given reason. Any attached `.catch()` handlers will be queued in the Microtask Queue.",
+    "promiseResolveCallback": "**resolve({{value}})** — Promise fulfilled. The Promise transitions from **pending** to **fulfilled** and any registered `.then()` callbacks are queued in the **Microtask Queue**.",
+    "promiseRejectCallback": "**reject({{value}})** — Promise rejected. The Promise transitions from **pending** to **rejected** and any registered `.catch()` callbacks are queued in the **Microtask Queue**.",
+    "thenRegistered": "**.then()** registered — callback queued when Promise settles. If the Promise is already fulfilled the callback is queued immediately in the **Microtask Queue**; otherwise it waits.",
+    "thenSkipped": "**.then()** skipped — Promise is **rejected**. The fulfillment handler is bypassed and the rejection propagates down the chain to the next `.catch()`.",
+    "catchQueued": "**.catch()** — Promise rejected, callback → **Microtask Queue**. The rejection handler is queued and will execute on the next microtask drain.",
+    "catchSkipped": "**.catch()** skipped — Promise is **fulfilled**. The rejection handler is bypassed and the resolved value propagates down the chain.",
+    "catchRegistered": "**.catch()** registered — will handle rejection. If the Promise is already rejected the handler is queued immediately in the **Microtask Queue**; otherwise it waits.",
+    "finallyQueued": "**.finally()** — callback → **Microtask Queue** (will run on settle). The finally handler always runs regardless of fulfillment or rejection, without receiving the settled value.",
+    "finallyRegistered": "**.finally()** registered — will run on settle. The callback is enqueued in the **Microtask Queue** once the Promise settles, running unconditionally.",
+    "executingMicrotask": "Executing **.then().catch().finally()** callback with value: **{{displayValue}}**. The microtask is dequeued, a new Execution Context is pushed, and the callback body runs.",
+    "promiseAllRejected": "**Promise.all([{{count}} promises])** — rejected. One or more Promises rejected; **Promise.all** short-circuits and the resulting Promise rejects immediately with the first rejection reason.",
+    "promiseAllResolved": "**Promise.all([{{count}} promises])** — resolved with [{{values}} values]. All Promises fulfilled; the resulting Promise resolves with an array of their values in the original order.",
+    "promiseAllSettledRejected": "**Promise.allSettled([{{count}} promises])** — some rejected. Unlike `Promise.all`, it waits for all Promises to settle and returns an array of **{ status, value/reason }** objects.",
+    "promiseAllSettledResolved": "**Promise.allSettled([{{count}} promises])** — resolved with [{{values}} values]. All Promises settled (fulfilled or rejected); the resulting Promise resolves with the status array.",
+    "promiseRacePending": "**Promise.race([{{count}} promises])** — all pending. The resulting Promise will adopt the state of whichever Promise settles first.",
+    "promiseRaceSettled": "**Promise.race([{{count}} promises])** — {{state}} with {{displayValue}}. The first Promise to settle determined the outcome; the rest are ignored.",
+    "promiseAllEmpty": "**Promise.all([])** — resolved with []. An empty input array means all zero Promises are immediately fulfilled, so the result resolves synchronously with an empty array.",
+    "promiseAllSettledEmpty": "**Promise.allSettled([])** — resolved with []. An empty input array means the resulting Promise resolves synchronously with an empty status array.",
+    "promiseRaceEmpty": "**Promise.race([])** — forever pending. An empty array means no Promise will ever settle, so the resulting Promise remains in the **pending** state indefinitely.",
+    "promiseNotIterable": "**Promise.{{method}}**: argument not iterable. The argument passed to `Promise.{{method}}` must be an iterable (e.g., an array); a TypeError would be thrown at runtime.",
+    "promiseMethodNotSupported": "**Promise.{{methodName}}** (not supported). This Promise static method is not implemented in the visualizer's execution engine.",
+    "callingAsyncFunction": "Calling **async {{funcName}}()** — returns **Promise** (pending). An async function always returns a Promise. The function body starts executing synchronously up to the first **await**.",
+    "asyncFunctionCompleted": "**async {{funcName}}** completed — Promise resolved with **{{displayValue}}**. The returned Promise is fulfilled and any `.then()` callbacks are queued in the Microtask Queue.",
+    "asyncFunctionThrew": "**async {{funcName}}** threw — Promise rejected with **{{displayValue}}**. An unhandled exception inside an async function causes its returned Promise to reject.",
+    "asyncFunctionSuspended": "**async {{funcName}}** suspended at **await** — yielding execution. The function is paused and its state is saved. Control returns to the caller while the awaited Promise settles.",
+    "awaitCheckingPromise": "**await** — checking if Promise is settled. If the Promise is already resolved the function will be resumed immediately in the Microtask Queue; otherwise it waits.",
+    "asyncFunctionResumed": "**async {{funcName}}** resumed — await resolved with **{{displayValue}}**. The function's saved state is restored, the await expression evaluates to the resolved value, and execution continues.",
+    "asyncContinuationCompleted": "**async {{funcName}}** completed — Promise resolved with **{{displayValue}}**. All awaits have settled and the async function's returned Promise is now fulfilled.",
+    "asyncContinuationThrew": "**async {{funcName}}** threw — Promise rejected. An exception occurred during the resumed execution and the function's returned Promise is rejected with that error.",
+    "asyncContinuationRejected": "**async {{funcName}}** — await rejected, Promise rejected with **{{displayValue}}**. The awaited Promise was rejected and there is no enclosing try/catch to handle it inside the async function.",
+    "generatorCreated": "**{{funcName}}({{argsDisplay}})** — generator object created (suspended). Calling a generator function does NOT execute its body; it returns a **Generator** object in the **suspended** state.",
+    "generatorNext": "**gen.next({{inputValue}})** — resuming generator with value {{inputStr}}. Execution continues from the last **yield** point; the input value becomes the result of the yield expression inside the generator.",
+    "generatorReturn": "**gen.return({{displayValue}})** — generator closed. The generator is forcefully terminated and returns **{ value: {{displayValue}}, done: true }** regardless of remaining yield points.",
+    "generatorThrow": "**gen.throw({{displayValue}})** — generator closed with error. The error is thrown at the last suspension point inside the generator; if unhandled, the generator terminates.",
+    "generatorAlreadyClosed": "**gen.{{method}}()** — generator already closed. The generator has already finished (done: true) or was terminated; calling methods on a closed generator has no effect.",
+    "yieldStatement": "**yield {{displayValue}}** — generator suspended, returned **{ value: {{displayValue}}, done: false }**. Execution is paused here and the yielded value is passed back to the caller's `.next()` call.",
+    "generatorCompleted": "Generator **{{funcName}}** completed — returned **{ value: {{displayValue}}, done: true }**. The generator function body ran to completion; the generator is now closed.",
+    "generatorMaxIterations": "Generator closed — max iterations reached. The visualizer caps generator resumptions to prevent infinite loops during visualization.",
+    "unsupportedNew": "**new {{name}}** (not supported). This constructor call is not implemented in the visualizer's execution engine and will be skipped."
+  }
+}

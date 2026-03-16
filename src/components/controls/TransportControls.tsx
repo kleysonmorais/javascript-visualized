@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   SkipBack,
@@ -82,6 +83,7 @@ function StepDescription() {
 }
 
 export function TransportControls() {
+  const { t } = useTranslation();
   const {
     currentStepIndex,
     totalSteps,
@@ -169,7 +171,7 @@ export function TransportControls() {
           <button
             onClick={goToStart}
             disabled={atStart}
-            title="Go to start (Home)"
+            title={t("transport.goToStart")}
             className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
@@ -195,7 +197,7 @@ export function TransportControls() {
           <button
             onClick={goBack}
             disabled={atStart}
-            title="Step back (←)"
+            title={t("transport.stepBack")}
             className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
@@ -221,7 +223,7 @@ export function TransportControls() {
           <motion.button
             onClick={togglePlayback}
             disabled={noSteps}
-            title={isPlaying ? "Pause (Space)" : "Play (Space)"}
+            title={isPlaying ? t("transport.pause") : t("transport.play")}
             whileTap={
               shouldReduceMotion || noSteps ? undefined : { scale: 0.92 }
             }
@@ -246,7 +248,7 @@ export function TransportControls() {
           <button
             onClick={goNext}
             disabled={atEnd}
-            title="Step forward (→)"
+            title={t("transport.stepForward")}
             className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
@@ -272,7 +274,7 @@ export function TransportControls() {
           <button
             onClick={goToEnd}
             disabled={atEnd}
-            title="Go to end (End)"
+            title={t("transport.goToEnd")}
             className="min-w-10 min-h-10 sm:min-w-0 sm:min-h-0"
             style={{
               ...btnBase,
@@ -373,7 +375,7 @@ export function TransportControls() {
                   fontFamily: THEME.fonts.ui,
                 }}
               >
-                Speed:
+                {t("transport.speed")}
               </span>
               {SPEEDS.map((s) => (
                 <button
@@ -412,7 +414,7 @@ export function TransportControls() {
             whiteSpace: "nowrap",
           }}
         >
-          {!isSmallMobile && "Step "}
+          {!isSmallMobile && t("transport.step")}
           <AnimatePresence mode="wait">
             <motion.span
               key={totalSteps === 0 ? "empty" : currentStepIndex}

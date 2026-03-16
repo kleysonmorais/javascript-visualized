@@ -1,10 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 
 export function TaskQueue() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const tasks = currentStep?.taskQueue ?? [];
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
@@ -14,7 +16,7 @@ export function TaskQueue() {
   }
 
   return (
-    <Panel title="Task Queue" scrollable={false}>
+    <Panel title={t("taskQueue.title")} scrollable={false}>
       {tasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
@@ -24,7 +26,7 @@ export function TaskQueue() {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            Callbacks from Web APIs will queue here
+            {t("taskQueue.empty")}
           </span>
         </div>
       ) : (

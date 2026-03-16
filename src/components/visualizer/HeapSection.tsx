@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ChevronRight,
@@ -628,6 +629,7 @@ function GeneratorHeapCard({
   obj: HeapObject;
   isHighlighted: boolean;
 }) {
+  const { t } = useTranslation();
   const stateProp = obj.properties?.find((p) => p.key === "[[GeneratorState]]");
   const stateValue = stateProp?.displayValue ?? obj.generatorState ?? "unknown";
   const stateStyle = getGeneratorStateStyle(stateValue);
@@ -700,7 +702,7 @@ function GeneratorHeapCard({
       )}
       {obj.lastYieldedValue && (
         <PropRow
-          propKey="last yield"
+          propKey={t("heap.lastYield")}
           value={
             <span
               style={{
@@ -728,6 +730,7 @@ function HeapCard({
   obj: HeapObject;
   isHighlighted: boolean;
 }) {
+  const { t } = useTranslation();
   const isFunc = obj.type === "function";
   const src = obj.functionSource ?? obj.label ?? "";
 
@@ -739,13 +742,13 @@ function HeapCard({
   const badge = isFunc ? (
     <div className="flex items-center gap-1">
       {isAsync && (
-        <TypeChip label="async" color={THEME.colors.syntax.keyword} />
+        <TypeChip label={t("heap.chips.async")} color={THEME.colors.syntax.keyword} />
       )}
       {isGenFunc && (
-        <TypeChip label="gen*" color={THEME.colors.syntax.keyword} />
+        <TypeChip label={t("heap.chips.gen")} color={THEME.colors.syntax.keyword} />
       )}
       {!isAsync && !isGenFunc && (
-        <TypeChip label="fn" color={THEME.colors.syntax.function} />
+        <TypeChip label={t("heap.chips.fn")} color={THEME.colors.syntax.function} />
       )}
     </div>
   ) : isInstance ? (
@@ -844,6 +847,7 @@ interface HeapSectionProps {
 }
 
 export function HeapSection({ heap }: HeapSectionProps) {
+  const { t } = useTranslation();
   const hoveredPointerId = useVisualizerStore((s) => s.hoveredPointerId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
 
@@ -877,7 +881,7 @@ export function HeapSection({ heap }: HeapSectionProps) {
           letterSpacing: "0.07em",
         }}
       >
-        Heap
+        {t("heap.title")}
       </div>
 
       {heap.length === 0 ? (
@@ -888,14 +892,14 @@ export function HeapSection({ heap }: HeapSectionProps) {
             fontFamily: THEME.fonts.code,
           }}
         >
-          No heap objects
+          {t("heap.empty")}
         </div>
       ) : (
         <div className="flex flex-col gap-2">
           {/* Regular objects */}
           {otherObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label="Objects" />}
+              {hasMultipleGroups && <GroupDivider label={t("heap.groups.objects")} />}
               <AnimatePresence mode="popLayout">
                 {otherObjects.map((obj) => (
                   <motion.div
@@ -924,7 +928,7 @@ export function HeapSection({ heap }: HeapSectionProps) {
           {/* Generator objects */}
           {generatorObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label="Generators" />}
+              {hasMultipleGroups && <GroupDivider label={t("heap.groups.generators")} />}
               <AnimatePresence mode="popLayout">
                 {generatorObjects.map((obj) => (
                   <motion.div
@@ -953,7 +957,7 @@ export function HeapSection({ heap }: HeapSectionProps) {
           {/* Promise objects */}
           {promiseObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label="Promises" />}
+              {hasMultipleGroups && <GroupDivider label={t("heap.groups.promises")} />}
               <AnimatePresence mode="popLayout">
                 {promiseObjects.map((obj) => (
                   <motion.div

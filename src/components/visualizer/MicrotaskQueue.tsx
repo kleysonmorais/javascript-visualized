@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -11,6 +12,7 @@ interface MicrotaskCardProps {
 }
 
 function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
+  const { t } = useTranslation();
   const setHoveredPointerId = useVisualizerStore((s) => s.setHoveredPointerId);
   const { duration, shouldReduceMotion } = useAnimationConfig();
 
@@ -67,13 +69,14 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
           textTransform: "capitalize",
         }}
       >
-        {task.sourceType === "promise" ? "Promise" : task.sourceType}
+        {task.sourceType === "promise" ? t("microtaskQueue.promise") : task.sourceType}
       </div>
     </motion.div>
   );
 }
 
 export function MicrotaskQueue() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const microtasks = currentStep?.microtaskQueue ?? [];
@@ -87,7 +90,7 @@ export function MicrotaskQueue() {
   }
 
   return (
-    <Panel title="Microtask Queue" scrollable={false}>
+    <Panel title={t("microtaskQueue.title")} scrollable={false}>
       {microtasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
@@ -97,7 +100,7 @@ export function MicrotaskQueue() {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            No microtasks
+            {t("microtaskQueue.empty")}
           </span>
         </div>
       ) : (

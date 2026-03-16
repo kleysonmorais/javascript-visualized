@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -7,6 +8,7 @@ import { MemoryBlockCard } from "./MemoryBlockCard";
 import { HeapSection } from "./HeapSection";
 
 export function MemoryPanel() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const memoryBlocks = currentStep?.memoryBlocks ?? [];
   const heap = currentStep?.heap ?? [];
@@ -18,7 +20,7 @@ export function MemoryPanel() {
   const isEmpty = reversed.length === 0 && heap.length === 0;
 
   return (
-    <Panel title="Memory" className="flex-1 min-h-0">
+    <Panel title={t("memory.title")} className="flex-1 min-h-0">
       {isEmpty ? (
         <div className="flex items-center justify-center h-full">
           <span
@@ -28,7 +30,7 @@ export function MemoryPanel() {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            Run code to see Memory allocation
+            {t("memory.empty")}
           </span>
         </div>
       ) : (

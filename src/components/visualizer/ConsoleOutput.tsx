@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
@@ -14,6 +15,7 @@ const METHOD_COLORS: Record<ConsoleMethod, string> = {
 };
 
 export function ConsoleOutput() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const { duration, shouldReduceMotion } = useAnimationConfig();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -30,7 +32,7 @@ export function ConsoleOutput() {
   }, [entries]);
 
   return (
-    <Panel title="console" className="shrink-0">
+    <Panel title={t("console.title")} className="shrink-0">
       <div
         ref={scrollRef}
         className="flex flex-col gap-1 h-full overflow-y-auto min-h-40 

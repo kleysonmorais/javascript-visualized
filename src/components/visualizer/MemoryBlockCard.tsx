@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { ChevronRight } from "lucide-react";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -187,6 +188,7 @@ interface MemoryBlockCardProps {
 }
 
 export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const hoveredFrameId = useVisualizerStore((s) => s.hoveredFrameId);
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
@@ -266,7 +268,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                 flexShrink: 0,
               }}
             >
-              suspended
+              {t("memory.suspended")}
             </span>
           )}
         </div>
@@ -279,8 +281,8 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
           }}
         >
           {block.entries.length === 0
-            ? "empty"
-            : `${block.entries.length} var${block.entries.length !== 1 ? "s" : ""}`}
+            ? t("memory.emptyBlock")
+            : t("memory.var", { count: block.entries.length })}
         </span>
       </div>
 
@@ -333,7 +335,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                             color: THEME.colors.text.muted,
                             fontSize: 9,
                           }}
-                          title="Destructured"
+                          title={t("memory.destructured")}
                         >
                           {"{}"}
                         </span>
@@ -359,7 +361,7 @@ export function MemoryBlockCard({ block }: MemoryBlockCardProps) {
                             color: THEME.colors.syntax.keyword,
                             fontSize: 9,
                           }}
-                          title="Exported"
+                          title={t("memory.exported")}
                         >
                           ↗
                         </span>

@@ -40,7 +40,8 @@
       "@/constants": ["src/constants"],
       "@/constants/*": ["src/constants/*"],
       "@/utils": ["src/utils"],
-      "@/utils/*": ["src/utils/*"]
+      "@/utils/*": ["src/utils/*"],
+      "@/i18n": ["src/i18n.ts"]
     }
   },
   "include": ["src"]

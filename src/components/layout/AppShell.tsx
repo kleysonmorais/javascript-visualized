@@ -1,4 +1,5 @@
 import { Play, Loader2, RotateCcw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { THEME } from "@/constants/theme";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { CallStack } from "@/components/visualizer/CallStack";
@@ -16,6 +17,7 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ExamplesButton } from "./ExamplesModal";
 
 export function AppShell() {
+  const { t } = useTranslation();
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);
   const steps = useVisualizerStore((s) => s.steps);
@@ -45,7 +47,7 @@ export function AppShell() {
         <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
           {/* Code Editor */}
           <Panel
-            title="Code"
+            title={t("appShell.code")}
             className="flex-1 min-h-0 lg:min-h-50"
             scrollable={false}
             headerLeft={
@@ -81,7 +83,7 @@ export function AppShell() {
                     }}
                   >
                     <RotateCcw size={12} />
-                    <span>Edit</span>
+                    <span>{t("appShell.edit")}</span>
                   </button>
                 )}
                 <button
@@ -109,12 +111,12 @@ export function AppShell() {
                   {isRunning ? (
                     <>
                       <Loader2 size={12} className="animate-spin" />
-                      <span>Parsing...</span>
+                      <span>{t("appShell.parsing")}</span>
                     </>
                   ) : (
                     <>
                       <Play size={12} fill="currentColor" />
-                      <span>Run</span>
+                      <span>{t("appShell.run")}</span>
                     </>
                   )}
                 </button>

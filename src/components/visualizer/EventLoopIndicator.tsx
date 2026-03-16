@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { RefreshCw } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -61,6 +62,7 @@ const PHASE_CONFIG: Record<EventLoopPhase, PhaseConfig> = {
 
 /** Show priority order when relevant */
 function PriorityIndicator({ phase }: { phase: EventLoopPhase }) {
+  const { t } = useTranslation();
   const showIndicator =
     phase === "checking-microtasks" ||
     phase === "draining-microtasks" ||
@@ -87,18 +89,19 @@ function PriorityIndicator({ phase }: { phase: EventLoopPhase }) {
         <span
           style={{ color: THEME.colors.border.microtaskQueue, fontWeight: 600 }}
         >
-          Microtasks
+          {t("eventLoop.microtasks")}
         </span>
       </div>
       <div className="flex items-center gap-1.5">
         <span style={{ color: THEME.colors.text.secondary }}>②</span>
-        <span style={{ color: THEME.colors.border.taskQueue }}>Tasks</span>
+        <span style={{ color: THEME.colors.border.taskQueue }}>{t("eventLoop.tasks")}</span>
       </div>
     </div>
   );
 }
 
 export function EventLoopIndicator() {
+  const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const { duration, shouldReduceMotion } = useAnimationConfig();
   const eventLoop = currentStep?.eventLoop ?? {
@@ -127,7 +130,7 @@ export function EventLoopIndicator() {
   };
 
   return (
-    <Panel title="Event Loop" className="w-48">
+    <Panel title={t("eventLoop.title")} className="w-48">
       <style>{`
         @keyframes event-loop-spin {
           from { transform: rotate(0deg); }
