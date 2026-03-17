@@ -100,7 +100,10 @@ const assigningThisProperty = ({
   propName: string;
   displayValue: string;
 }) => {
-  return t("stepDescriptions.assigningThisProperty", { propName, displayValue });
+  return t("stepDescriptions.assigningThisProperty", {
+    propName,
+    displayValue,
+  });
 };
 
 const incrementDecrement = ({
@@ -144,12 +147,7 @@ const callingFunction = ({
   argsDisplay: string;
 }) => {
   if (receiver) {
-    let receiverDisplay: string;
-    try {
-      receiverDisplay = JSON.stringify(receiver);
-    } catch {
-      receiverDisplay = "[Object]";
-    }
+    const receiverDisplay: string = "[Object]";
     return argsDisplay
       ? t("stepDescriptions.callingFunctionWithArgs", {
           name,
@@ -484,11 +482,7 @@ const promiseRejectStatic = ({ displayValue }: { displayValue: string }) => {
   return t("stepDescriptions.promiseRejectStatic", { value });
 };
 
-const promiseResolveCallback = ({
-  displayValue,
-}: {
-  displayValue: string;
-}) => {
+const promiseResolveCallback = ({ displayValue }: { displayValue: string }) => {
   const value =
     displayValue && displayValue !== "undefined" ? displayValue : "";
   return t("stepDescriptions.promiseResolveCallback", { value });
@@ -574,7 +568,11 @@ const promiseRace = ({
   if (state === "pending") {
     return t("stepDescriptions.promiseRacePending", { count });
   }
-  return t("stepDescriptions.promiseRaceSettled", { count, state, displayValue });
+  return t("stepDescriptions.promiseRaceSettled", {
+    count,
+    state,
+    displayValue,
+  });
 };
 
 const promiseAllEmpty = () => {
@@ -610,7 +608,10 @@ const asyncFunctionCompleted = ({
   funcName: string;
   displayValue: string;
 }) => {
-  return t("stepDescriptions.asyncFunctionCompleted", { funcName, displayValue });
+  return t("stepDescriptions.asyncFunctionCompleted", {
+    funcName,
+    displayValue,
+  });
 };
 
 const asyncFunctionThrew = ({
