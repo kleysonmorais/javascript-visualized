@@ -1,4 +1,4 @@
-import { Play, Loader2, RotateCcw } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { THEME } from "@/constants/theme";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -15,6 +15,8 @@ import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { ExamplesButton } from "./ExamplesModal";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import { MdOutlineModeEditOutline } from "react-icons/md";
 
 export function AppShell() {
   const { t } = useTranslation();
@@ -24,6 +26,8 @@ export function AppShell() {
   const resetToEdit = useVisualizerStore((s) => s.resetToEdit);
   const error = useVisualizerStore((s) => s.error);
   const clearError = useVisualizerStore((s) => s.clearError);
+
+  const isMobile = useIsMobile();
 
   const hasSteps = steps.length > 0;
 
@@ -47,7 +51,7 @@ export function AppShell() {
         <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
           {/* Code Editor */}
           <Panel
-            title={t("appShell.code")}
+            title={!isMobile ? t("appShell.code") : undefined}
             className="flex-1 min-h-0 lg:min-h-50"
             scrollable={false}
             headerLeft={
@@ -82,7 +86,7 @@ export function AppShell() {
                         THEME.colors.text.secondary;
                     }}
                   >
-                    <RotateCcw size={12} />
+                    <MdOutlineModeEditOutline size={12} />
                     <span>{t("appShell.edit")}</span>
                   </button>
                 )}
@@ -159,26 +163,22 @@ export function AppShell() {
             )}
           </Panel>
 
-          <div className="hidden lg:block">
-            <ConsoleOutput />
-          </div>
+          <ConsoleOutput />
         </div>
 
-        <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
-          <div className="flex flex-col lg:flex-row gap-2 lg:flex-1 lg:min-h-0">
-            <CallStack />
-            <MemoryPanel />
+        {!isMobile && (
+          <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-2 lg:flex-1 lg:min-h-0">
+              <CallStack />
+              <MemoryPanel />
+            </div>
+
+            <WebAPIs />
+
+            <MicrotaskQueue />
+            <TaskQueue />
           </div>
-
-          <WebAPIs />
-
-          <MicrotaskQueue />
-          <TaskQueue />
-
-          <div className="lg:hidden">
-            <ConsoleOutput />
-          </div>
-        </div>
+        )}
       </main>
 
       <TransportControls />

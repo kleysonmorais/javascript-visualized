@@ -35,8 +35,10 @@ export function ConsoleOutput() {
     <Panel title={t("console.title")} className="shrink-0">
       <div
         ref={scrollRef}
-        className="flex flex-col gap-1 h-full overflow-y-auto min-h-40 
-        max-h-40 2xl:min-h-60 2xl:max-h-60"
+        className="flex flex-col gap-1 h-full overflow-y-auto 
+        min-h-16 max-h-16 
+        lg:min-h-40 lg:max-h-40 
+        2xl:min-h-60 2xl:max-h-60"
         style={{
           fontFamily: THEME.fonts.code,
           fontSize: 13,

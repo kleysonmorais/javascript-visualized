@@ -37,8 +37,6 @@ function renderBoldText(text: string) {
 
 function StepDescription() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const isSmallMobile = useIsSmallMobile();
 
   if (!currentStep) return null;
 
@@ -49,15 +47,10 @@ function StepDescription() {
     phase === "draining-microtasks";
 
   const description = currentStep.description;
-  const shouldTruncate = isSmallMobile && description.length > 50;
-  const displayText =
-    shouldTruncate && !isExpanded
-      ? description.slice(0, 47) + "..."
-      : description;
 
   return (
     <div
-      className={`px-3 sm:px-4 py-2 flex items-start gap-2 text-xs sm:text-sm ${shouldTruncate ? "cursor-pointer" : ""}`}
+      className={`px-3 sm:px-4 py-2 flex items-start gap-2 text-xs sm:text-sm`}
       style={{
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.md,
@@ -65,8 +58,6 @@ function StepDescription() {
         color: THEME.colors.text.primary,
         fontFamily: THEME.fonts.ui,
       }}
-      onClick={() => shouldTruncate && setIsExpanded(!isExpanded)}
-      title={shouldTruncate ? description : undefined}
     >
       <span className="shrink-0 mt-0.5">
         {isTimer ? (
@@ -76,7 +67,7 @@ function StepDescription() {
         )}
       </span>
       <span className="min-w-0 wrap-break-word">
-        {renderBoldText(displayText)}
+        {renderBoldText(description)}
       </span>
     </div>
   );

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { THEME } from "@/constants/theme";
 
 interface PanelProps {
-  title: string;
+  title?: string;
   className?: string;
   headerRight?: ReactNode;
   headerLeft?: ReactNode;

@@ -6,6 +6,7 @@ import { THEME } from "@/constants/theme";
 import { CODE_EXAMPLES } from "@/constants/examples";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import type { CodeExample } from "@/types";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 interface ExampleGroup {
   id: string;
@@ -62,6 +63,8 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
   const { t } = useTranslation();
   const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
   const reset = useVisualizerStore((s) => s.reset);
+
+  const isMobile = useIsMobile();
 
   // Group examples by their group
   const groupedExamples = useMemo(() => {
@@ -127,8 +130,8 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
             style={{
-              width: "80%",
-              height: "80%",
+              width: isMobile ? "95%" : "80%",
+              height: isMobile ? "90%" : "80%",
               maxWidth: "1400px",
               maxHeight: "900px",
               backgroundColor: THEME.colors.bg.secondary,
@@ -145,18 +148,20 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
               }}
             >
               <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center w-10 h-10 rounded-lg"
-                  style={{
-                    backgroundColor: `${THEME.colors.text.accent}15`,
-                    border: `1px solid ${THEME.colors.text.accent}30`,
-                  }}
-                >
-                  <Code2
-                    size={20}
-                    style={{ color: THEME.colors.text.accent }}
-                  />
-                </div>
+                {!isMobile && (
+                  <div
+                    className="flex items-center justify-center w-10 h-10 rounded-lg"
+                    style={{
+                      backgroundColor: `${THEME.colors.text.accent}15`,
+                      border: `1px solid ${THEME.colors.text.accent}30`,
+                    }}
+                  >
+                    <Code2
+                      size={20}
+                      style={{ color: THEME.colors.text.accent }}
+                    />
+                  </div>
+                )}
                 <div>
                   <h2
                     style={{
@@ -181,9 +186,10 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
                   </p>
                 </div>
               </div>
+
               <button
                 onClick={onClose}
-                className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center justify-center p-2 w-9 h-9 rounded-lg transition-colors cursor-pointer"
                 style={{
                   backgroundColor: "transparent",
                   border: `1px solid ${THEME.colors.border.editor}`,
