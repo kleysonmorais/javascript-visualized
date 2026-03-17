@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Play, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { THEME } from "@/constants/theme";
@@ -11,6 +12,7 @@ import { ConsoleOutput } from "@/components/visualizer/ConsoleOutput";
 import { Panel } from "@/components/ui/Panel";
 import { TransportControls } from "@/components/controls/TransportControls";
 import { Navbar } from "@/components/layout/Navbar";
+import { MobileTabBar, type MobileTab } from "@/components/layout/MobileTabBar";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -28,6 +30,7 @@ export function AppShell() {
   const clearError = useVisualizerStore((s) => s.clearError);
 
   const isMobile = useIsMobile();
+  const [activeTab, setActiveTab] = useState<MobileTab>("code");
 
   const hasSteps = steps.length > 0;
 
@@ -45,10 +48,15 @@ export function AppShell() {
       {/* Navbar */}
       <Navbar />
 
+      {/* Mobile tab bar */}
+      <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
       {/* Main layout: responsive grid - stacked on mobile, side-by-side on desktop */}
       <main className="flex-1 min-h-0 p-2 gap-2 overflow-y-auto lg:overflow-hidden grid grid-cols-1 lg:grid-cols-[minmax(350px,2fr)_3fr]">
-        {/* Left column on desktop / First section on mobile: Code Editor + Console */}
-        <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
+        {/* Left column on desktop / Code + Console on mobile (code tab) */}
+        <div
+          className={`flex flex-col gap-2 min-h-0 lg:overflow-hidden ${isMobile && activeTab !== "code" ? "hidden" : ""}`}
+        >
           {/* Code Editor */}
           <Panel
             title={!isMobile ? t("appShell.code") : undefined}
@@ -166,6 +174,7 @@ export function AppShell() {
           <ConsoleOutput />
         </div>
 
+        {/* Desktop: right column with all visualizer panels */}
         {!isMobile && (
           <div className="flex flex-col gap-2 min-h-0 lg:overflow-hidden">
             <div className="flex flex-col lg:flex-row gap-2 lg:flex-1 lg:min-h-0">
@@ -177,6 +186,18 @@ export function AppShell() {
 
             <MicrotaskQueue />
             <TaskQueue />
+          </div>
+        )}
+
+        {/* Mobile: visualizer panels shown based on active tab, console always visible */}
+        {isMobile && activeTab !== "code" && (
+          <div className="flex flex-col gap-2 min-h-0">
+            {activeTab === "callStack" && <CallStack />}
+            {activeTab === "memory" && <MemoryPanel />}
+            {activeTab === "webAPIs" && <WebAPIs />}
+            {activeTab === "microtaskQueue" && <MicrotaskQueue />}
+            {activeTab === "taskQueue" && <TaskQueue />}
+            <ConsoleOutput />
           </div>
         )}
       </main>

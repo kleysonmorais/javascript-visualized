@@ -5,6 +5,7 @@ import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { QueueItem } from "@/types";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 interface MicrotaskCardProps {
   task: QueueItem;
@@ -69,7 +70,9 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
           textTransform: "capitalize",
         }}
       >
-        {task.sourceType === "promise" ? t("microtaskQueue.promise") : task.sourceType}
+        {task.sourceType === "promise"
+          ? t("microtaskQueue.promise")
+          : task.sourceType}
       </div>
     </motion.div>
   );
@@ -81,8 +84,10 @@ export function MicrotaskQueue() {
   const hoveredHeapId = useVisualizerStore((s) => s.hoveredHeapId);
   const microtasks = currentStep?.microtaskQueue ?? [];
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
+  const isMobile = useIsMobile();
 
   if (
+    !isMobile &&
     microtasks.length === 0 &&
     currentStep?.eventLoop.phase !== "draining-microtasks"
   ) {
@@ -90,7 +95,11 @@ export function MicrotaskQueue() {
   }
 
   return (
-    <Panel title={t("microtaskQueue.title")} scrollable={false}>
+    <Panel
+      title={t("microtaskQueue.title")}
+      scrollable={false}
+      className="flex-1 lg:flex-none shrink-0"
+    >
       {microtasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span

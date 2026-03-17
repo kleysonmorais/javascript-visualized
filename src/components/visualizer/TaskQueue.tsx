@@ -4,19 +4,29 @@ import { Panel } from "@/components/ui/Panel";
 import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 export function TaskQueue() {
   const { t } = useTranslation();
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const tasks = currentStep?.taskQueue ?? [];
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
+  const isMobile = useIsMobile();
 
-  if (tasks.length === 0 && currentStep?.eventLoop.phase !== "picking-task") {
+  if (
+    !isMobile &&
+    tasks.length === 0 &&
+    currentStep?.eventLoop.phase !== "picking-task"
+  ) {
     return null;
   }
 
   return (
-    <Panel title={t("taskQueue.title")} scrollable={false}>
+    <Panel
+      title={t("taskQueue.title")}
+      scrollable={false}
+      className="flex-1 lg:flex-none shrink-0"
+    >
       {tasks.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span

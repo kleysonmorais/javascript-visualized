@@ -6,6 +6,7 @@ import { THEME } from "@/constants/theme";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAnimationConfig } from "@/hooks/useAnimationConfig";
 import type { WebAPIEntry } from "@/types";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 function statusBorderColor(status: WebAPIEntry["status"]): string {
   if (status === "running") return THEME.colors.border.webAPIs;
@@ -41,11 +42,16 @@ export function WebAPIs() {
   const currentStep = useVisualizerStore((s) => s.currentStep);
   const activeEntries = currentStep?.webAPIs ?? [];
   const { duration, shouldReduceMotion } = useAnimationConfig();
+  const isMobile = useIsMobile();
 
-  if (activeEntries.length === 0) return null;
+  if (!isMobile && activeEntries.length === 0) return null;
 
   return (
-    <Panel title={t("webAPIs.title")} className="shrink-0" scrollable={false}>
+    <Panel
+      title={t("webAPIs.title")}
+      className="flex-1 lg:flex-none shrink-0"
+      scrollable={false}
+    >
       {activeEntries.length === 0 ? (
         <div className="flex items-center justify-center h-full">
           <span
