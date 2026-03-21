@@ -33,6 +33,8 @@ export default defineConfig({
       "@/lib": path.resolve(__dirname, "src/lib"),
       "@/constants": path.resolve(__dirname, "src/constants"),
       "@/utils": path.resolve(__dirname, "src/utils"),
+      "@/pages": path.resolve(__dirname, "src/pages"),
+      "@/challenges": path.resolve(__dirname, "src/challenges"),
       "@/i18n": path.resolve(__dirname, "src/i18n.ts"),
     },
   },
