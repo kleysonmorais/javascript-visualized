@@ -13,11 +13,7 @@ export function TaskQueue() {
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
   const isMobile = useIsMobile();
 
-  if (
-    !isMobile &&
-    tasks.length === 0 &&
-    currentStep?.eventLoop.phase !== "picking-task"
-  ) {
+  if (!isMobile && tasks.length === 0) {
     return null;
   }
 

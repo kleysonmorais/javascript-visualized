@@ -86,11 +86,7 @@ export function MicrotaskQueue() {
   const { getSpringTransition, shouldReduceMotion } = useAnimationConfig();
   const isMobile = useIsMobile();
 
-  if (
-    !isMobile &&
-    microtasks.length === 0 &&
-    currentStep?.eventLoop.phase !== "draining-microtasks"
-  ) {
+  if (!isMobile && microtasks.length === 0) {
     return null;
   }
 
