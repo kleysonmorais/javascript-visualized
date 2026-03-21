@@ -1783,12 +1783,18 @@ export class Interpreter {
         const funcValue = this.createFunctionValue(funcNode);
         value = funcValue;
 
+        // For arrow functions, prefix with the declaration so the label can be extracted
+        const heapFunctionSource =
+          funcNode.type === "ArrowFunctionExpression"
+            ? `${kind} ${name} = ${funcValue.source}`
+            : funcValue.source;
+
         // Create heap object for function
         const heapObj = this.addHeapObject(
           "function",
           "ⓕ",
           undefined,
-          funcValue.source,
+          heapFunctionSource,
         );
         this.objectHeapMap.set(funcValue, heapObj.id);
 

@@ -734,7 +734,7 @@ function HeapCard({
   const isFunc = obj.type === "function";
   const src = obj.functionSource ?? obj.label ?? "";
 
-  const isAsync = src.startsWith("async ");
+  const isAsync = /\basync\s/.test(src);
   const isGenFunc = src.includes("function*");
   const isInstance =
     obj.label?.includes(" instance") || obj.label?.startsWith("class ");
