@@ -181,6 +181,17 @@ describe("Async Examples", () => {
       expect(logAStep).toBeDefined();
       expect(logDStep).toBeDefined();
     });
+
+    it("expected event loop phase", () => {
+      const steps = run(example.code);
+      expect(steps[16].eventLoop.phase).toBe("checking-microtasks");
+      expect(steps[17].eventLoop.phase).toBe("draining-microtasks");
+    });
+
+    it("total of 28 steps executed", () => {
+      const steps = run(example.code);
+      expect(steps.length).toBe(28);
+    });
   });
 
   // ─── Timer Race ───────────────────────────────────────
@@ -196,9 +207,7 @@ describe("Async Examples", () => {
 
     it("d() is called synchronously (frame appears on call stack)", () => {
       const steps = run(example.code);
-      const dStep = steps.find((s) =>
-        s.callStack.some((f) => f.name === "d"),
-      );
+      const dStep = steps.find((s) => s.callStack.some((f) => f.name === "d"));
       expect(dStep).toBeDefined();
     });
 

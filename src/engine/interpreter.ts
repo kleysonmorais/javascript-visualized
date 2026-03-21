@@ -674,7 +674,10 @@ export class Interpreter {
       this.pendingFetches.filter((f) => !f.processed).length > 0;
 
     this.eventLoop = {
-      phase: "checking-tasks",
+      phase:
+        this.pendingMicrotasks.length > 0
+          ? "checking-microtasks"
+          : "checking-tasks",
       description: "All synchronous code executed — checking for async tasks",
     };
     this.snapshot(
@@ -701,16 +704,6 @@ export class Interpreter {
 
     // STEP 1: Drain microtasks queued during synchronous execution
     if (this.pendingMicrotasks.length > 0) {
-      this.eventLoop = {
-        phase: "checking-microtasks",
-        description: "Checking Microtask Queue...",
-      };
-      this.snapshot(
-        0,
-        0,
-        description.checkingMicrotaskQueue(),
-        "",
-      );
       this.drainMicrotaskQueue();
     }
 
