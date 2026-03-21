@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Play, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate, useParams } from "react-router-dom";
 import { THEME } from "@/constants/theme";
+import { CODE_EXAMPLES } from "@/constants/examples";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { CallStack } from "@/components/visualizer/CallStack";
 import { MemoryPanel } from "@/components/visualizer/MemoryPanel";
@@ -22,6 +24,23 @@ import { MdOutlineModeEditOutline } from "react-icons/md";
 
 export function AppShell() {
   const { t } = useTranslation();
+  const { exampleId } = useParams<{ exampleId: string }>();
+  const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
+  const reset = useVisualizerStore((s) => s.reset);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!exampleId) return;
+
+    const example = CODE_EXAMPLES.find((e) => e.id === exampleId);
+    if (example) {
+      setSourceCode(example.code);
+      reset();
+    } else {
+      navigate("/");
+    }
+  }, [exampleId]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);
   const steps = useVisualizerStore((s) => s.steps);

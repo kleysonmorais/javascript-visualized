@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Code2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useNavigate } from "react-router-dom";
 import { THEME } from "@/constants/theme";
 import { CODE_EXAMPLES } from "@/constants/examples";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
@@ -61,7 +62,7 @@ interface ExamplesModalProps {
 
 function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
   const { t } = useTranslation();
-  const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
+  const navigate = useNavigate();
   const reset = useVisualizerStore((s) => s.reset);
 
   const isMobile = useIsMobile();
@@ -104,9 +105,9 @@ function ExamplesModal({ isOpen, onClose }: ExamplesModalProps) {
   }, [isOpen]);
 
   const handleSelectExample = (example: CodeExample) => {
-    setSourceCode(example.code);
     reset();
     onClose();
+    navigate(`/${example.id}`);
   };
 
   return (
