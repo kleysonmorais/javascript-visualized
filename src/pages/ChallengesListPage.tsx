@@ -1,3 +1,181 @@
+import { Link } from 'react-router-dom';
+import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
+import { Navbar } from '@/components/layout/Navbar';
+import { ConceptBadge } from '@/components/ui/ConceptBadge';
+import { THEME } from '@/constants/theme';
+import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
+import { isCompleted, getCompletedCount } from '@/lib/progress';
+import type { Challenge, ChallengeLevel } from '@/challenges/types';
+
+const LEVEL_CONFIG: Record<ChallengeLevel, { label: string; color: string; emoji: string }> = {
+  basic:        { label: 'Basic',        color: '#22c55e', emoji: '🟢' },
+  intermediate: { label: 'Intermediate', color: '#f59e0b', emoji: '🟡' },
+  advanced:     { label: 'Advanced',     color: '#ef4444', emoji: '🔴' },
+  expert:       { label: 'Expert',       color: '#a855f7', emoji: '🟣' },
+};
+
+const LEVELS: ChallengeLevel[] = ['basic', 'intermediate', 'advanced', 'expert'];
+
+interface ChallengeCardProps {
+  challenge: Challenge;
+}
+
+function ChallengeCard({ challenge }: ChallengeCardProps) {
+  const completed = isCompleted(challenge.id);
+
+  return (
+    <Link to={`/challenges/${challenge.id}`} className="block">
+      <div
+        className="flex items-start gap-3 p-4 rounded-lg transition-colors duration-150 cursor-pointer group"
+        style={{ '--hover-bg': THEME.colors.bg.tertiary } as React.CSSProperties}
+        onMouseEnter={e => (e.currentTarget.style.backgroundColor = THEME.colors.bg.tertiary)}
+        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      >
+        <div className="shrink-0 mt-0.5">
+          {completed
+            ? <CheckCircle size={22} style={{ color: '#22c55e' }} />
+            : <Circle size={22} style={{ color: THEME.colors.text.muted }} />
+          }
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <h3
+            className="font-semibold transition-colors duration-150"
+            style={{ color: THEME.colors.text.primary, fontFamily: THEME.fonts.ui }}
+          >
+            {challenge.title}
+          </h3>
+          <p
+            className="text-sm mt-1 line-clamp-1"
+            style={{ color: THEME.colors.text.muted }}
+          >
+            {challenge.description}
+          </p>
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {challenge.concepts.map(concept => (
+              <ConceptBadge key={concept} concept={concept} />
+            ))}
+          </div>
+        </div>
+
+        <ChevronRight
+          size={18}
+          className="shrink-0 mt-1 transition-colors duration-150"
+          style={{ color: THEME.colors.text.muted }}
+        />
+      </div>
+    </Link>
+  );
+}
+
+interface LevelSectionProps {
+  level: ChallengeLevel;
+  challenges: Challenge[];
+}
+
+function LevelSection({ level, challenges }: LevelSectionProps) {
+  if (challenges.length === 0) return null;
+
+  const config = LEVEL_CONFIG[level];
+  const completedCount = challenges.filter(c => isCompleted(c.id)).length;
+
+  return (
+    <div className="mb-6">
+      <div
+        className="flex items-center justify-between px-4 py-3 rounded-t-lg mb-0.5"
+        style={{
+          borderLeft: `3px solid ${config.color}`,
+          backgroundColor: THEME.colors.bg.secondary,
+        }}
+      >
+        <div className="flex items-center gap-2">
+          <span>{config.emoji}</span>
+          <span
+            className="font-bold text-sm uppercase tracking-wide"
+            style={{ color: config.color, fontFamily: THEME.fonts.ui }}
+          >
+            {config.label}
+          </span>
+        </div>
+        <span
+          className="text-sm font-medium"
+          style={{ color: THEME.colors.text.muted }}
+        >
+          {completedCount}/{challenges.length}
+        </span>
+      </div>
+
+      <div
+        className="rounded-b-lg overflow-hidden"
+        style={{ backgroundColor: THEME.colors.bg.secondary }}
+      >
+        {challenges.map((challenge, i) => (
+          <div key={challenge.id}>
+            {i > 0 && (
+              <div
+                className="mx-4"
+                style={{ borderTop: `1px solid rgba(255,255,255,0.05)` }}
+              />
+            )}
+            <ChallengeCard challenge={challenge} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ChallengesListPage() {
-  return <div>Challenges List</div>;
+  const completedCount = getCompletedCount();
+  const totalCount = ALL_CHALLENGES.length;
+
+  return (
+    <div
+      className="h-full overflow-y-auto flex flex-col"
+      style={{ backgroundColor: THEME.colors.bg.primary }}
+    >
+      <Navbar />
+      <main className="flex-1 px-4 py-8 max-w-4xl mx-auto w-full">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-8">
+          <div>
+            <h1
+              className="text-3xl font-bold"
+              style={{ color: THEME.colors.text.primary, fontFamily: THEME.fonts.ui }}
+            >
+              Practice
+            </h1>
+            <p
+              className="mt-1 text-sm"
+              style={{ color: THEME.colors.text.secondary }}
+            >
+              Master JavaScript runtime internals by solving challenges
+            </p>
+          </div>
+          <div
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0"
+            style={{ backgroundColor: THEME.colors.bg.tertiary }}
+          >
+            <span style={{ color: THEME.colors.text.accent }}>{completedCount}</span>
+            <span style={{ color: THEME.colors.text.muted }}>/{totalCount} completed</span>
+          </div>
+        </div>
+
+        {/* Level sections */}
+        {ALL_CHALLENGES.length === 0 ? (
+          <p className="text-center" style={{ color: THEME.colors.text.muted }}>
+            No challenges available
+          </p>
+        ) : (
+          LEVELS.map(level => (
+            <LevelSection
+              key={level}
+              level={level}
+              challenges={getChallengesByLevel(level)}
+            />
+          ))
+        )}
+      </main>
+    </div>
+  );
 }
