@@ -868,9 +868,8 @@ export class Interpreter {
     this.taskQueue.push(taskItem);
     this.snapshot(0, 0, description.callbackMovedToTaskQueue(), "");
 
-    // Step 3: Event Loop picks task
-    this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
-    // Keep cancelled timer visible for one step, then remove running/completed
+    // Step 3: Event Loop picks task — snapshot while item is still in queue so
+    // the UI shows what is being picked, then remove it before execution.
     this.webAPIs = this.webAPIs.filter((w) => w.id !== timer.id);
     this.eventLoop = {
       phase: "picking-task",
@@ -882,6 +881,7 @@ export class Interpreter {
       description.eventLoopPickingTask(),
       "",
     );
+    this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
 
     // Step 4: Execute the callback body
     const resolvedFn = timer.resolvedFnValue;
