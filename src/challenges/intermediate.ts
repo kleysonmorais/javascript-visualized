@@ -110,10 +110,6 @@ export const intermediateChallenges: Challenge[] = [
       const hadSuspended = steps.some(s =>
         s.callStack.some(f => f.status === 'suspended')
       );
-      const hadResumed = hadSuspended && steps.some((s, i) => {
-        if (i === 0) return false;
-        return s.callStack.some(f => f.status === 'executing' && f.type === 'async');
-      });
       const last = steps[steps.length - 1];
       const hasOutput = last && last.console.length >= 2;
 
