@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import MonacoEditor, { type OnMount } from "@monaco-editor/react";
 import type * as Monaco from "monaco-editor";
+import { RiFireLine } from "react-icons/ri";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -21,19 +22,10 @@ import { getChallengeById, ALL_CHALLENGES } from "@/challenges";
 import { markAttempt, markCompleted, getAttempts } from "@/lib/progress";
 import { generateSteps } from "@/engine";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
-import type { ChallengeResult, ChallengeLevel } from "@/challenges/types";
+import type { ChallengeResult } from "@/challenges/types";
+import { LEVEL_CONFIG } from "@/constants/level-config";
 
 const THEME_NAME = "js-visualizer-dark";
-
-const LEVEL_CONFIG: Record<
-  ChallengeLevel,
-  { label: string; color: string; emoji: string }
-> = {
-  basic: { label: "Basic", color: "#22c55e", emoji: "🟢" },
-  intermediate: { label: "Intermediate", color: "#f59e0b", emoji: "🟡" },
-  advanced: { label: "Advanced", color: "#ef4444", emoji: "🔴" },
-  expert: { label: "Expert", color: "#a855f7", emoji: "🟣" },
-};
 
 function defineEditorTheme(monaco: typeof Monaco) {
   monaco.editor.defineTheme(THEME_NAME, {
@@ -343,7 +335,8 @@ export default function ChallengeDetailPage() {
               color: levelConfig.color,
             }}
           >
-            {levelConfig.emoji} {levelConfig.label}
+            <RiFireLine />
+            {levelConfig.label}
           </span>
           <span className="text-xs" style={{ color: THEME.colors.text.muted }}>
             Challenge {challengeIndex + 1} of {totalChallenges}

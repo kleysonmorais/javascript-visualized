@@ -1,21 +1,21 @@
-import type { ExecutionStep } from '@/types';
+import type { ExecutionStep } from "@/types";
 
-export type ChallengeLevel = 'basic' | 'intermediate' | 'advanced' | 'expert';
+export type ChallengeLevel = "easy" | "medium" | "hard" | "expert";
 
 export type RuntimeConcept =
-  | 'call-stack'
-  | 'global-memory'
-  | 'local-memory'
-  | 'heap'
-  | 'web-apis'
-  | 'task-queue'
-  | 'microtask-queue'
-  | 'event-loop'
-  | 'console'
-  | 'closures'
-  | 'promises'
-  | 'async-await'
-  | 'generators';
+  | "call-stack"
+  | "global-memory"
+  | "local-memory"
+  | "heap"
+  | "web-apis"
+  | "task-queue"
+  | "microtask-queue"
+  | "event-loop"
+  | "console"
+  | "closures"
+  | "promises"
+  | "async-await"
+  | "generators";
 
 export interface ChallengeResult {
   passed: boolean;

@@ -6,23 +6,8 @@ import { ALL_CHALLENGES, getChallengesByLevel } from "@/challenges/index";
 import { isCompleted, getCompletedCount } from "@/lib/progress";
 import type { Challenge, ChallengeLevel } from "@/challenges/types";
 import { FaTrophy } from "react-icons/fa";
-
-const LEVEL_CONFIG: Record<
-  ChallengeLevel,
-  { label: string; color: string; emoji: string }
-> = {
-  basic: { label: "Basic", color: "#22c55e", emoji: "🟢" },
-  intermediate: { label: "Intermediate", color: "#f59e0b", emoji: "🟡" },
-  advanced: { label: "Advanced", color: "#ef4444", emoji: "🔴" },
-  expert: { label: "Expert", color: "#a855f7", emoji: "🟣" },
-};
-
-const LEVELS: ChallengeLevel[] = [
-  "basic",
-  "intermediate",
-  "advanced",
-  "expert",
-];
+import { LEVEL_CONFIG, LEVELS } from "@/constants/level-config";
+import { RiFireLine } from "react-icons/ri";
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -106,12 +91,12 @@ function LevelSection({ level, challenges }: LevelSectionProps) {
           backgroundColor: THEME.colors.bg.secondary,
         }}
       >
-        <div className="flex items-center gap-2">
-          <span>{config.emoji}</span>
-          <span
-            className="font-bold text-sm uppercase tracking-wide"
-            style={{ color: config.color, fontFamily: THEME.fonts.ui }}
-          >
+        <div
+          className="flex items-center gap-2"
+          style={{ color: config.color, fontFamily: THEME.fonts.ui }}
+        >
+          <RiFireLine />
+          <span className="font-bold text-sm uppercase tracking-wide">
             {config.label}
           </span>
         </div>
