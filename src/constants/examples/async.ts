@@ -1,11 +1,11 @@
-import type { CodeExample } from "@/types";
+import type { CodeExample } from '@/types';
 
 export const ASYNC_EXAMPLES: CodeExample[] = [
   {
-    id: "settimeout-ordering",
-    title: "setTimeout Ordering",
-    description: "Understand why shorter delays execute first",
-    category: "async",
+    id: 'settimeout-ordering',
+    title: 'setTimeout Ordering',
+    description: 'Understand why shorter delays execute first',
+    category: 'async',
     code: `// setTimeout Ordering
 console.log("Start");
 
@@ -24,10 +24,10 @@ setTimeout(() => {
 console.log("End");`,
   },
   {
-    id: "promise-vs-settimeout",
-    title: "Promise vs setTimeout",
-    description: "Microtasks always run before macrotasks — the classic quiz",
-    category: "async",
+    id: 'promise-vs-settimeout',
+    title: 'Promise vs setTimeout',
+    description: 'Microtasks always run before macrotasks — the classic quiz',
+    category: 'async',
     code: `// Promise vs setTimeout
 console.log("1");
 
@@ -42,10 +42,10 @@ Promise.resolve().then(() => {
 console.log("5");`,
   },
   {
-    id: "async-await-flow",
-    title: "Async/Await Flow",
-    description: "Watch async functions suspend and resume with fetch",
-    category: "async",
+    id: 'async-await-flow',
+    title: 'Async/Await Flow',
+    description: 'Watch async functions suspend and resume with fetch',
+    category: 'async',
     code: `// Async/Await Flow
 console.log("Start");
 
@@ -64,10 +64,10 @@ fetchData().then(result => {
 console.log("End");`,
   },
   {
-    id: "event-loop-quiz",
-    title: "Event Loop Quiz",
-    description: "Can you predict the output order? (Try before running!)",
-    category: "async",
+    id: 'event-loop-quiz',
+    title: 'Event Loop Quiz',
+    description: 'Can you predict the output order? (Try before running!)',
+    category: 'async',
     code: `// Event Loop Quiz
 console.log("A");
 
@@ -85,10 +85,10 @@ setTimeout(() => console.log("F"), 0);
 console.log("G");`,
   },
   {
-    id: "microtask-vs-macrotask",
-    title: "Microtask vs Macrotask",
-    description: "See why Promises execute before setTimeout(0)",
-    category: "async",
+    id: 'microtask-vs-macrotask',
+    title: 'Microtask vs Macrotask',
+    description: 'See why Promises execute before setTimeout(0)',
+    category: 'async',
     code: `// Microtask vs Macrotask
 function logA() { console.log('A') }
 function logB() { console.log('B') }
@@ -101,10 +101,10 @@ Promise.resolve().then(logC);
 logD();`,
   },
   {
-    id: "timer-race",
-    title: "Timer Race",
-    description: "Timers with different delays — who wins?",
-    category: "async",
+    id: 'timer-race',
+    title: 'Timer Race',
+    description: 'Timers with different delays — who wins?',
+    category: 'async',
     code: `// Timer Race
 setTimeout(function a() {}, 1000);
 

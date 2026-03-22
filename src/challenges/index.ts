@@ -12,11 +12,16 @@ export const ALL_CHALLENGES: Challenge[] = [
 ];
 
 export function getChallengeById(id: string): Challenge | undefined {
-  return ALL_CHALLENGES.find(c => c.id === id);
+  return ALL_CHALLENGES.find((c) => c.id === id);
 }
 
 export function getChallengesByLevel(level: Challenge['level']): Challenge[] {
-  return ALL_CHALLENGES.filter(c => c.level === level);
+  return ALL_CHALLENGES.filter((c) => c.level === level);
 }
 
-export { type Challenge, type ChallengeResult, type ChallengeLevel, type RuntimeConcept } from './types';
+export {
+  type Challenge,
+  type ChallengeResult,
+  type ChallengeLevel,
+  type RuntimeConcept,
+} from './types';

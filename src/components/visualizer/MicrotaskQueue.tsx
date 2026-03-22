@@ -1,11 +1,11 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useTranslation } from "react-i18next";
-import { Panel } from "@/components/ui/Panel";
-import { THEME } from "@/constants/theme";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
-import { useAnimationConfig } from "@/hooks/useAnimationConfig";
-import type { QueueItem } from "@/types";
-import { useIsMobile } from "@/hooks/useMediaQuery";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Panel } from '@/components/ui/Panel';
+import { THEME } from '@/constants/theme';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { useAnimationConfig } from '@/hooks/useAnimationConfig';
+import type { QueueItem } from '@/types';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 
 interface MicrotaskCardProps {
   task: QueueItem;
@@ -22,7 +22,7 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
       animate={{
         boxShadow: isHighlighted
           ? `0 0 12px ${THEME.colors.border.microtaskQueue}50`
-          : "0 0 0px transparent",
+          : '0 0 0px transparent',
         borderColor: isHighlighted
           ? THEME.colors.border.microtaskQueue
           : THEME.colors.border.microtaskQueue,
@@ -32,11 +32,11 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
         backgroundColor: THEME.colors.bg.tertiary,
         border: `1px solid ${THEME.colors.border.microtaskQueue}`,
         borderRadius: THEME.radius.md,
-        padding: "6px 10px",
+        padding: '6px 10px',
         flexShrink: 0,
         minWidth: 100,
         maxWidth: 180,
-        cursor: "pointer",
+        cursor: 'pointer',
       }}
       onMouseEnter={() => task.sourceId && setHoveredPointerId(task.sourceId)}
       onMouseLeave={() => setHoveredPointerId(null)}
@@ -46,14 +46,14 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
           fontFamily: THEME.fonts.code,
           fontSize: 12,
           color: THEME.colors.text.primary,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}
         title={task.callbackLabel}
       >
         {task.callbackLabel.length > 35
-          ? task.callbackLabel.slice(0, 35) + "…"
+          ? task.callbackLabel.slice(0, 35) + '…'
           : task.callbackLabel}
       </div>
       {/* Source badge - shows "Promise" for promise microtasks */}
@@ -62,16 +62,16 @@ function MicrotaskCard({ task, isHighlighted }: MicrotaskCardProps) {
           fontFamily: THEME.fonts.ui,
           fontSize: 10,
           marginTop: 3,
-          display: "inline-block",
-          padding: "1px 6px",
+          display: 'inline-block',
+          padding: '1px 6px',
           borderRadius: 4,
           backgroundColor: `${THEME.colors.border.microtaskQueue}22`,
           color: THEME.colors.border.microtaskQueue,
-          textTransform: "capitalize",
+          textTransform: 'capitalize',
         }}
       >
-        {task.sourceType === "promise"
-          ? t("microtaskQueue.promise")
+        {task.sourceType === 'promise'
+          ? t('microtaskQueue.promise')
           : task.sourceType}
       </div>
     </motion.div>
@@ -92,41 +92,41 @@ export function MicrotaskQueue() {
 
   return (
     <Panel
-      title={t("microtaskQueue.title")}
+      title={t('microtaskQueue.title')}
       scrollable={false}
-      className="flex-1 lg:flex-none shrink-0"
+      className='flex-1 lg:flex-none shrink-0'
     >
       {microtasks.length === 0 ? (
-        <div className="flex items-center justify-center h-full">
+        <div className='flex items-center justify-center h-full'>
           <span
-            className="text-center text-xs"
+            className='text-center text-xs'
             style={{
               color: THEME.colors.text.muted,
               fontFamily: THEME.fonts.ui,
             }}
           >
-            {t("microtaskQueue.empty")}
+            {t('microtaskQueue.empty')}
           </span>
         </div>
       ) : (
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className='flex items-center gap-2 overflow-x-auto pb-1'>
           {/* Dequeue direction indicator */}
           <div
             style={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
               fontSize: 10,
               color: THEME.colors.text.muted,
               flexShrink: 0,
-              userSelect: "none",
+              userSelect: 'none',
               gap: 2,
             }}
           >
             <span style={{ fontSize: 12 }}>▶</span>
             <span style={{ fontSize: 8, opacity: 0.7 }}>OUT</span>
           </div>
-          <AnimatePresence mode="popLayout">
+          <AnimatePresence mode='popLayout'>
             {microtasks.map((task) => (
               <motion.div
                 key={task.id}

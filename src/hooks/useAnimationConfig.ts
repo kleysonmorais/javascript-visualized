@@ -1,5 +1,5 @@
-import { useReducedMotion } from "framer-motion";
-import type { Transition } from "framer-motion";
+import { useReducedMotion } from 'framer-motion';
+import type { Transition } from 'framer-motion';
 
 /**
  * Animation durations in seconds.
@@ -19,17 +19,17 @@ interface AnimationDurations {
 }
 
 type EasingType =
-  | "linear"
-  | "easeIn"
-  | "easeOut"
-  | "easeInOut"
-  | "circIn"
-  | "circOut"
-  | "circInOut"
-  | "backIn"
-  | "backOut"
-  | "backInOut"
-  | "anticipate";
+  | 'linear'
+  | 'easeIn'
+  | 'easeOut'
+  | 'easeInOut'
+  | 'circIn'
+  | 'circOut'
+  | 'circInOut'
+  | 'backIn'
+  | 'backOut'
+  | 'backInOut'
+  | 'anticipate';
 
 interface AnimationConfig {
   /** Whether animations should be disabled for reduced motion preference */
@@ -39,7 +39,7 @@ interface AnimationConfig {
   /** Get transition config for a given duration type */
   getTransition: (
     type: keyof AnimationDurations,
-    options?: { ease?: EasingType },
+    options?: { ease?: EasingType }
   ) => Transition;
   /** Get spring transition config (respects reduced motion) */
   getSpringTransition: (options?: {
@@ -75,14 +75,14 @@ export function useAnimationConfig(): AnimationConfig {
 
   const getTransition = (
     type: keyof AnimationDurations,
-    options?: { ease?: EasingType },
+    options?: { ease?: EasingType }
   ): Transition => {
     if (shouldReduceMotion) {
       return { duration: 0 };
     }
     return {
       duration: duration[type],
-      ease: options?.ease ?? "easeOut",
+      ease: options?.ease ?? 'easeOut',
     };
   };
 
@@ -91,10 +91,10 @@ export function useAnimationConfig(): AnimationConfig {
     damping?: number;
   }): Transition => {
     if (shouldReduceMotion) {
-      return { type: "tween", duration: 0 };
+      return { type: 'tween', duration: 0 };
     }
     return {
-      type: "spring",
+      type: 'spring',
       stiffness: options?.stiffness ?? 300,
       damping: options?.damping ?? 25,
     };

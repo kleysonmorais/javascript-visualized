@@ -1,53 +1,53 @@
-import { useTranslation } from "react-i18next";
-import { THEME } from "@/constants/theme";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useTranslation } from 'react-i18next';
+import { THEME } from '@/constants/theme';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
 
 export type MobileTab =
-  | "code"
-  | "callStack"
-  | "memory"
-  | "webAPIs"
-  | "microtaskQueue"
-  | "taskQueue";
+  | 'code'
+  | 'callStack'
+  | 'memory'
+  | 'webAPIs'
+  | 'microtaskQueue'
+  | 'taskQueue';
 
 interface TabConfig {
   id: MobileTab;
   labelKey: string;
   getBadge: (
-    step: ReturnType<typeof useVisualizerStore.getState>["currentStep"],
+    step: ReturnType<typeof useVisualizerStore.getState>['currentStep']
   ) => number;
 }
 
 const TABS: TabConfig[] = [
   {
-    id: "code",
-    labelKey: "appShell.code",
+    id: 'code',
+    labelKey: 'appShell.code',
     getBadge: () => 0,
   },
   {
-    id: "callStack",
-    labelKey: "callStack.title",
+    id: 'callStack',
+    labelKey: 'callStack.title',
     getBadge: (step) => step?.callStack?.length ?? 0,
   },
   {
-    id: "memory",
-    labelKey: "memory.title",
+    id: 'memory',
+    labelKey: 'memory.title',
     getBadge: (step) => step?.memoryBlocks?.length ?? 0,
   },
   {
-    id: "webAPIs",
-    labelKey: "webAPIs.title",
+    id: 'webAPIs',
+    labelKey: 'webAPIs.title',
     getBadge: (step) =>
-      step?.webAPIs?.filter((e) => e.status === "running").length ?? 0,
+      step?.webAPIs?.filter((e) => e.status === 'running').length ?? 0,
   },
   {
-    id: "microtaskQueue",
-    labelKey: "microtaskQueue.title",
+    id: 'microtaskQueue',
+    labelKey: 'microtaskQueue.title',
     getBadge: (step) => step?.microtaskQueue?.length ?? 0,
   },
   {
-    id: "taskQueue",
-    labelKey: "taskQueue.title",
+    id: 'taskQueue',
+    labelKey: 'taskQueue.title',
     getBadge: (step) => step?.taskQueue?.length ?? 0,
   },
 ];
@@ -63,7 +63,7 @@ export function MobileTabBar({ activeTab, onTabChange }: MobileTabBarProps) {
 
   return (
     <div
-      className="flex overflow-x-auto scrollbar-hide lg:hidden shrink-0"
+      className='flex overflow-x-auto scrollbar-hide lg:hidden shrink-0'
       style={{
         backgroundColor: THEME.colors.bg.elevated,
         borderBottom: `1px solid ${THEME.colors.border.console}`,
@@ -77,7 +77,7 @@ export function MobileTabBar({ activeTab, onTabChange }: MobileTabBarProps) {
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className="flex items-center gap-1.5 px-3 py-2.5 whitespace-nowrap shrink-0 transition-colors relative"
+            className='flex items-center gap-1.5 px-3 py-2.5 whitespace-nowrap shrink-0 transition-colors relative'
             style={{
               fontFamily: THEME.fonts.ui,
               fontSize: 12,
@@ -87,15 +87,15 @@ export function MobileTabBar({ activeTab, onTabChange }: MobileTabBarProps) {
                 : THEME.colors.text.secondary,
               borderBottom: isActive
                 ? `2px solid ${THEME.colors.text.accent}`
-                : "2px solid transparent",
-              backgroundColor: "transparent",
-              cursor: "pointer",
+                : '2px solid transparent',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
             }}
           >
             <span>{t(tab.labelKey)}</span>
             {badge > 0 && (
               <span
-                className="flex items-center justify-center rounded-full min-w-4 h-4 px-1"
+                className='flex items-center justify-center rounded-full min-w-4 h-4 px-1'
                 style={{
                   backgroundColor: THEME.colors.text.accent,
                   color: THEME.colors.bg.primary,
@@ -104,7 +104,7 @@ export function MobileTabBar({ activeTab, onTabChange }: MobileTabBarProps) {
                   lineHeight: 1,
                 }}
               >
-                {badge > 99 ? "99+" : badge}
+                {badge > 99 ? '99+' : badge}
               </span>
             )}
           </button>

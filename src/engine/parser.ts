@@ -1,4 +1,4 @@
-import * as acorn from "acorn";
+import * as acorn from 'acorn';
 
 export interface ParseError {
   message: string;
@@ -6,7 +6,7 @@ export interface ParseError {
   column: number;
 }
 
-export type SourceType = "script" | "module";
+export type SourceType = 'script' | 'module';
 
 /**
  * Detect if code contains import/export statements (module syntax).
@@ -20,7 +20,7 @@ export function detectSourceType(code: string): SourceType {
     /^\s*export\s*{/m,
     /^\s*export\s+default\s+/m,
   ];
-  return modulePatterns.some((p) => p.test(code)) ? "module" : "script";
+  return modulePatterns.some((p) => p.test(code)) ? 'module' : 'script';
 }
 
 /**
@@ -32,19 +32,19 @@ export function detectSourceType(code: string): SourceType {
  */
 export function parseCode(
   code: string,
-  sourceType?: SourceType,
+  sourceType?: SourceType
 ): { ast: acorn.Node; sourceType: SourceType } {
   const detectedType = sourceType ?? detectSourceType(code);
 
   try {
     const ast = acorn.parse(code, {
-      ecmaVersion: "latest",
+      ecmaVersion: 'latest',
       sourceType: detectedType,
       locations: true, // we need line/column info
     });
     return { ast, sourceType: detectedType };
   } catch (error) {
-    if (error instanceof SyntaxError && "loc" in error) {
+    if (error instanceof SyntaxError && 'loc' in error) {
       const acornError = error as SyntaxError & {
         loc: { line: number; column: number };
       };

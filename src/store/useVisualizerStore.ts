@@ -1,7 +1,7 @@
-import { create } from "zustand";
-import type { ExecutionStep, PlaybackSpeed } from "@/types";
-import { generateSteps } from "@/engine";
-import { mockSteps } from "@/lib/mockSteps";
+import { create } from 'zustand';
+import type { ExecutionStep, PlaybackSpeed } from '@/types';
+import { generateSteps } from '@/engine';
+import { mockSteps } from '@/lib/mockSteps';
 
 const DEFAULT_SOURCE_CODE = `// Can you guess the exact console output order?
 
@@ -194,7 +194,7 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
     } catch (err) {
       set({
         error:
-          err instanceof Error ? err.message : "An unexpected error occurred",
+          err instanceof Error ? err.message : 'An unexpected error occurred',
         errorLine: null,
         steps: [],
         currentStepIndex: 0,

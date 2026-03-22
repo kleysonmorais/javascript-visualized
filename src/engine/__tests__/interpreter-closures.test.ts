@@ -9,7 +9,6 @@ import {
 } from './helpers';
 
 describe('Interpreter — Closures', () => {
-
   it('closure can access enclosing scope variable', () => {
     const output = consoleOutput(`
       function outer() {
@@ -133,10 +132,12 @@ describe('Interpreter — Closures', () => {
     `);
     // Find a step where outer is on the call stack to get its color
     const outerStep = steps.find((s) =>
-      s.callStack.some((f) => f.name === 'outer'),
+      s.callStack.some((f) => f.name === 'outer')
     );
     expect(outerStep).toBeDefined();
-    const outerColor = outerStep!.callStack.find((f) => f.name === 'outer')!.color;
+    const outerColor = outerStep!.callStack.find(
+      (f) => f.name === 'outer'
+    )!.color;
 
     // On the last step, fn's [[Scope]] should reference that same color
     const lastS = steps[steps.length - 1];
@@ -346,5 +347,4 @@ describe('Interpreter — Closures', () => {
     expect(output[1]).toContain('16');
     expect(output[2]).toContain('9');
   });
-
 });

@@ -1,11 +1,11 @@
-import type { CodeExample } from "@/types";
+import type { CodeExample } from '@/types';
 
 export const CLOSURES_EXAMPLES: CodeExample[] = [
   {
-    id: "closures",
-    title: "Closures",
-    description: "Variables survive beyond their scope through [[Scope]]",
-    category: "closures",
+    id: 'closures',
+    title: 'Closures',
+    description: 'Variables survive beyond their scope through [[Scope]]',
+    category: 'closures',
     code: `// Closures
 function createCounter() {
   let count = 0;
@@ -21,10 +21,11 @@ console.log(counter());
 console.log(counter());`,
   },
   {
-    id: "closures-loop-trap",
-    title: "Loop Closure Trap",
-    description: "var shares one binding; let creates a fresh scope each iteration",
-    category: "closures",
+    id: 'closures-loop-trap',
+    title: 'Loop Closure Trap',
+    description:
+      'var shares one binding; let creates a fresh scope each iteration',
+    category: 'closures',
     code: `// Loop Closure Trap
 // With var: all closures share the SAME 'i' binding
 const funcsVar = [];
@@ -45,10 +46,10 @@ console.log(funcsLet[0]()); // 0
 console.log(funcsLet[1]()); // 1`,
   },
   {
-    id: "closures-memoize",
-    title: "Memoization via Closure",
-    description: "A closure over a cache object remembers previous results",
-    category: "closures",
+    id: 'closures-memoize',
+    title: 'Memoization via Closure',
+    description: 'A closure over a cache object remembers previous results',
+    category: 'closures',
     code: `// Memoization via Closure
 function memoize(fn) {
   const cache = {};

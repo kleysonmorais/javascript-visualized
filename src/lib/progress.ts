@@ -55,7 +55,7 @@ export function getAttempts(challengeId: string): number {
 
 export function getCompletedCount(): number {
   const all = getAll();
-  return Object.values(all).filter(p => p.completed).length;
+  return Object.values(all).filter((p) => p.completed).length;
 }
 
 export function resetProgress(): void {

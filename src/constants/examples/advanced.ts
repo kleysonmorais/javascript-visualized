@@ -1,11 +1,11 @@
-import type { CodeExample } from "@/types";
+import type { CodeExample } from '@/types';
 
 export const ADVANCED_EXAMPLES: CodeExample[] = [
   {
-    id: "blocking-computation",
-    title: "Blocking Computation",
-    description: "A long-running loop blocks the entire event loop",
-    category: "advanced",
+    id: 'blocking-computation',
+    title: 'Blocking Computation',
+    description: 'A long-running loop blocks the entire event loop',
+    category: 'advanced',
     code: `// Blocking Computation
 function isPrime(n) {
   for (let i = 2; i < n; i++) {
@@ -26,10 +26,10 @@ computePrimes(prime => {
 });`,
   },
   {
-    id: "chunked-setTimeout",
-    title: "Chunked with setTimeout",
-    description: "Break work into chunks using macrotasks to stay responsive",
-    category: "advanced",
+    id: 'chunked-setTimeout',
+    title: 'Chunked with setTimeout',
+    description: 'Break work into chunks using macrotasks to stay responsive',
+    category: 'advanced',
     code: `// Chunked with setTimeout
 function isPrime(n) {
   for (let i = 2; i < n; i++) {
@@ -53,10 +53,10 @@ computePrimes(prime => {
 });`,
   },
   {
-    id: "chunked-promise",
-    title: "Chunked with Promise",
-    description: "Break work using microtasks — faster but still blocking",
-    category: "advanced",
+    id: 'chunked-promise',
+    title: 'Chunked with Promise',
+    description: 'Break work using microtasks — faster but still blocking',
+    category: 'advanced',
     code: `// Chunked with Promise
 function isPrime(n) {
   for (let i = 2; i < n; i++) {

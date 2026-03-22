@@ -1,18 +1,18 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { Pause } from "lucide-react";
-import { useTranslation } from "react-i18next";
-import { Panel } from "@/components/ui/Panel";
-import { THEME } from "@/constants/theme";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
-import { useAnimationConfig } from "@/hooks/useAnimationConfig";
-import type { CallStackFrame } from "@/types";
+import { motion, AnimatePresence } from 'framer-motion';
+import { Pause } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Panel } from '@/components/ui/Panel';
+import { THEME } from '@/constants/theme';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { useAnimationConfig } from '@/hooks/useAnimationConfig';
+import type { CallStackFrame } from '@/types';
 
-const FRAME_TYPE_KEYS: Record<CallStackFrame["type"], string> = {
-  global: "callStack.types.global",
-  function: "callStack.types.function",
-  method: "callStack.types.method",
-  async: "callStack.types.async",
-  generator: "callStack.types.generator",
+const FRAME_TYPE_KEYS: Record<CallStackFrame['type'], string> = {
+  global: 'callStack.types.global',
+  function: 'callStack.types.function',
+  method: 'callStack.types.method',
+  async: 'callStack.types.async',
+  generator: 'callStack.types.generator',
 };
 
 export function CallStack() {
@@ -27,26 +27,26 @@ export function CallStack() {
   const reversed = [...frames].reverse();
 
   return (
-    <Panel title={t("callStack.title")} className="flex-1 min-h-0">
+    <Panel title={t('callStack.title')} className='flex-1 min-h-0'>
       {reversed.length === 0 ? (
-        <div className="flex items-center justify-center h-full">
+        <div className='flex items-center justify-center h-full'>
           <span
-            className="text-center text-xs"
+            className='text-center text-xs'
             style={{
               color: THEME.colors.text.muted,
               fontFamily: THEME.fonts.ui,
             }}
           >
-            {t("callStack.empty")}
+            {t('callStack.empty')}
           </span>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          <AnimatePresence mode="popLayout">
+        <div className='flex flex-col gap-2'>
+          <AnimatePresence mode='popLayout'>
             {reversed.map((frame) => {
               const color = frame.color ?? THEME.colors.border.callStack;
               const isHovered = hoveredFrameId === frame.id;
-              const isSuspended = frame.status === "suspended";
+              const isSuspended = frame.status === 'suspended';
               const suspendedColor = THEME.colors.status.pending; // amber
               return (
                 <motion.div
@@ -57,26 +57,26 @@ export function CallStack() {
                     x: 0,
                     boxShadow: isHovered
                       ? `0 0 12px ${color}50`
-                      : "0 0 0px transparent",
+                      : '0 0 0px transparent',
                     borderColor: isHovered ? color : `${color}44`,
                   }}
                   exit={shouldReduceMotion ? undefined : { opacity: 0, x: 20 }}
-                  transition={{ duration: duration.normal, ease: "easeOut" }}
-                  className="px-3 py-2 rounded"
+                  transition={{ duration: duration.normal, ease: 'easeOut' }}
+                  className='px-3 py-2 rounded'
                   style={{
                     backgroundColor: THEME.colors.bg.elevated,
                     borderTop: `1px solid ${isHovered ? color : `${color}44`}`,
                     borderRight: `1px solid ${isHovered ? color : `${color}44`}`,
                     borderBottom: `1px solid ${isHovered ? color : `${color}44`}`,
-                    borderLeft: `3px ${isSuspended ? "dashed" : "solid"} ${isSuspended ? suspendedColor : color}`,
+                    borderLeft: `3px ${isSuspended ? 'dashed' : 'solid'} ${isSuspended ? suspendedColor : color}`,
                     color: THEME.colors.text.primary,
-                    cursor: "pointer",
+                    cursor: 'pointer',
                   }}
                   onMouseEnter={() => setHoveredFrameId(frame.id)}
                   onMouseLeave={() => setHoveredFrameId(null)}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
+                  <div className='flex items-center justify-between gap-2'>
+                    <div className='flex items-center gap-2'>
                       <span style={{ color, fontSize: 10, lineHeight: 1 }}>
                         ●
                       </span>
@@ -101,12 +101,12 @@ export function CallStack() {
                               fontFamily: THEME.fonts.code,
                               color: suspendedColor,
                               backgroundColor: `${suspendedColor}22`,
-                              padding: "1px 5px",
+                              padding: '1px 5px',
                               borderRadius: 4,
                               flexShrink: 0,
                             }}
                           >
-                            {t("callStack.suspended")}
+                            {t('callStack.suspended')}
                           </span>
                         </>
                       )}
@@ -117,7 +117,7 @@ export function CallStack() {
                         fontFamily: THEME.fonts.code,
                         color,
                         backgroundColor: `${color}22`,
-                        padding: "1px 5px",
+                        padding: '1px 5px',
                         borderRadius: 4,
                         flexShrink: 0,
                       }}
@@ -133,7 +133,8 @@ export function CallStack() {
                       fontFamily: THEME.fonts.code,
                     }}
                   >
-                    {t("callStack.line")} {frame.line}, {t("callStack.col")} {frame.column}
+                    {t('callStack.line')} {frame.line}, {t('callStack.col')}{' '}
+                    {frame.column}
                   </div>
                 </motion.div>
               );

@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from 'react';
 
 /**
  * Hook that tracks whether a CSS media query matches
@@ -10,8 +10,8 @@ export function useMediaQuery(query: string): boolean {
   // Subscribe function for useSyncExternalStore
   const subscribe = (callback: () => void) => {
     const mediaQueryList = window.matchMedia(query);
-    mediaQueryList.addEventListener("change", callback);
-    return () => mediaQueryList.removeEventListener("change", callback);
+    mediaQueryList.addEventListener('change', callback);
+    return () => mediaQueryList.removeEventListener('change', callback);
   };
 
   // Snapshot function that returns current value
@@ -29,12 +29,12 @@ export function useMediaQuery(query: string): boolean {
  * Convenience hook for mobile breakpoint (<1024px)
  */
 export function useIsMobile(): boolean {
-  return useMediaQuery("(max-width: 1023px)");
+  return useMediaQuery('(max-width: 1023px)');
 }
 
 /**
  * Convenience hook for small mobile (<768px)
  */
 export function useIsSmallMobile(): boolean {
-  return useMediaQuery("(max-width: 767px)");
+  return useMediaQuery('(max-width: 767px)');
 }

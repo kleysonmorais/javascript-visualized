@@ -6,7 +6,7 @@
 
 ## 🤔 Why?
 
-JavaScript's execution model — call stack, closures, event loop, promises — is notoriously hard to reason about from text alone. Most developers learn it once, forget half of it, and look it up again when something breaks. This tool exists to make that mental model stick by letting you *see* it in motion, step by step.
+JavaScript's execution model — call stack, closures, event loop, promises — is notoriously hard to reason about from text alone. Most developers learn it once, forget half of it, and look it up again when something breaks. This tool exists to make that mental model stick by letting you _see_ it in motion, step by step.
 
 ## ✨ What makes this different?
 
@@ -35,17 +35,21 @@ npm run dev
 ## 📸 Screenshots
 
 ### Synchronous Execution — Function Call with Memory
+
 ![Sync execution](./docs/sync-memory.png)
 
 ### Async — Promise vs setTimeout (Microtask Priority)
+
 ![Async execution](./docs/async-promise.png)
 
 ### Closures — [[Scope]] Surviving Beyond Its Frame
+
 ![Closures](./docs/closures.png)
 
 ## 🎯 Features
 
 ### Visualization Panels
+
 - **Code Editor** — Monaco Editor with syntax highlighting and line-by-line execution tracking
 - **Call Stack** — color-coded frames that match their memory blocks
 - **Memory** — local and global memory with primitives, `ⓕ` functions, `[Pointer]` references
@@ -57,6 +61,7 @@ npm run dev
 - **Console** — virtual console output matching execution steps
 
 ### Supported JS Features
+
 - Variables (`var`, `let`, `const`), assignments, operators
 - Functions (declarations, expressions, arrow functions)
 - Control flow (`if/else`, `for`, `while`, `break`, `continue`)
@@ -73,6 +78,7 @@ npm run dev
 - `try`/`catch`/`finally`
 
 ### UX
+
 - Step-by-step navigation (back/forward/play/pause)
 - Adjustable playback speed (0.5x — 3x)
 - Keyboard shortcuts (Arrow keys, Space, Home/End)
@@ -112,17 +118,17 @@ Source Code (string)
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
-|-----------|---------|
-| **Vite** | Build tool and dev server |
-| **React** | UI framework |
-| **TypeScript** | Type safety |
-| **TailwindCSS** | Styling |
-| **Zustand** | State management |
-| **acorn** | JavaScript parser (AST generation) |
-| **Monaco Editor** | Code editor (same as VS Code) |
-| **Framer Motion** | Animations |
-| **Vitest** | Testing |
+| Technology        | Purpose                            |
+| ----------------- | ---------------------------------- |
+| **Vite**          | Build tool and dev server          |
+| **React**         | UI framework                       |
+| **TypeScript**    | Type safety                        |
+| **TailwindCSS**   | Styling                            |
+| **Zustand**       | State management                   |
+| **acorn**         | JavaScript parser (AST generation) |
+| **Monaco Editor** | Code editor (same as VS Code)      |
+| **Framer Motion** | Animations                         |
+| **Vitest**        | Testing                            |
 
 ## 🤝 Contributing
 
@@ -131,4 +137,3 @@ See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup instructions and guidelines.
 ## 📄 License
 
 MIT
-

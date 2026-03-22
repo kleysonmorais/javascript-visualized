@@ -1,4 +1,4 @@
-import type * as acorn from "acorn";
+import type * as acorn from 'acorn';
 import type {
   ExecutionStep,
   CallStackFrame,
@@ -16,8 +16,8 @@ import type {
   ConsoleMethod,
   ClosureScopeEntry,
   ClosureVariable,
-} from "@/types";
-import { getFrameColor, getPointerColor } from "@/constants/theme";
+} from '@/types';
+import { getFrameColor, getPointerColor } from '@/constants/theme';
 import {
   displayValue,
   getValueType,
@@ -26,13 +26,13 @@ import {
   generateId,
   deepClone,
   stringifyForConsole,
-} from "./utils";
+} from './utils';
 import type {
   InternalPromise,
   PendingMicrotask,
   PromiseReaction,
-} from "./promise";
-import description from "@/utils/stepDescriptions";
+} from './promise';
+import description from '@/utils/stepDescriptions';
 
 // ESTree node types (extending acorn.Node)
 interface BaseNode {
@@ -46,24 +46,24 @@ interface BaseNode {
 }
 
 interface ProgramNode extends BaseNode {
-  type: "Program";
+  type: 'Program';
   body: StatementNode[];
 }
 
 interface VariableDeclarationNode extends BaseNode {
-  type: "VariableDeclaration";
+  type: 'VariableDeclaration';
   declarations: VariableDeclaratorNode[];
-  kind: "var" | "let" | "const";
+  kind: 'var' | 'let' | 'const';
 }
 
 interface VariableDeclaratorNode extends BaseNode {
-  type: "VariableDeclarator";
+  type: 'VariableDeclarator';
   id: PatternNode;
   init: ExpressionNode | null;
 }
 
 interface FunctionDeclarationNode extends BaseNode {
-  type: "FunctionDeclaration";
+  type: 'FunctionDeclaration';
   id: IdentifierNode;
   params: PatternNode[];
   body: BlockStatementNode;
@@ -72,19 +72,19 @@ interface FunctionDeclarationNode extends BaseNode {
 }
 
 interface ExpressionStatementNode extends BaseNode {
-  type: "ExpressionStatement";
+  type: 'ExpressionStatement';
   expression: ExpressionNode;
 }
 
 interface IfStatementNode extends BaseNode {
-  type: "IfStatement";
+  type: 'IfStatement';
   test: ExpressionNode;
   consequent: StatementNode;
   alternate: StatementNode | null;
 }
 
 interface ForStatementNode extends BaseNode {
-  type: "ForStatement";
+  type: 'ForStatement';
   init: VariableDeclarationNode | ExpressionNode | null;
   test: ExpressionNode | null;
   update: ExpressionNode | null;
@@ -92,101 +92,101 @@ interface ForStatementNode extends BaseNode {
 }
 
 interface WhileStatementNode extends BaseNode {
-  type: "WhileStatement";
+  type: 'WhileStatement';
   test: ExpressionNode;
   body: StatementNode;
 }
 
 interface BlockStatementNode extends BaseNode {
-  type: "BlockStatement";
+  type: 'BlockStatement';
   body: StatementNode[];
 }
 
 interface ReturnStatementNode extends BaseNode {
-  type: "ReturnStatement";
+  type: 'ReturnStatement';
   argument: ExpressionNode | null;
 }
 
 interface CallExpressionNode extends BaseNode {
-  type: "CallExpression";
+  type: 'CallExpression';
   callee: ExpressionNode;
   arguments: (ExpressionNode | SpreadElementNode)[];
 }
 
 interface MemberExpressionNode extends BaseNode {
-  type: "MemberExpression";
+  type: 'MemberExpression';
   object: ExpressionNode;
   property: ExpressionNode | IdentifierNode;
   computed: boolean;
 }
 
 interface AssignmentExpressionNode extends BaseNode {
-  type: "AssignmentExpression";
+  type: 'AssignmentExpression';
   operator: string;
   left: PatternNode | MemberExpressionNode;
   right: ExpressionNode;
 }
 
 interface BinaryExpressionNode extends BaseNode {
-  type: "BinaryExpression";
+  type: 'BinaryExpression';
   operator: string;
   left: ExpressionNode;
   right: ExpressionNode;
 }
 
 interface LogicalExpressionNode extends BaseNode {
-  type: "LogicalExpression";
+  type: 'LogicalExpression';
   operator: string;
   left: ExpressionNode;
   right: ExpressionNode;
 }
 
 interface UnaryExpressionNode extends BaseNode {
-  type: "UnaryExpression";
+  type: 'UnaryExpression';
   operator: string;
   prefix: boolean;
   argument: ExpressionNode;
 }
 
 interface UpdateExpressionNode extends BaseNode {
-  type: "UpdateExpression";
-  operator: "++" | "--";
+  type: 'UpdateExpression';
+  operator: '++' | '--';
   prefix: boolean;
   argument: IdentifierNode | MemberExpressionNode;
 }
 
 interface LiteralNode extends BaseNode {
-  type: "Literal";
+  type: 'Literal';
   value: string | number | boolean | null | RegExp | bigint;
   raw: string;
 }
 
 interface IdentifierNode extends BaseNode {
-  type: "Identifier";
+  type: 'Identifier';
   name: string;
 }
 
 interface ObjectExpressionNode extends BaseNode {
-  type: "ObjectExpression";
+  type: 'ObjectExpression';
   properties: (PropertyNode | SpreadElementNode)[];
 }
 
 interface PropertyNode extends BaseNode {
-  type: "Property";
+  type: 'Property';
   key: IdentifierNode | LiteralNode;
   value: ExpressionNode | PatternNode; // value can be Identifier, AssignmentPattern, ObjectPattern, ArrayPattern in destructuring
-  kind: "init" | "get" | "set";
+  kind: 'init' | 'get' | 'set';
   computed: boolean;
   shorthand: boolean;
 }
 
 interface ArrayExpressionNode extends BaseNode {
-  type: "ArrayExpression";
+  type: 'ArrayExpression';
   elements: (ExpressionNode | SpreadElementNode | null)[];
 }
 
 interface FunctionExpressionNode extends BaseNode {
-  type: "FunctionExpression";
+  type: 'FunctionExpression';
   id: IdentifierNode | null;
   params: PatternNode[];
   body: BlockStatementNode;
@@ -195,7 +195,7 @@ interface FunctionExpressionNode extends BaseNode {
 }
 
 interface ArrowFunctionExpressionNode extends BaseNode {
-  type: "ArrowFunctionExpression";
+  type: 'ArrowFunctionExpression';
   params: PatternNode[];
   body: BlockStatementNode | ExpressionNode;
   expression: boolean;
@@ -203,43 +203,43 @@ interface ArrowFunctionExpressionNode extends BaseNode {
 }
 
 interface TemplateLiteralNode extends BaseNode {
-  type: "TemplateLiteral";
+  type: 'TemplateLiteral';
   quasis: TemplateElementNode[];
   expressions: ExpressionNode[];
 }
 
 interface TemplateElementNode extends BaseNode {
-  type: "TemplateElement";
+  type: 'TemplateElement';
   value: { raw: string; cooked: string };
   tail: boolean;
 }
 
 interface ConditionalExpressionNode extends BaseNode {
-  type: "ConditionalExpression";
+  type: 'ConditionalExpression';
   test: ExpressionNode;
   consequent: ExpressionNode;
   alternate: ExpressionNode;
 }
 
 interface NewExpressionNode extends BaseNode {
-  type: "NewExpression";
+  type: 'NewExpression';
   callee: ExpressionNode;
   arguments: ExpressionNode[];
 }
 
 interface AwaitExpressionNode extends BaseNode {
-  type: "AwaitExpression";
+  type: 'AwaitExpression';
   argument: ExpressionNode;
 }
 
 interface YieldExpressionNode extends BaseNode {
-  type: "YieldExpression";
+  type: 'YieldExpression';
   argument: ExpressionNode | null;
   delegate: boolean; // true for `yield*`
 }
 
 interface ForOfStatementNode extends BaseNode {
-  type: "ForOfStatement";
+  type: 'ForOfStatement';
   left: VariableDeclarationNode | IdentifierNode;
   right: ExpressionNode;
   body: StatementNode;
@@ -247,110 +247,110 @@ interface ForOfStatementNode extends BaseNode {
 }
 
 interface TryStatementNode extends BaseNode {
-  type: "TryStatement";
+  type: 'TryStatement';
   block: BlockStatementNode;
   handler: CatchClauseNode | null;
   finalizer: BlockStatementNode | null;
 }
 
 interface CatchClauseNode extends BaseNode {
-  type: "CatchClause";
+  type: 'CatchClause';
   param: IdentifierNode | null;
   body: BlockStatementNode;
 }
 
 interface ThrowStatementNode extends BaseNode {
-  type: "ThrowStatement";
+  type: 'ThrowStatement';
   argument: ExpressionNode;
 }
 
 interface BreakStatementNode extends BaseNode {
-  type: "BreakStatement";
+  type: 'BreakStatement';
 }
 
 interface ContinueStatementNode extends BaseNode {
-  type: "ContinueStatement";
+  type: 'ContinueStatement';
 }
 
 // Class AST nodes
 interface ClassDeclarationNode extends BaseNode {
-  type: "ClassDeclaration";
+  type: 'ClassDeclaration';
   id: IdentifierNode;
   superClass: ExpressionNode | null;
   body: ClassBodyNode;
 }
 
 interface ClassBodyNode extends BaseNode {
-  type: "ClassBody";
+  type: 'ClassBody';
   body: MethodDefinitionNode[];
 }
 
 interface MethodDefinitionNode extends BaseNode {
-  type: "MethodDefinition";
+  type: 'MethodDefinition';
   key: IdentifierNode | LiteralNode;
   value: FunctionExpressionNode;
-  kind: "constructor" | "method" | "get" | "set";
+  kind: 'constructor' | 'method' | 'get' | 'set';
   static: boolean;
   computed: boolean;
 }
 
 // Destructuring pattern nodes
 interface ObjectPatternNode extends BaseNode {
-  type: "ObjectPattern";
+  type: 'ObjectPattern';
   properties: (PropertyNode | RestElementNode)[];
 }
 
 interface ArrayPatternNode extends BaseNode {
-  type: "ArrayPattern";
+  type: 'ArrayPattern';
   elements: (PatternNode | null)[];
 }
 
 interface AssignmentPatternNode extends BaseNode {
-  type: "AssignmentPattern";
+  type: 'AssignmentPattern';
   left: PatternNode;
   right: ExpressionNode;
 }
 
 interface RestElementNode extends BaseNode {
-  type: "RestElement";
+  type: 'RestElement';
   argument: PatternNode;
 }
 
 interface SpreadElementNode extends BaseNode {
-  type: "SpreadElement";
+  type: 'SpreadElement';
   argument: ExpressionNode;
 }
 
 // Module nodes
 interface ImportDeclarationNode extends BaseNode {
-  type: "ImportDeclaration";
+  type: 'ImportDeclaration';
   specifiers: ImportSpecifierNode[];
   source: LiteralNode;
 }
 
 interface ImportSpecifierNode extends BaseNode {
   type:
-    | "ImportSpecifier"
-    | "ImportDefaultSpecifier"
-    | "ImportNamespaceSpecifier";
+    | 'ImportSpecifier'
+    | 'ImportDefaultSpecifier'
+    | 'ImportNamespaceSpecifier';
   local: IdentifierNode;
   imported?: IdentifierNode;
 }
 
 interface ExportNamedDeclarationNode extends BaseNode {
-  type: "ExportNamedDeclaration";
+  type: 'ExportNamedDeclaration';
   declaration: StatementNode | null;
   specifiers: ExportSpecifierNode[];
   source: LiteralNode | null;
 }
 
 interface ExportDefaultDeclarationNode extends BaseNode {
-  type: "ExportDefaultDeclaration";
+  type: 'ExportDefaultDeclaration';
   declaration: ExpressionNode | StatementNode;
 }
 
 interface ExportSpecifierNode extends BaseNode {
-  type: "ExportSpecifier";
+  type: 'ExportSpecifier';
   local: IdentifierNode;
   exported: IdentifierNode;
 }
@@ -406,7 +406,7 @@ interface CapturedEnvMeta {
   scopeName: string;
   scopeColor: string;
   // kinds for each variable in this layer (for isMutable flag)
-  kinds: Record<string, VariableKind | "param" | "function">;
+  kinds: Record<string, VariableKind | 'param' | 'function'>;
   // live reference to the env object — mutations here are visible immediately
   env: Record<string, unknown>;
 }
@@ -500,7 +500,7 @@ interface PromiseWrapper {
 // Runtime value for built-in resolve/reject functions injected into executor scope
 interface BuiltinFn {
   __isBuiltin: true;
-  kind: "promise-resolve" | "promise-reject";
+  kind: 'promise-resolve' | 'promise-reject';
   promiseId: string;
 }
 
@@ -523,7 +523,7 @@ const MAX_MICROTASK_DRAIN = 100; // safety limit per drain cycle
 interface PendingTimer {
   id: string;
   numericId: number; // the number returned to user code (e.g. 1, 2, 3…)
-  type: "setTimeout" | "setInterval";
+  type: 'setTimeout' | 'setInterval';
   callbackNode: BaseNode;
   callbackSource: string;
   delay: number;
@@ -560,7 +560,7 @@ export class Interpreter {
   private webAPIs: WebAPIEntry[] = [];
   private taskQueue: QueueItem[] = [];
   private microtaskQueue: QueueItem[] = [];
-  private eventLoop: EventLoopState = { phase: "idle", description: "Idle" };
+  private eventLoop: EventLoopState = { phase: 'idle', description: 'Idle' };
   private scopes: VariableScope[] = [];
 
   // Counters
@@ -576,7 +576,7 @@ export class Interpreter {
   private envStack: Record<string, unknown>[] = [];
 
   // Source code for extracting function sources
-  private sourceCode: string = "";
+  private sourceCode: string = '';
 
   // Return value communication
   private returnValue: unknown = undefined;
@@ -621,7 +621,7 @@ export class Interpreter {
   // Tracks kinds of variables in each env layer: env object reference → variable kinds
   private envKindsMap: Map<
     Record<string, unknown>,
-    Record<string, VariableKind | "param" | "function">
+    Record<string, VariableKind | 'param' | 'function'>
   > = new Map();
 
   // Tracks function names captured by closure scope: env → function names
@@ -633,10 +633,10 @@ export class Interpreter {
   execute(
     ast: acorn.Node,
     sourceCode: string,
-    sourceType: "script" | "module" = "script",
+    sourceType: 'script' | 'module' = 'script'
   ): ExecutionStep[] {
     this.sourceCode = sourceCode;
-    this.isModuleMode = sourceType === "module";
+    this.isModuleMode = sourceType === 'module';
 
     // Phase 1: Synchronous execution
     this.pushGlobalFrame();
@@ -646,14 +646,14 @@ export class Interpreter {
     // disturbing any suspended async frames that may sit above it.
     // We do NOT use popFrame() here because that removes from the TOP.
     const globalFrameIndex = this.callStack.findIndex(
-      (f) => f.type === "global",
+      (f) => f.type === 'global'
     );
     if (globalFrameIndex !== -1) {
       const globalFrame = this.callStack[globalFrameIndex];
       this.callStack.splice(globalFrameIndex, 1);
       // Remove global memory block (will be re-attached below for async phase)
       const blockIndex = this.memoryBlocks.findIndex(
-        (b) => b.frameId === globalFrame.id,
+        (b) => b.frameId === globalFrame.id
       );
       if (blockIndex !== -1) this.memoryBlocks.splice(blockIndex, 1);
       // Pop global env + scope (they are at the bottom of their stacks)
@@ -676,9 +676,9 @@ export class Interpreter {
     this.eventLoop = {
       phase:
         this.pendingMicrotasks.length > 0
-          ? "checking-microtasks"
-          : "checking-tasks",
-      description: "All synchronous code executed — checking for async tasks",
+          ? 'checking-microtasks'
+          : 'checking-tasks',
+      description: 'All synchronous code executed — checking for async tasks',
     };
     this.snapshot(
       0,
@@ -686,7 +686,7 @@ export class Interpreter {
       hasAsyncWork
         ? description.checkingMicrotaskQueue()
         : description.executionComplete(),
-      "",
+      ''
     );
 
     if (!hasAsyncWork) return this.steps;
@@ -710,21 +710,21 @@ export class Interpreter {
     while (iteration < MAX_ASYNC_ITERATIONS && this.stepIndex < MAX_STEPS) {
       // Process any pending fetches — they resolve Promises (→ microtasks) before timers run
       const unprocessedFetches = this.pendingFetches.filter(
-        (f) => !f.processed,
+        (f) => !f.processed
       );
       if (unprocessedFetches.length > 0) {
         this.eventLoop = {
-          phase: "checking-tasks",
-          description: "fetch() completed — resolving Promise",
+          phase: 'checking-tasks',
+          description: 'fetch() completed — resolving Promise',
         };
         this.processPendingFetches();
         // Drain microtasks that the fetch resolution triggered
         if (this.pendingMicrotasks.length > 0) {
           this.eventLoop = {
-            phase: "checking-microtasks",
-            description: "fetch resolved — draining Microtask Queue",
+            phase: 'checking-microtasks',
+            description: 'fetch resolved — draining Microtask Queue',
           };
-          this.snapshot(0, 0, description.fetchCheckingMicrotasks(), "");
+          this.snapshot(0, 0, description.fetchCheckingMicrotasks(), '');
           this.drainMicrotaskQueue();
         }
         iteration++;
@@ -737,7 +737,7 @@ export class Interpreter {
         .sort((a, b) =>
           a.delay !== b.delay
             ? a.delay - b.delay
-            : a.registeredAtStep - b.registeredAtStep,
+            : a.registeredAtStep - b.registeredAtStep
         );
 
       if (activeTimers.length === 0 && this.pendingMicrotasks.length === 0)
@@ -746,15 +746,10 @@ export class Interpreter {
       // Process microtasks again if any were added during the last iteration
       if (this.pendingMicrotasks.length > 0) {
         this.eventLoop = {
-          phase: "checking-microtasks",
-          description: "Checking Microtask Queue...",
+          phase: 'checking-microtasks',
+          description: 'Checking Microtask Queue...',
         };
-        this.snapshot(
-          0,
-          0,
-          description.microtasksPending(),
-          "",
-        );
+        this.snapshot(0, 0, description.microtasksPending(), '');
         this.drainMicrotaskQueue();
         continue;
       }
@@ -772,10 +767,10 @@ export class Interpreter {
       // STEP 3: After callback execution, drain microtasks before picking next task
       if (this.pendingMicrotasks.length > 0) {
         this.eventLoop = {
-          phase: "checking-microtasks",
-          description: "Checking Microtask Queue...",
+          phase: 'checking-microtasks',
+          description: 'Checking Microtask Queue...',
         };
-        this.snapshot(0, 0, description.callbackCheckingMicrotasks(), "");
+        this.snapshot(0, 0, description.callbackCheckingMicrotasks(), '');
         this.drainMicrotaskQueue();
       }
 
@@ -789,14 +784,14 @@ export class Interpreter {
 
     // Remove cancelled timers from Web APIs (they were already shown as cancelled)
     const cancelledIds = new Set(
-      this.pendingTimers.filter((t) => t.cancelled).map((t) => t.id),
+      this.pendingTimers.filter((t) => t.cancelled).map((t) => t.id)
     );
     if (cancelledIds.size > 0) {
       this.webAPIs = this.webAPIs.filter((w) => !cancelledIds.has(w.id));
     }
 
-    this.eventLoop = { phase: "idle", description: "All tasks completed" };
-    this.snapshot(0, 0, description.executionComplete(), "");
+    this.eventLoop = { phase: 'idle', description: 'All tasks completed' };
+    this.snapshot(0, 0, description.executionComplete(), '');
   }
 
   private drainMicrotaskQueue(): void {
@@ -811,29 +806,29 @@ export class Interpreter {
 
       // Update Event Loop phase
       this.eventLoop = {
-        phase: "draining-microtasks",
+        phase: 'draining-microtasks',
         description:
-          "Event Loop: draining Microtask Queue (priority over Task Queue)",
+          'Event Loop: draining Microtask Queue (priority over Task Queue)',
       };
 
       // Remove from visualization queue
       this.microtaskQueue = this.microtaskQueue.filter(
-        (q) => q.id !== microtask.id,
+        (q) => q.id !== microtask.id
       );
 
       // Execute the microtask
       this.executeMicrotask(microtask);
 
       this.eventLoop = {
-        phase: "checking-microtasks",
-        description: "Checking for more microtasks...",
+        phase: 'checking-microtasks',
+        description: 'Checking for more microtasks...',
       };
 
       drainCount++;
     }
 
     if (drainCount >= MAX_MICROTASK_DRAIN) {
-      console.warn("Microtask drain limit reached (possible infinite loop)");
+      console.warn('Microtask drain limit reached (possible infinite loop)');
     }
   }
 
@@ -842,64 +837,56 @@ export class Interpreter {
     const webAPI = this.webAPIs.find((w) => w.id === timer.id);
     if (webAPI) {
       webAPI.elapsed = timer.delay;
-      webAPI.status = "completed";
+      webAPI.status = 'completed';
     }
     this.eventLoop = {
-      phase: "checking-tasks",
-      description: "Timer completed — checking Task Queue",
+      phase: 'checking-tasks',
+      description: 'Timer completed — checking Task Queue',
     };
-    this.snapshot(
-      0,
-      0,
-      description.timerFired({ delay: timer.delay }),
-      "",
-    );
+    this.snapshot(0, 0, description.timerFired({ delay: timer.delay }), '');
 
     // Step 2: Move callback to Task Queue
     const taskItem: QueueItem = {
       id: `task-${timer.id}`,
       callbackLabel:
         timer.callbackSource.length > 30
-          ? timer.callbackSource.slice(0, 30) + "..."
+          ? timer.callbackSource.slice(0, 30) + '...'
           : timer.callbackSource,
       sourceType: timer.type,
       sourceId: timer.id,
     };
     this.taskQueue.push(taskItem);
-    this.snapshot(0, 0, description.callbackMovedToTaskQueue(), "");
+    this.snapshot(0, 0, description.callbackMovedToTaskQueue(), '');
 
     // Step 3: Event Loop picks task — snapshot while item is still in queue so
     // the UI shows what is being picked, then remove it before execution.
     this.webAPIs = this.webAPIs.filter((w) => w.id !== timer.id);
     this.eventLoop = {
-      phase: "picking-task",
-      description: "Moving callback from Task Queue to Call Stack",
+      phase: 'picking-task',
+      description: 'Moving callback from Task Queue to Call Stack',
     };
-    this.snapshot(
-      0,
-      0,
-      description.eventLoopPickingTask(),
-      "",
-    );
+    this.snapshot(0, 0, description.eventLoopPickingTask(), '');
     this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
 
     // Step 4: Execute the callback body
     const resolvedFn = timer.resolvedFnValue;
     const callbackNode = resolvedFn
       ? null
-      : (timer.callbackNode as FunctionExpressionNode | ArrowFunctionExpressionNode);
+      : (timer.callbackNode as
+          | FunctionExpressionNode
+          | ArrowFunctionExpressionNode);
 
     const iterationLabel =
-      timer.type === "setInterval"
+      timer.type === 'setInterval'
         ? ` (iteration ${timer.intervalCount + 1})`
-        : "";
+        : '';
     const execDescription = `Executing ${timer.type} callback${iterationLabel}`;
 
     // Determine frame name: use named function id, or identifier name, or "callback"
     const fnIdName =
       resolvedFn != null
-        ? (timer.callbackSource) // identifier name (e.g. "logB")
-        : ((callbackNode as FunctionExpressionNode)?.id?.name ?? "callback");
+        ? timer.callbackSource // identifier name (e.g. "logB")
+        : ((callbackNode as FunctionExpressionNode)?.id?.name ?? 'callback');
 
     // Inject captured closure envs so the callback can access closed-over variables.
     const capturedCount = timer.capturedEnvStack.length;
@@ -920,8 +907,8 @@ export class Interpreter {
 
     this.pushFrame(fnIdName, lineNum, colNum, []);
     this.eventLoop = {
-      phase: "executing-task",
-      description: "Executing callback",
+      phase: 'executing-task',
+      description: 'Executing callback',
     };
     this.snapshot(0, 0, execDescription, timer.callbackSource);
 
@@ -930,7 +917,7 @@ export class Interpreter {
 
     if (callbackNode) {
       if (
-        callbackNode.type === "ArrowFunctionExpression" &&
+        callbackNode.type === 'ArrowFunctionExpression' &&
         callbackNode.expression
       ) {
         this.evaluateExpression(callbackNode.body as ExpressionNode);
@@ -954,16 +941,16 @@ export class Interpreter {
       this.envStack.splice(1, capturedCount);
     }
     this.eventLoop = {
-      phase: "checking-tasks",
-      description: "Callback done — checking for more tasks",
+      phase: 'checking-tasks',
+      description: 'Callback done — checking for more tasks',
     };
-    this.snapshot(0, 0, description.callbackExecutionCompleted(), "");
+    this.snapshot(0, 0, description.callbackExecutionCompleted(), '');
 
     // Step 5: For setInterval, re-register if under iteration limit
-    if (timer.type === "setInterval" && !timer.cancelled) {
+    if (timer.type === 'setInterval' && !timer.cancelled) {
       const nextCount = timer.intervalCount + 1;
       if (nextCount < MAX_INTERVAL_ITERATIONS) {
-        const newWebApiId = generateId("webapi", this.webAPICounter++);
+        const newWebApiId = generateId('webapi', this.webAPICounter++);
         const newTimer: PendingTimer = {
           ...timer,
           id: newWebApiId,
@@ -975,21 +962,21 @@ export class Interpreter {
         this.pendingTimers.push(newTimer);
         this.webAPIs.push({
           id: newWebApiId,
-          type: "setInterval",
-          label: "setInterval",
+          type: 'setInterval',
+          label: 'setInterval',
           callback: timer.callbackSource,
           delay: timer.delay,
           elapsed: 0,
-          status: "running",
+          status: 'running',
         });
         this.snapshot(
           0,
           0,
           description.intervalRegistered({ delay: timer.delay }),
-          "",
+          ''
         );
       } else {
-        this.snapshot(0, 0, description.setIntervalLimitReached(), "");
+        this.snapshot(0, 0, description.setIntervalLimitReached(), '');
       }
     }
   }
@@ -1000,7 +987,7 @@ export class Interpreter {
     line: number,
     column: number,
     description: string,
-    code: string,
+    code: string
   ): void {
     // Refresh closure scope displays from live env references before cloning
     this.syncClosureScopeDisplays();
@@ -1011,7 +998,7 @@ export class Interpreter {
           index: this.stepIndex,
           line,
           column,
-          description: "Execution limit reached (2000 steps)",
+          description: 'Execution limit reached (2000 steps)',
           code,
           callStack: deepClone(this.callStack),
           webAPIs: deepClone(this.webAPIs),
@@ -1050,19 +1037,19 @@ export class Interpreter {
   }
 
   private pushGlobalFrame(): void {
-    const frameId = generateId("frame", this.frameCounter);
+    const frameId = generateId('frame', this.frameCounter);
     const color = getFrameColor(this.frameCounter++);
     const isModule = this.isModuleMode;
 
     const frame: CallStackFrame = {
       id: frameId,
-      name: isModule ? "<module>" : "<global>",
-      type: "global",
+      name: isModule ? '<module>' : '<global>',
+      type: 'global',
       line: 1,
       column: 0,
       scope: {
-        name: isModule ? "Module" : "Global",
-        type: "global",
+        name: isModule ? 'Module' : 'Global',
+        type: 'global',
         variables: [],
       },
       color,
@@ -1070,8 +1057,8 @@ export class Interpreter {
 
     const memoryBlock: MemoryBlock = {
       frameId,
-      label: isModule ? "Module Scope" : "Global Memory",
-      type: isModule ? "module" : "global",
+      label: isModule ? 'Module Scope' : 'Global Memory',
+      type: isModule ? 'module' : 'global',
       color,
       entries: [],
     };
@@ -1084,41 +1071,41 @@ export class Interpreter {
     this.envKindsMap.set(this.globalEnv, {});
 
     this.scopes.push({
-      name: isModule ? "Module" : "Global",
-      type: "global",
+      name: isModule ? 'Module' : 'Global',
+      type: 'global',
       variables: [],
     });
 
     this.eventLoop = {
-      phase: "executing-task",
-      description: "Executing synchronous code",
+      phase: 'executing-task',
+      description: 'Executing synchronous code',
     };
 
-    this.snapshot(1, 0, description.startingExecution(isModule), "");
+    this.snapshot(1, 0, description.startingExecution(isModule), '');
   }
 
   private pushFrame(
     name: string,
     line: number,
     column: number,
-    params: Array<{ name: string; value: unknown }>,
+    params: Array<{ name: string; value: unknown }>
   ): void {
-    const frameId = generateId("frame", this.frameCounter);
+    const frameId = generateId('frame', this.frameCounter);
     const color = getFrameColor(this.frameCounter++);
 
     const frame: CallStackFrame = {
       id: frameId,
       name,
-      type: "function",
+      type: 'function',
       line,
       column,
       scope: {
         name,
-        type: "function",
+        type: 'function',
         variables: params.map((p) => ({
           name: p.name,
           value: p.value,
-          kind: "param" as VariableKind,
+          kind: 'param' as VariableKind,
         })),
         parentScope:
           this.callStack.length > 0
@@ -1132,7 +1119,7 @@ export class Interpreter {
       const resolved = this.resolveValueForMemory(p.value);
       return {
         name: p.name,
-        kind: "param" as const,
+        kind: 'param' as const,
         valueType: resolved.valueType,
         displayValue: resolved.displayValue,
         heapReferenceId: resolved.heapReferenceId,
@@ -1143,7 +1130,7 @@ export class Interpreter {
     const memoryBlock: MemoryBlock = {
       frameId,
       label: `Local: ${name}`,
-      type: "local",
+      type: 'local',
       color,
       entries,
     };
@@ -1153,21 +1140,21 @@ export class Interpreter {
 
     // Create new local environment
     const localEnv: Record<string, unknown> = {};
-    const localKinds: Record<string, VariableKind | "param" | "function"> = {};
+    const localKinds: Record<string, VariableKind | 'param' | 'function'> = {};
     for (const p of params) {
       localEnv[p.name] = p.value;
-      localKinds[p.name] = "param";
+      localKinds[p.name] = 'param';
     }
     this.envStack.push(localEnv);
     this.envKindsMap.set(localEnv, localKinds);
 
     this.scopes.push({
       name,
-      type: "function",
+      type: 'function',
       variables: params.map((p) => ({
         name: p.name,
         value: p.value,
-        kind: "param" as VariableKind,
+        kind: 'param' as VariableKind,
       })),
       parentScope:
         this.scopes.length > 0
@@ -1181,7 +1168,7 @@ export class Interpreter {
       const frame = this.callStack.pop()!;
       // Remove corresponding memory block
       const blockIndex = this.memoryBlocks.findIndex(
-        (b) => b.frameId === frame.id,
+        (b) => b.frameId === frame.id
       );
       if (blockIndex !== -1) {
         this.memoryBlocks.splice(blockIndex, 1);
@@ -1195,11 +1182,11 @@ export class Interpreter {
   }
 
   private getCurrentFrameId(): string {
-    return this.callStack[this.callStack.length - 1]?.id ?? "";
+    return this.callStack[this.callStack.length - 1]?.id ?? '';
   }
 
   private getCurrentFrameName(): string {
-    return this.callStack[this.callStack.length - 1]?.name ?? "<global>";
+    return this.callStack[this.callStack.length - 1]?.name ?? '<global>';
   }
 
   private getCurrentEnv(): Record<string, unknown> {
@@ -1216,7 +1203,7 @@ export class Interpreter {
   private updateMemoryEntry(
     frameId: string,
     name: string,
-    updates: Partial<MemoryEntry>,
+    updates: Partial<MemoryEntry>
   ): void {
     const block = this.memoryBlocks.find((b) => b.frameId === frameId);
     if (block) {
@@ -1239,12 +1226,12 @@ export class Interpreter {
   }
 
   private addHeapObject(
-    type: "object" | "array" | "function",
+    type: 'object' | 'array' | 'function',
     label: string,
     properties?: HeapObjectProperty[],
-    functionSource?: string,
+    functionSource?: string
   ): HeapObject {
-    const id = generateId("heap", this.heapCounter++);
+    const id = generateId('heap', this.heapCounter++);
     const color = getPointerColor(this.pointerCounter++);
 
     const heapObj: HeapObject = {
@@ -1262,7 +1249,7 @@ export class Interpreter {
 
   private addConsoleEntry(method: ConsoleMethod, args: string[]): void {
     const entry: ConsoleEntry = {
-      id: generateId("console", this.consoleCounter++),
+      id: generateId('console', this.consoleCounter++),
       method,
       args,
       timestamp: this.stepIndex,
@@ -1271,11 +1258,11 @@ export class Interpreter {
   }
 
   private addWebAPIEntry(
-    type: "setTimeout" | "setInterval",
+    type: 'setTimeout' | 'setInterval',
     callback: string,
-    delay: number,
+    delay: number
   ): string {
-    const id = generateId("webapi", this.webAPICounter++);
+    const id = generateId('webapi', this.webAPICounter++);
     const entry: WebAPIEntry = {
       id,
       type,
@@ -1283,7 +1270,7 @@ export class Interpreter {
       callback,
       delay,
       elapsed: 0,
-      status: "running",
+      status: 'running',
     };
     this.webAPIs.push(entry);
     return id;
@@ -1291,7 +1278,7 @@ export class Interpreter {
 
   private recordVarKind(
     name: string,
-    kind: VariableKind | "param" | "function",
+    kind: VariableKind | 'param' | 'function'
   ): void {
     const env = this.getCurrentEnv();
     const kinds = this.envKindsMap.get(env);
@@ -1318,7 +1305,7 @@ export class Interpreter {
   private setVariable(
     name: string,
     value: unknown,
-    isNewDeclaration: boolean = false,
+    isNewDeclaration: boolean = false
   ): void {
     if (isNewDeclaration) {
       // Add to current scope
@@ -1349,8 +1336,8 @@ export class Interpreter {
       if (heapObj) {
         return {
           value,
-          displayValue: "ⓕ",
-          valueType: "function",
+          displayValue: 'ⓕ',
+          valueType: 'function',
           heapReferenceId: heapObj.id,
           pointerColor: heapObj.color,
         };
@@ -1366,18 +1353,18 @@ export class Interpreter {
         if (existing) {
           return {
             value,
-            displayValue: "ⓕ",
-            valueType: "function",
+            displayValue: 'ⓕ',
+            valueType: 'function',
             heapReferenceId: existing.id,
             pointerColor: existing.color,
           };
         }
       }
       const heapObj = this.addHeapObject(
-        "function",
-        "ⓕ",
+        'function',
+        'ⓕ',
         undefined,
-        value.source,
+        value.source
       );
       this.objectHeapMap.set(value, heapObj.id);
       // Attach closure scope if this function has captured envs
@@ -1388,8 +1375,8 @@ export class Interpreter {
       }
       return {
         value,
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
         heapReferenceId: heapObj.id,
         pointerColor: heapObj.color,
       };
@@ -1404,13 +1391,13 @@ export class Interpreter {
       const internalPromise = this.promises.get(promiseId);
       if (internalPromise) {
         const heapObj = this.heap.find(
-          (h) => h.id === internalPromise.heapObjectId,
+          (h) => h.id === internalPromise.heapObjectId
         );
         if (heapObj) {
           return {
             value,
-            displayValue: "[Pointer]",
-            valueType: "object",
+            displayValue: '[Pointer]',
+            valueType: 'object',
             heapReferenceId: heapObj.id,
             pointerColor: heapObj.color,
           };
@@ -1418,7 +1405,7 @@ export class Interpreter {
       }
     }
 
-    if (valueType === "primitive") {
+    if (valueType === 'primitive') {
       return {
         value,
         displayValue: display,
@@ -1426,7 +1413,7 @@ export class Interpreter {
       };
     }
 
-    if (valueType === "function") {
+    if (valueType === 'function') {
       // Check if it's a wrapped function we created
       if (this.isFunctionValue(value)) {
         // Reuse existing heap entry if this exact function object was already tracked
@@ -1436,23 +1423,23 @@ export class Interpreter {
           if (existing) {
             return {
               value,
-              displayValue: "ⓕ",
-              valueType: "function",
+              displayValue: 'ⓕ',
+              valueType: 'function',
               heapReferenceId: existing.id,
               pointerColor: existing.color,
             };
           }
         }
         const heapObj = this.addHeapObject(
-          "function",
-          "ⓕ",
+          'function',
+          'ⓕ',
           undefined,
-          value.source,
+          value.source
         );
         this.objectHeapMap.set(value, heapObj.id);
         // Attach closure scope if this function has captured envs
         const closureScope = this.buildClosureScopeEntries(
-          value.capturedEnvMeta,
+          value.capturedEnvMeta
         );
         if (closureScope.length > 0) {
           heapObj.closureScope = closureScope;
@@ -1460,16 +1447,16 @@ export class Interpreter {
         }
         return {
           value,
-          displayValue: "ⓕ",
-          valueType: "function",
+          displayValue: 'ⓕ',
+          valueType: 'function',
           heapReferenceId: heapObj.id,
           pointerColor: heapObj.color,
         };
       }
       return {
         value,
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
       };
     }
 
@@ -1481,8 +1468,8 @@ export class Interpreter {
         if (existing) {
           return {
             value,
-            displayValue: "[Pointer]",
-            valueType: "object",
+            displayValue: '[Pointer]',
+            valueType: 'object',
             heapReferenceId: existing.id,
             pointerColor: existing.color,
           };
@@ -1501,27 +1488,27 @@ export class Interpreter {
       });
 
       const label = generateObjectLabel(value);
-      const heapObj = this.addHeapObject("array", label, properties);
+      const heapObj = this.addHeapObject('array', label, properties);
       this.objectHeapMap.set(value, heapObj.id);
 
       return {
         value,
-        displayValue: "[Pointer]",
-        valueType: "object",
+        displayValue: '[Pointer]',
+        valueType: 'object',
         heapReferenceId: heapObj.id,
         pointerColor: heapObj.color,
       };
     }
 
-    if (typeof value === "object" && value !== null) {
+    if (typeof value === 'object' && value !== null) {
       const existingId = this.objectHeapMap.get(value);
       if (existingId) {
         const existing = this.heap.find((h) => h.id === existingId);
         if (existing) {
           return {
             value,
-            displayValue: "[Pointer]",
-            valueType: "object",
+            displayValue: '[Pointer]',
+            valueType: 'object',
             heapReferenceId: existing.id,
             pointerColor: existing.color,
           };
@@ -1529,7 +1516,7 @@ export class Interpreter {
       }
 
       const properties: HeapObjectProperty[] = Object.entries(
-        value as Record<string, unknown>,
+        value as Record<string, unknown>
       ).map(([key, val]) => {
         const propResolved = this.resolveValueForMemoryWithoutHeap(val);
         return {
@@ -1542,13 +1529,13 @@ export class Interpreter {
       });
 
       const label = generateObjectLabel(value);
-      const heapObj = this.addHeapObject("object", label, properties);
+      const heapObj = this.addHeapObject('object', label, properties);
       this.objectHeapMap.set(value, heapObj.id);
 
       return {
         value,
-        displayValue: "[Pointer]",
-        valueType: "object",
+        displayValue: '[Pointer]',
+        valueType: 'object',
         heapReferenceId: heapObj.id,
         pointerColor: heapObj.color,
       };
@@ -1565,7 +1552,7 @@ export class Interpreter {
     const valueType = getValueType(value);
     const display = displayValue(value);
 
-    if (valueType === "primitive") {
+    if (valueType === 'primitive') {
       return {
         value,
         displayValue: display,
@@ -1575,11 +1562,11 @@ export class Interpreter {
 
     // For nested objects, we check if they already exist in the heap
     // For simplicity, just display placeholders
-    if (valueType === "function") {
+    if (valueType === 'function') {
       return {
         value,
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
       };
     }
 
@@ -1587,49 +1574,49 @@ export class Interpreter {
       return {
         value,
         displayValue: generateObjectLabel(value),
-        valueType: "object",
+        valueType: 'object',
       };
     }
 
     return {
       value,
       displayValue: generateObjectLabel(value),
-      valueType: "object",
+      valueType: 'object',
     };
   }
 
   private isFunctionValue(value: unknown): value is FunctionValue {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isFunction" in value &&
+      '__isFunction' in value &&
       (value as FunctionValue).__isFunction === true
     );
   }
 
   private isClassValue(value: unknown): value is ClassValue {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isClass" in value &&
+      '__isClass' in value &&
       (value as ClassValue).__isClass === true
     );
   }
 
   private isBuiltinFn(value: unknown): value is BuiltinFn {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isBuiltin" in value &&
+      '__isBuiltin' in value &&
       (value as BuiltinFn).__isBuiltin === true
     );
   }
 
   private isGeneratorWrapper(value: unknown): value is GeneratorWrapper {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isGenerator" in value &&
+      '__isGenerator' in value &&
       (value as GeneratorWrapper).__isGenerator === true
     );
   }
@@ -1655,57 +1642,57 @@ export class Interpreter {
     if (this.stepIndex >= MAX_STEPS) return;
 
     switch (node.type) {
-      case "VariableDeclaration":
+      case 'VariableDeclaration':
         this.visitVariableDeclaration(node as VariableDeclarationNode);
         break;
-      case "FunctionDeclaration":
+      case 'FunctionDeclaration':
         this.visitFunctionDeclaration(node as FunctionDeclarationNode);
         break;
-      case "ExpressionStatement":
+      case 'ExpressionStatement':
         this.visitExpressionStatement(node as ExpressionStatementNode);
         break;
-      case "IfStatement":
+      case 'IfStatement':
         this.visitIfStatement(node as IfStatementNode);
         break;
-      case "ForStatement":
+      case 'ForStatement':
         this.visitForStatement(node as ForStatementNode);
         break;
-      case "ForOfStatement":
+      case 'ForOfStatement':
         this.visitForOfStatement(node as ForOfStatementNode);
         break;
-      case "WhileStatement":
+      case 'WhileStatement':
         this.visitWhileStatement(node as WhileStatementNode);
         break;
-      case "BlockStatement":
+      case 'BlockStatement':
         this.visitBlockStatement(node as BlockStatementNode);
         break;
-      case "ReturnStatement":
+      case 'ReturnStatement':
         this.visitReturnStatement(node as ReturnStatementNode);
         break;
-      case "TryStatement":
+      case 'TryStatement':
         this.visitTryStatement(node as TryStatementNode);
         break;
-      case "ThrowStatement":
+      case 'ThrowStatement':
         this.visitThrowStatement(node as ThrowStatementNode);
         break;
-      case "BreakStatement":
+      case 'BreakStatement':
         this.visitBreakStatement(node as BreakStatementNode);
         break;
-      case "ContinueStatement":
+      case 'ContinueStatement':
         this.visitContinueStatement(node as ContinueStatementNode);
         break;
-      case "ClassDeclaration":
+      case 'ClassDeclaration':
         this.visitClassDeclaration(node as ClassDeclarationNode);
         break;
-      case "ImportDeclaration":
+      case 'ImportDeclaration':
         this.visitImportDeclaration(node as ImportDeclarationNode);
         break;
-      case "ExportNamedDeclaration":
+      case 'ExportNamedDeclaration':
         this.visitExportNamedDeclaration(node as ExportNamedDeclarationNode);
         break;
-      case "ExportDefaultDeclaration":
+      case 'ExportDefaultDeclaration':
         this.visitExportDefaultDeclaration(
-          node as ExportDefaultDeclarationNode,
+          node as ExportDefaultDeclarationNode
         );
         break;
       default:
@@ -1716,7 +1703,7 @@ export class Interpreter {
 
   private visitVariableDeclaration(
     node: VariableDeclarationNode,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     const kind = node.kind;
 
@@ -1724,31 +1711,31 @@ export class Interpreter {
       const code = extractSource(this.sourceCode, declarator);
 
       // Handle different pattern types
-      if (declarator.id.type === "Identifier") {
+      if (declarator.id.type === 'Identifier') {
         // Simple variable declaration
         this.handleSimpleVariableDeclaration(
           declarator,
           kind,
           code,
-          isExported,
+          isExported
         );
-      } else if (declarator.id.type === "ObjectPattern") {
+      } else if (declarator.id.type === 'ObjectPattern') {
         // Object destructuring
         this.handleObjectDestructuring(
           declarator.id as ObjectPatternNode,
           declarator.init,
           kind,
           code,
-          isExported,
+          isExported
         );
-      } else if (declarator.id.type === "ArrayPattern") {
+      } else if (declarator.id.type === 'ArrayPattern') {
         // Array destructuring
         this.handleArrayDestructuring(
           declarator.id as ArrayPatternNode,
           declarator.init,
           kind,
           code,
-          isExported,
+          isExported
         );
       }
     }
@@ -1758,7 +1745,7 @@ export class Interpreter {
     declarator: VariableDeclaratorNode,
     kind: string,
     code: string,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     const name = (declarator.id as IdentifierNode).name;
     let value: unknown = undefined;
@@ -1767,8 +1754,8 @@ export class Interpreter {
     if (declarator.init) {
       // Check for function expression or arrow function
       if (
-        declarator.init.type === "FunctionExpression" ||
-        declarator.init.type === "ArrowFunctionExpression"
+        declarator.init.type === 'FunctionExpression' ||
+        declarator.init.type === 'ArrowFunctionExpression'
       ) {
         const funcNode = declarator.init as
           | FunctionExpressionNode
@@ -1778,22 +1765,22 @@ export class Interpreter {
 
         // For arrow functions, prefix with the declaration so the label can be extracted
         const heapFunctionSource =
-          funcNode.type === "ArrowFunctionExpression"
+          funcNode.type === 'ArrowFunctionExpression'
             ? `${kind} ${name} = ${funcValue.source}`
             : funcValue.source;
 
         // Create heap object for function
         const heapObj = this.addHeapObject(
-          "function",
-          "ⓕ",
+          'function',
+          'ⓕ',
           undefined,
-          heapFunctionSource,
+          heapFunctionSource
         );
         this.objectHeapMap.set(funcValue, heapObj.id);
 
         // Attach closure scope to heap object if inside a nested scope
         const closureScope = this.buildClosureScopeEntries(
-          funcValue.capturedEnvMeta,
+          funcValue.capturedEnvMeta
         );
         if (closureScope.length > 0) {
           heapObj.closureScope = closureScope;
@@ -1802,8 +1789,8 @@ export class Interpreter {
 
         resolved = {
           value: funcValue,
-          displayValue: "ⓕ",
-          valueType: "function",
+          displayValue: 'ⓕ',
+          valueType: 'function',
           heapReferenceId: heapObj.id,
           pointerColor: heapObj.color,
         };
@@ -1815,8 +1802,8 @@ export class Interpreter {
       value = undefined;
       resolved = {
         value: undefined,
-        displayValue: "undefined",
-        valueType: "primitive",
+        displayValue: 'undefined',
+        valueType: 'primitive',
       };
     }
 
@@ -1860,8 +1847,13 @@ export class Interpreter {
     this.snapshot(
       this.getLine(declarator),
       this.getColumn(declarator),
-      description.declaringVariable({ kind, name, displayValue: resolved.displayValue, isExported }),
-      code,
+      description.declaringVariable({
+        kind,
+        name,
+        displayValue: resolved.displayValue,
+        isExported,
+      }),
+      code
     );
   }
 
@@ -1870,27 +1862,27 @@ export class Interpreter {
     init: ExpressionNode | null,
     kind: string,
     code: string,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     // Evaluate the source object
     const sourceValue = init ? this.evaluateExpression(init) : undefined;
     const sourceObj = (sourceValue as Record<string, unknown>) ?? {};
     const sourceName =
-      init?.type === "Identifier" ? (init as IdentifierNode).name : "object";
+      init?.type === 'Identifier' ? (init as IdentifierNode).name : 'object';
 
     // Process each property in the pattern
     for (const prop of pattern.properties) {
-      if (prop.type === "RestElement") {
+      if (prop.type === 'RestElement') {
         // Handle ...rest
         const restNode = prop as RestElementNode;
         const restName = (restNode.argument as IdentifierNode).name;
 
         // Collect remaining properties (not already destructured)
         const usedKeys = pattern.properties
-          .filter((p) => p.type === "Property")
+          .filter((p) => p.type === 'Property')
           .map((p) => {
             const propNode = p as PropertyNode;
-            return propNode.key.type === "Identifier"
+            return propNode.key.type === 'Identifier'
               ? (propNode.key as IdentifierNode).name
               : String((propNode.key as LiteralNode).value);
           });
@@ -1923,8 +1915,8 @@ export class Interpreter {
         this.snapshot(
           this.getLine(prop),
           this.getColumn(prop),
-          description.destructuringRest({ restName, kind: "object" }),
-          code,
+          description.destructuringRest({ restName, kind: 'object' }),
+          code
         );
         continue;
       }
@@ -1932,7 +1924,7 @@ export class Interpreter {
       // Regular property
       const propNode = prop as PropertyNode;
       const keyName =
-        propNode.key.type === "Identifier"
+        propNode.key.type === 'Identifier'
           ? (propNode.key as IdentifierNode).name
           : String((propNode.key as LiteralNode).value);
 
@@ -1942,14 +1934,14 @@ export class Interpreter {
       const valuePattern = propNode.value;
 
       // Handle rename: { name: firstName }
-      if (valuePattern.type === "Identifier") {
+      if (valuePattern.type === 'Identifier') {
         varName = (valuePattern as IdentifierNode).name;
-      } else if (valuePattern.type === "AssignmentPattern") {
+      } else if (valuePattern.type === 'AssignmentPattern') {
         // Handle default: { x = 10 }
         const assignPattern = valuePattern as AssignmentPatternNode;
         varName = (assignPattern.left as IdentifierNode).name;
         defaultValue = this.evaluateExpression(assignPattern.right);
-      } else if (valuePattern.type === "ObjectPattern") {
+      } else if (valuePattern.type === 'ObjectPattern') {
         // Nested object destructuring: { address: { city } }
         const nestedValue = sourceObj[keyName] as
           | Record<string, unknown>
@@ -1959,17 +1951,17 @@ export class Interpreter {
           null,
           kind,
           code,
-          isExported,
+          isExported
         );
         // Manually set the source for nested destructuring
         const nestedPattern = valuePattern as ObjectPatternNode;
         for (const nestedProp of nestedPattern.properties) {
-          if (nestedProp.type === "Property") {
+          if (nestedProp.type === 'Property') {
             const nestedKeyName =
-              (nestedProp as PropertyNode).key.type === "Identifier"
+              (nestedProp as PropertyNode).key.type === 'Identifier'
                 ? ((nestedProp as PropertyNode).key as IdentifierNode).name
                 : String(
-                    ((nestedProp as PropertyNode).key as LiteralNode).value,
+                    ((nestedProp as PropertyNode).key as LiteralNode).value
                   );
             const nestedVarName = (
               (nestedProp as PropertyNode).value as IdentifierNode
@@ -1979,7 +1971,7 @@ export class Interpreter {
           }
         }
         continue;
-      } else if (valuePattern.type === "ArrayPattern") {
+      } else if (valuePattern.type === 'ArrayPattern') {
         // Nested array destructuring
         const nestedValue = sourceObj[keyName] as unknown[] | undefined;
         this.handleArrayDestructuringWithSource(
@@ -1987,7 +1979,7 @@ export class Interpreter {
           nestedValue ?? [],
           kind,
           code,
-          isExported,
+          isExported
         );
         continue;
       } else {
@@ -2025,8 +2017,12 @@ export class Interpreter {
       this.snapshot(
         this.getLine(prop),
         this.getColumn(prop),
-        description.destructuringVariable({ varName, displayValue: resolved.displayValue, sourceName }),
-        code,
+        description.destructuringVariable({
+          varName,
+          displayValue: resolved.displayValue,
+          sourceName,
+        }),
+        code
       );
     }
   }
@@ -2036,7 +2032,7 @@ export class Interpreter {
     init: ExpressionNode | null,
     kind: string,
     code: string,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     // Evaluate the source array
     const sourceValue = init ? this.evaluateExpression(init) : [];
@@ -2047,7 +2043,7 @@ export class Interpreter {
       sourceArr,
       kind,
       code,
-      isExported,
+      isExported
     );
   }
 
@@ -2056,7 +2052,7 @@ export class Interpreter {
     sourceArr: unknown[],
     kind: string,
     code: string,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     // Process each element in the pattern
     for (let i = 0; i < pattern.elements.length; i++) {
@@ -2067,7 +2063,7 @@ export class Interpreter {
         continue;
       }
 
-      if (element.type === "RestElement") {
+      if (element.type === 'RestElement') {
         // Handle ...rest
         const restNode = element as RestElementNode;
         const restName = (restNode.argument as IdentifierNode).name;
@@ -2093,8 +2089,8 @@ export class Interpreter {
         this.snapshot(
           this.getLine(element),
           this.getColumn(element),
-          description.destructuringRest({ restName, kind: "array" }),
-          code,
+          description.destructuringRest({ restName, kind: 'array' }),
+          code
         );
         break; // Rest must be last
       }
@@ -2102,13 +2098,13 @@ export class Interpreter {
       let varName: string;
       let defaultValue: unknown = undefined;
 
-      if (element.type === "Identifier") {
+      if (element.type === 'Identifier') {
         varName = (element as IdentifierNode).name;
-      } else if (element.type === "AssignmentPattern") {
+      } else if (element.type === 'AssignmentPattern') {
         const assignPattern = element as AssignmentPatternNode;
         varName = (assignPattern.left as IdentifierNode).name;
         defaultValue = this.evaluateExpression(assignPattern.right);
-      } else if (element.type === "ObjectPattern") {
+      } else if (element.type === 'ObjectPattern') {
         // Nested object destructuring in array
         const nestedValue = sourceArr[i] as Record<string, unknown> | undefined;
         this.handleObjectDestructuringWithSource(
@@ -2116,10 +2112,10 @@ export class Interpreter {
           nestedValue ?? {},
           kind,
           code,
-          isExported,
+          isExported
         );
         continue;
-      } else if (element.type === "ArrayPattern") {
+      } else if (element.type === 'ArrayPattern') {
         // Nested array destructuring
         const nestedValue = sourceArr[i] as unknown[] | undefined;
         this.handleArrayDestructuringWithSource(
@@ -2127,7 +2123,7 @@ export class Interpreter {
           nestedValue ?? [],
           kind,
           code,
-          isExported,
+          isExported
         );
         continue;
       } else {
@@ -2162,8 +2158,11 @@ export class Interpreter {
       this.snapshot(
         this.getLine(element),
         this.getColumn(element),
-        description.destructuringVariable({ varName, displayValue: resolved.displayValue }),
-        code,
+        description.destructuringVariable({
+          varName,
+          displayValue: resolved.displayValue,
+        }),
+        code
       );
     }
   }
@@ -2173,18 +2172,18 @@ export class Interpreter {
     sourceObj: Record<string, unknown>,
     kind: string,
     code: string,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     for (const prop of pattern.properties) {
-      if (prop.type === "RestElement") {
+      if (prop.type === 'RestElement') {
         const restNode = prop as RestElementNode;
         const restName = (restNode.argument as IdentifierNode).name;
 
         const usedKeys = pattern.properties
-          .filter((p) => p.type === "Property")
+          .filter((p) => p.type === 'Property')
           .map((p) => {
             const propNode = p as PropertyNode;
-            return propNode.key.type === "Identifier"
+            return propNode.key.type === 'Identifier'
               ? (propNode.key as IdentifierNode).name
               : String((propNode.key as LiteralNode).value);
           });
@@ -2216,15 +2215,15 @@ export class Interpreter {
         this.snapshot(
           this.getLine(prop),
           this.getColumn(prop),
-          description.destructuringRest({ restName, kind: "object" }),
-          code,
+          description.destructuringRest({ restName, kind: 'object' }),
+          code
         );
         continue;
       }
 
       const propNode = prop as PropertyNode;
       const keyName =
-        propNode.key.type === "Identifier"
+        propNode.key.type === 'Identifier'
           ? (propNode.key as IdentifierNode).name
           : String((propNode.key as LiteralNode).value);
 
@@ -2232,13 +2231,13 @@ export class Interpreter {
       let defaultValue: unknown = undefined;
       const valuePattern = propNode.value;
 
-      if (valuePattern.type === "Identifier") {
+      if (valuePattern.type === 'Identifier') {
         varName = (valuePattern as IdentifierNode).name;
-      } else if (valuePattern.type === "AssignmentPattern") {
+      } else if (valuePattern.type === 'AssignmentPattern') {
         const assignPattern = valuePattern as AssignmentPatternNode;
         varName = (assignPattern.left as IdentifierNode).name;
         defaultValue = this.evaluateExpression(assignPattern.right);
-      } else if (valuePattern.type === "ObjectPattern") {
+      } else if (valuePattern.type === 'ObjectPattern') {
         const nestedValue = sourceObj[keyName] as
           | Record<string, unknown>
           | undefined;
@@ -2247,17 +2246,17 @@ export class Interpreter {
           nestedValue ?? {},
           kind,
           code,
-          isExported,
+          isExported
         );
         continue;
-      } else if (valuePattern.type === "ArrayPattern") {
+      } else if (valuePattern.type === 'ArrayPattern') {
         const nestedValue = sourceObj[keyName] as unknown[] | undefined;
         this.handleArrayDestructuringWithSource(
           valuePattern as ArrayPatternNode,
           nestedValue ?? [],
           kind,
           code,
-          isExported,
+          isExported
         );
         continue;
       } else {
@@ -2290,8 +2289,11 @@ export class Interpreter {
       this.snapshot(
         this.getLine(prop),
         this.getColumn(prop),
-        description.destructuringVariable({ varName, displayValue: resolved.displayValue }),
-        code,
+        description.destructuringVariable({
+          varName,
+          displayValue: resolved.displayValue,
+        }),
+        code
       );
     }
   }
@@ -2299,7 +2301,7 @@ export class Interpreter {
   private addToCurrentScope(
     name: string,
     value: unknown,
-    kind: VariableKind,
+    kind: VariableKind
   ): void {
     const currentScope = this.scopes[this.scopes.length - 1];
     if (currentScope) {
@@ -2317,7 +2319,7 @@ export class Interpreter {
    */
   private handleParameterDestructuring(
     funcValue: FunctionValue,
-    args: unknown[],
+    args: unknown[]
   ): void {
     const paramNodes = funcValue.paramNodes;
     if (!paramNodes) return;
@@ -2326,11 +2328,14 @@ export class Interpreter {
       const paramNode = paramNodes[i];
       const argValue = args[i];
 
-      if (paramNode.type === "ObjectPattern") {
+      if (paramNode.type === 'ObjectPattern') {
         this.destructureObjectParam(paramNode as ObjectPatternNode, argValue);
-      } else if (paramNode.type === "ArrayPattern") {
+      } else if (paramNode.type === 'ArrayPattern') {
         this.destructureArrayParam(paramNode as ArrayPatternNode, argValue);
-      } else if (paramNode.type === "AssignmentPattern" && argValue === undefined) {
+      } else if (
+        paramNode.type === 'AssignmentPattern' &&
+        argValue === undefined
+      ) {
         // Default parameter: apply default value when argument is missing/undefined
         const assignPattern = paramNode as AssignmentPatternNode;
         const varName = (assignPattern.left as IdentifierNode).name;
@@ -2355,20 +2360,20 @@ export class Interpreter {
 
   private destructureObjectParam(
     pattern: ObjectPatternNode,
-    value: unknown,
+    value: unknown
   ): void {
     const sourceObj = (value as Record<string, unknown>) ?? {};
 
     for (const prop of pattern.properties) {
-      if (prop.type === "RestElement") {
+      if (prop.type === 'RestElement') {
         const restNode = prop as RestElementNode;
         const restName = (restNode.argument as IdentifierNode).name;
 
         const usedKeys = pattern.properties
-          .filter((p) => p.type === "Property")
+          .filter((p) => p.type === 'Property')
           .map((p) => {
             const propNode = p as PropertyNode;
-            return propNode.key.type === "Identifier"
+            return propNode.key.type === 'Identifier'
               ? (propNode.key as IdentifierNode).name
               : String((propNode.key as LiteralNode).value);
           });
@@ -2382,11 +2387,11 @@ export class Interpreter {
 
         const resolved = this.resolveValueForMemory(restObj);
         this.setVariable(restName, restObj, true);
-        this.recordVarKind(restName, "param");
+        this.recordVarKind(restName, 'param');
 
         const entry: MemoryEntry = {
           name: restName,
-          kind: "param",
+          kind: 'param',
           valueType: resolved.valueType,
           displayValue: resolved.displayValue,
           heapReferenceId: resolved.heapReferenceId,
@@ -2394,13 +2399,13 @@ export class Interpreter {
           isDestructured: true,
         };
         this.addMemoryEntry(this.getCurrentFrameId(), entry);
-        this.addToCurrentScope(restName, restObj, "param" as VariableKind);
+        this.addToCurrentScope(restName, restObj, 'param' as VariableKind);
         continue;
       }
 
       const propNode = prop as PropertyNode;
       const keyName =
-        propNode.key.type === "Identifier"
+        propNode.key.type === 'Identifier'
           ? (propNode.key as IdentifierNode).name
           : String((propNode.key as LiteralNode).value);
 
@@ -2408,22 +2413,22 @@ export class Interpreter {
       let defaultValue: unknown = undefined;
       const valuePattern = propNode.value;
 
-      if (valuePattern.type === "Identifier") {
+      if (valuePattern.type === 'Identifier') {
         varName = (valuePattern as IdentifierNode).name;
-      } else if (valuePattern.type === "AssignmentPattern") {
+      } else if (valuePattern.type === 'AssignmentPattern') {
         const assignPattern = valuePattern as AssignmentPatternNode;
         varName = (assignPattern.left as IdentifierNode).name;
         defaultValue = this.evaluateExpression(assignPattern.right);
-      } else if (valuePattern.type === "ObjectPattern") {
+      } else if (valuePattern.type === 'ObjectPattern') {
         this.destructureObjectParam(
           valuePattern as ObjectPatternNode,
-          sourceObj[keyName],
+          sourceObj[keyName]
         );
         continue;
-      } else if (valuePattern.type === "ArrayPattern") {
+      } else if (valuePattern.type === 'ArrayPattern') {
         this.destructureArrayParam(
           valuePattern as ArrayPatternNode,
-          sourceObj[keyName] as unknown[],
+          sourceObj[keyName] as unknown[]
         );
         continue;
       } else {
@@ -2437,11 +2442,11 @@ export class Interpreter {
 
       const resolved = this.resolveValueForMemory(paramValue);
       this.setVariable(varName, paramValue, true);
-      this.recordVarKind(varName, "param");
+      this.recordVarKind(varName, 'param');
 
       const entry: MemoryEntry = {
         name: varName,
-        kind: "param",
+        kind: 'param',
         valueType: resolved.valueType,
         displayValue: resolved.displayValue,
         heapReferenceId: resolved.heapReferenceId,
@@ -2449,13 +2454,13 @@ export class Interpreter {
         isDestructured: true,
       };
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
-      this.addToCurrentScope(varName, paramValue, "param" as VariableKind);
+      this.addToCurrentScope(varName, paramValue, 'param' as VariableKind);
     }
   }
 
   private destructureArrayParam(
     pattern: ArrayPatternNode,
-    value: unknown,
+    value: unknown
   ): void {
     const sourceArr = (value as unknown[]) ?? [];
 
@@ -2463,18 +2468,18 @@ export class Interpreter {
       const element = pattern.elements[i];
       if (element === null) continue;
 
-      if (element.type === "RestElement") {
+      if (element.type === 'RestElement') {
         const restNode = element as RestElementNode;
         const restName = (restNode.argument as IdentifierNode).name;
         const restArr = sourceArr.slice(i);
 
         const resolved = this.resolveValueForMemory(restArr);
         this.setVariable(restName, restArr, true);
-        this.recordVarKind(restName, "param");
+        this.recordVarKind(restName, 'param');
 
         const entry: MemoryEntry = {
           name: restName,
-          kind: "param",
+          kind: 'param',
           valueType: resolved.valueType,
           displayValue: resolved.displayValue,
           heapReferenceId: resolved.heapReferenceId,
@@ -2482,26 +2487,26 @@ export class Interpreter {
           isDestructured: true,
         };
         this.addMemoryEntry(this.getCurrentFrameId(), entry);
-        this.addToCurrentScope(restName, restArr, "param" as VariableKind);
+        this.addToCurrentScope(restName, restArr, 'param' as VariableKind);
         break;
       }
 
       let varName: string;
       let defaultValue: unknown = undefined;
 
-      if (element.type === "Identifier") {
+      if (element.type === 'Identifier') {
         varName = (element as IdentifierNode).name;
-      } else if (element.type === "AssignmentPattern") {
+      } else if (element.type === 'AssignmentPattern') {
         const assignPattern = element as AssignmentPatternNode;
         varName = (assignPattern.left as IdentifierNode).name;
         defaultValue = this.evaluateExpression(assignPattern.right);
-      } else if (element.type === "ObjectPattern") {
+      } else if (element.type === 'ObjectPattern') {
         this.destructureObjectParam(element as ObjectPatternNode, sourceArr[i]);
         continue;
-      } else if (element.type === "ArrayPattern") {
+      } else if (element.type === 'ArrayPattern') {
         this.destructureArrayParam(
           element as ArrayPatternNode,
-          sourceArr[i] as unknown[],
+          sourceArr[i] as unknown[]
         );
         continue;
       } else {
@@ -2515,11 +2520,11 @@ export class Interpreter {
 
       const resolved = this.resolveValueForMemory(paramValue);
       this.setVariable(varName, paramValue, true);
-      this.recordVarKind(varName, "param");
+      this.recordVarKind(varName, 'param');
 
       const entry: MemoryEntry = {
         name: varName,
-        kind: "param",
+        kind: 'param',
         valueType: resolved.valueType,
         displayValue: resolved.displayValue,
         heapReferenceId: resolved.heapReferenceId,
@@ -2527,13 +2532,13 @@ export class Interpreter {
         isDestructured: true,
       };
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
-      this.addToCurrentScope(varName, paramValue, "param" as VariableKind);
+      this.addToCurrentScope(varName, paramValue, 'param' as VariableKind);
     }
   }
 
   private visitFunctionDeclaration(
     node: FunctionDeclarationNode,
-    isExported: boolean = false,
+    isExported: boolean = false
   ): void {
     const name = node.id.name;
     const code = extractSource(this.sourceCode, node);
@@ -2544,23 +2549,23 @@ export class Interpreter {
 
     // Store in environment
     this.setVariable(name, funcValue, true);
-    this.recordVarKind(name, "function");
+    this.recordVarKind(name, 'function');
 
     // Display value differs for generators
-    const funcDisplayValue = isGenerator ? "ⓕ*" : "ⓕ";
+    const funcDisplayValue = isGenerator ? 'ⓕ*' : 'ⓕ';
 
     // Create heap object
     const heapObj = this.addHeapObject(
-      "function",
+      'function',
       funcDisplayValue,
       undefined,
-      funcValue.source,
+      funcValue.source
     );
     this.objectHeapMap.set(funcValue, heapObj.id);
 
     // Attach closure scope to heap object if inside a nested scope
     const closureScope = this.buildClosureScopeEntries(
-      funcValue.capturedEnvMeta,
+      funcValue.capturedEnvMeta
     );
     if (closureScope.length > 0) {
       heapObj.closureScope = closureScope;
@@ -2570,8 +2575,8 @@ export class Interpreter {
     // Add to current frame's memory
     const entry: MemoryEntry = {
       name,
-      kind: "function",
-      valueType: "function",
+      kind: 'function',
+      valueType: 'function',
       displayValue: funcDisplayValue,
       heapReferenceId: heapObj.id,
       pointerColor: heapObj.color,
@@ -2586,7 +2591,7 @@ export class Interpreter {
       currentScope.variables.push({
         name,
         value: funcValue,
-        kind: "const" as VariableKind,
+        kind: 'const' as VariableKind,
       });
     }
 
@@ -2596,7 +2601,7 @@ export class Interpreter {
       currentFrame.scope.variables.push({
         name,
         value: funcValue,
-        kind: "const" as VariableKind,
+        kind: 'const' as VariableKind,
       });
     }
 
@@ -2608,7 +2613,7 @@ export class Interpreter {
         isAsync: node.async,
         isGenerator,
       }),
-      code,
+      code
     );
   }
 
@@ -2616,7 +2621,7 @@ export class Interpreter {
     const name = node.id.name;
     const code = extractSource(this.sourceCode, node);
     const superClassName = node.superClass
-      ? node.superClass.type === "Identifier"
+      ? node.superClass.type === 'Identifier'
         ? (node.superClass as IdentifierNode).name
         : null
       : null;
@@ -2629,7 +2634,7 @@ export class Interpreter {
 
     for (const member of node.body.body) {
       const methodName =
-        member.key.type === "Identifier"
+        member.key.type === 'Identifier'
           ? (member.key as IdentifierNode).name
           : String((member.key as LiteralNode).value);
       const params = member.value.params.map((p) => (p as IdentifierNode).name);
@@ -2640,10 +2645,10 @@ export class Interpreter {
         params,
         body,
         isStatic: member.static,
-        isConstructor: member.kind === "constructor",
+        isConstructor: member.kind === 'constructor',
       };
 
-      if (member.kind === "constructor") {
+      if (member.kind === 'constructor') {
         constructorMethod = cm;
       } else if (member.static) {
         staticMethods.push(cm);
@@ -2656,32 +2661,32 @@ export class Interpreter {
     const classProps: HeapObjectProperty[] = [];
     if (constructorMethod) {
       classProps.push({
-        key: "constructor",
-        displayValue: "ⓕ",
-        valueType: "function",
+        key: 'constructor',
+        displayValue: 'ⓕ',
+        valueType: 'function',
       });
     }
     for (const m of instanceMethods) {
       classProps.push({
         key: `prototype.${m.name}`,
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
       });
     }
     for (const m of staticMethods) {
       classProps.push({
         key: `static ${m.name}`,
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
       });
     }
 
     // Create class HeapObject
     const heapObj = this.addHeapObject(
-      "function",
+      'function',
       `class ${name}`,
       classProps,
-      code,
+      code
     );
 
     // Add [[Prototype]] link if extends
@@ -2689,13 +2694,13 @@ export class Interpreter {
       const superClass = this.classRegistry.get(superClassName);
       if (superClass) {
         const superHeap = this.heap.find(
-          (h) => h.id === superClass.heapObjectId,
+          (h) => h.id === superClass.heapObjectId
         );
         heapObj.properties = heapObj.properties ?? [];
         heapObj.properties.push({
-          key: "[[Prototype]]",
+          key: '[[Prototype]]',
           displayValue: superClassName,
-          valueType: "object",
+          valueType: 'object',
           heapReferenceId: superHeap?.id,
           pointerColor: superHeap?.color,
         });
@@ -2715,7 +2720,7 @@ export class Interpreter {
 
     // Store in environment and registry
     this.setVariable(name, classVal, true);
-    this.recordVarKind(name, "function");
+    this.recordVarKind(name, 'function');
     this.classRegistry.set(name, classVal);
 
     // Evaluate static property initialisers (class fields with static keyword are
@@ -2739,9 +2744,9 @@ export class Interpreter {
     // Add class to memory as a function entry
     const entry: MemoryEntry = {
       name,
-      kind: "function",
-      valueType: "function",
-      displayValue: "ⓕ",
+      kind: 'function',
+      valueType: 'function',
+      displayValue: 'ⓕ',
       heapReferenceId: heapObj.id,
       pointerColor: heapObj.color,
     };
@@ -2753,7 +2758,7 @@ export class Interpreter {
       currentScope.variables.push({
         name,
         value: classVal,
-        kind: "const" as VariableKind,
+        kind: 'const' as VariableKind,
       });
     }
     const currentFrame = this.callStack[this.callStack.length - 1];
@@ -2761,7 +2766,7 @@ export class Interpreter {
       currentFrame.scope.variables.push({
         name,
         value: classVal,
-        kind: "const" as VariableKind,
+        kind: 'const' as VariableKind,
       });
     }
 
@@ -2769,7 +2774,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.declaringClass({ name, superClassName }),
-      code,
+      code
     );
   }
 
@@ -2784,11 +2789,11 @@ export class Interpreter {
       const localName = specifier.local.name;
       let importedName = localName;
 
-      if (specifier.type === "ImportDefaultSpecifier") {
-        importedName = "default";
-      } else if (specifier.type === "ImportNamespaceSpecifier") {
-        importedName = "*";
-      } else if (specifier.type === "ImportSpecifier" && specifier.imported) {
+      if (specifier.type === 'ImportDefaultSpecifier') {
+        importedName = 'default';
+      } else if (specifier.type === 'ImportNamespaceSpecifier') {
+        importedName = '*';
+      } else if (specifier.type === 'ImportSpecifier' && specifier.imported) {
         importedName = specifier.imported.name;
       }
 
@@ -2797,26 +2802,26 @@ export class Interpreter {
 
       // Store in environment
       this.setVariable(localName, placeholderValue, true);
-      this.recordVarKind(localName, "const");
+      this.recordVarKind(localName, 'const');
 
       // Add to memory as a primitive placeholder
       const entry: MemoryEntry = {
         name: localName,
-        kind: "const",
-        valueType: "primitive",
+        kind: 'const',
+        valueType: 'primitive',
         displayValue: `"[imported]"`,
       };
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
-      this.addToCurrentScope(localName, placeholderValue, "const");
+      this.addToCurrentScope(localName, placeholderValue, 'const');
     }
 
     const specifierNames = node.specifiers
       .map((s) => {
-        if (s.type === "ImportDefaultSpecifier") return s.local.name;
-        if (s.type === "ImportNamespaceSpecifier")
+        if (s.type === 'ImportDefaultSpecifier') return s.local.name;
+        if (s.type === 'ImportNamespaceSpecifier')
           return `* as ${s.local.name}`;
         if (
-          s.type === "ImportSpecifier" &&
+          s.type === 'ImportSpecifier' &&
           s.imported &&
           s.imported.name !== s.local.name
         ) {
@@ -2824,13 +2829,13 @@ export class Interpreter {
         }
         return s.local.name;
       })
-      .join(", ");
+      .join(', ');
 
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
       description.importDeclaration({ specifierNames, source }),
-      code,
+      code
     );
   }
 
@@ -2839,19 +2844,19 @@ export class Interpreter {
 
     // If there's a declaration, handle it with isExported flag
     if (node.declaration) {
-      if (node.declaration.type === "VariableDeclaration") {
+      if (node.declaration.type === 'VariableDeclaration') {
         this.visitVariableDeclaration(
           node.declaration as VariableDeclarationNode,
-          true,
+          true
         );
         return;
-      } else if (node.declaration.type === "FunctionDeclaration") {
+      } else if (node.declaration.type === 'FunctionDeclaration') {
         this.visitFunctionDeclaration(
           node.declaration as FunctionDeclarationNode,
-          true,
+          true
         );
         return;
-      } else if (node.declaration.type === "ClassDeclaration") {
+      } else if (node.declaration.type === 'ClassDeclaration') {
         this.visitClassDeclaration(node.declaration as ClassDeclarationNode);
         // Mark the class as exported in memory
         const className = (node.declaration as ClassDeclarationNode).id.name;
@@ -2870,36 +2875,36 @@ export class Interpreter {
             ? `${s.local.name} as ${s.exported.name}`
             : s.local.name;
         })
-        .join(", ");
+        .join(', ');
 
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
         description.exportNamedDeclaration({ exportedNames }),
-        code,
+        code
       );
     }
   }
 
   private visitExportDefaultDeclaration(
-    node: ExportDefaultDeclarationNode,
+    node: ExportDefaultDeclarationNode
   ): void {
     const code = extractSource(this.sourceCode, node);
 
-    if (node.declaration.type === "FunctionDeclaration") {
+    if (node.declaration.type === 'FunctionDeclaration') {
       const funcNode = node.declaration as FunctionDeclarationNode;
-      const name = funcNode.id?.name ?? "default";
+      const name = funcNode.id?.name ?? 'default';
       this.visitFunctionDeclaration(funcNode, true);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
         description.exportDefaultFunction({ name }),
-        code,
+        code
       );
       return;
     }
 
-    if (node.declaration.type === "ClassDeclaration") {
+    if (node.declaration.type === 'ClassDeclaration') {
       const classNode = node.declaration as ClassDeclarationNode;
       const name = classNode.id.name;
       this.visitClassDeclaration(classNode);
@@ -2908,7 +2913,7 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.exportDefaultClass({ name }),
-        code,
+        code
       );
       return;
     }
@@ -2918,12 +2923,12 @@ export class Interpreter {
     const resolved = this.resolveValueForMemory(value);
 
     // Store as "default" export
-    this.setVariable("default", value, true);
-    this.recordVarKind("default", "const");
+    this.setVariable('default', value, true);
+    this.recordVarKind('default', 'const');
 
     const entry: MemoryEntry = {
-      name: "default",
-      kind: "const",
+      name: 'default',
+      kind: 'const',
       valueType: resolved.valueType,
       displayValue: resolved.displayValue,
       heapReferenceId: resolved.heapReferenceId,
@@ -2936,7 +2941,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.exportDefaultValue({ displayValue: resolved.displayValue }),
-      code,
+      code
     );
   }
 
@@ -2963,7 +2968,7 @@ export class Interpreter {
       this.getLine(node.test),
       this.getColumn(node.test),
       description.evaluatingIfCondition({ result: displayValue(testResult) }),
-      code,
+      code
     );
 
     if (testResult) {
@@ -2976,11 +2981,11 @@ export class Interpreter {
   private visitForStatement(node: ForStatementNode): void {
     // Determine if the init uses block-scoped let/const (requires per-iteration scope)
     const initDecl =
-      node.init?.type === "VariableDeclaration"
+      node.init?.type === 'VariableDeclaration'
         ? (node.init as VariableDeclarationNode)
         : null;
     const isBlockScoped =
-      initDecl?.kind === "let" || initDecl?.kind === "const";
+      initDecl?.kind === 'let' || initDecl?.kind === 'const';
     const iteratorNames: string[] =
       isBlockScoped && initDecl
         ? initDecl.declarations.map((d) => (d.id as IdentifierNode).name)
@@ -2988,7 +2993,7 @@ export class Interpreter {
 
     // Visit init (declares variable in the current env)
     if (node.init) {
-      if (node.init.type === "VariableDeclaration") {
+      if (node.init.type === 'VariableDeclaration') {
         this.visitVariableDeclaration(node.init as VariableDeclarationNode);
       } else {
         this.evaluateExpression(node.init as ExpressionNode);
@@ -3014,11 +3019,11 @@ export class Interpreter {
       if (isBlockScoped && iteratorNames.length > 0) {
         const outerEnv = this.getCurrentEnv();
         iterEnv = {};
-        const iterKinds: Record<string, VariableKind | "param" | "function"> =
+        const iterKinds: Record<string, VariableKind | 'param' | 'function'> =
           {};
         for (const name of iteratorNames) {
           iterEnv[name] = outerEnv[name];
-          iterKinds[name] = (initDecl!.kind as VariableKind) ?? "let";
+          iterKinds[name] = (initDecl!.kind as VariableKind) ?? 'let';
         }
         this.envStack.push(iterEnv);
         this.envKindsMap.set(iterEnv, iterKinds);
@@ -3028,7 +3033,7 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.forLoopIteration({ iteration }),
-        code,
+        code
       );
 
       // Execute body
@@ -3068,7 +3073,7 @@ export class Interpreter {
     }
 
     if (iteration >= MAX_LOOP_ITERATIONS) {
-      console.warn("For loop iteration limit reached");
+      console.warn('For loop iteration limit reached');
     }
   }
 
@@ -3086,7 +3091,7 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.whileLoopIteration({ iteration }),
-        code,
+        code
       );
 
       // Execute body
@@ -3108,7 +3113,7 @@ export class Interpreter {
     }
 
     if (iteration >= MAX_LOOP_ITERATIONS) {
-      console.warn("While loop iteration limit reached");
+      console.warn('While loop iteration limit reached');
     }
   }
 
@@ -3135,8 +3140,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.returningValue({ funcName, displayValue: displayValue(value) }),
-      code,
+      description.returningValue({
+        funcName,
+        displayValue: displayValue(value),
+      }),
+      code
     );
   }
 
@@ -3146,64 +3154,64 @@ export class Interpreter {
     if (this.stepIndex >= MAX_STEPS) return undefined;
 
     switch (node.type) {
-      case "Literal":
+      case 'Literal':
         return this.evaluateLiteral(node as LiteralNode);
-      case "Identifier":
+      case 'Identifier':
         return this.evaluateIdentifier(node as IdentifierNode);
-      case "BinaryExpression":
+      case 'BinaryExpression':
         return this.evaluateBinaryExpression(node as BinaryExpressionNode);
-      case "LogicalExpression":
+      case 'LogicalExpression':
         return this.evaluateLogicalExpression(node as LogicalExpressionNode);
-      case "UnaryExpression":
+      case 'UnaryExpression':
         return this.evaluateUnaryExpression(node as UnaryExpressionNode);
-      case "UpdateExpression":
+      case 'UpdateExpression':
         return this.evaluateUpdateExpression(node as UpdateExpressionNode);
-      case "AssignmentExpression":
+      case 'AssignmentExpression':
         return this.evaluateAssignment(node as AssignmentExpressionNode);
-      case "CallExpression":
+      case 'CallExpression':
         return this.evaluateCallExpression(node as CallExpressionNode);
-      case "MemberExpression":
+      case 'MemberExpression':
         return this.evaluateMemberExpression(node as MemberExpressionNode);
-      case "ObjectExpression":
+      case 'ObjectExpression':
         return this.evaluateObjectExpression(node as ObjectExpressionNode);
-      case "ArrayExpression":
+      case 'ArrayExpression':
         return this.evaluateArrayExpression(node as ArrayExpressionNode);
-      case "FunctionExpression":
+      case 'FunctionExpression':
         return this.createFunctionValue(node as FunctionExpressionNode);
-      case "ArrowFunctionExpression":
+      case 'ArrowFunctionExpression':
         return this.createFunctionValue(node as ArrowFunctionExpressionNode);
-      case "TemplateLiteral":
+      case 'TemplateLiteral':
         return this.evaluateTemplateLiteral(node as TemplateLiteralNode);
-      case "ConditionalExpression":
+      case 'ConditionalExpression':
         return this.evaluateConditionalExpression(
-          node as ConditionalExpressionNode,
+          node as ConditionalExpressionNode
         );
-      case "NewExpression":
+      case 'NewExpression':
         return this.evaluateNewExpression(node as NewExpressionNode);
-      case "AwaitExpression": {
+      case 'AwaitExpression': {
         // Reached only when await is evaluated outside visitAsyncFunctionBody
         // (e.g. inside a try block). Evaluate the argument and propagate rejection.
         const awaitArgValue = this.evaluateExpression(
-          (node as AwaitExpressionNode).argument,
+          (node as AwaitExpressionNode).argument
         );
         if (this.isPromiseWrapper(awaitArgValue)) {
           const p = this.promises.get(
-            (awaitArgValue as PromiseWrapper).promiseId,
+            (awaitArgValue as PromiseWrapper).promiseId
           );
-          if (p && p.state === "rejected") {
+          if (p && p.state === 'rejected') {
             // Signal as a thrown error — do NOT set hasReturned so that
             // visitTryStatement can intercept it via isThrownError(returnValue)
             this.returnValue = this.makeThrownError(p.result);
             return undefined;
           }
           // Fulfilled — return the resolved value
-          if (p && p.state === "fulfilled") {
+          if (p && p.state === 'fulfilled') {
             return p.result;
           }
         }
         return awaitArgValue;
       }
-      case "YieldExpression": {
+      case 'YieldExpression': {
         // YieldExpression is normally handled in executeGeneratorBody's findYieldInStatement
         // This case handles nested yield or yield in expressions
         const yieldNode = node as YieldExpressionNode;
@@ -3211,8 +3219,8 @@ export class Interpreter {
           ? this.evaluateExpression(yieldNode.argument)
           : undefined;
       }
-      case "ThisExpression":
-        return this.lookupVariable("this");
+      case 'ThisExpression':
+        return this.lookupVariable('this');
       default:
         console.warn(`Unsupported expression type: ${node.type}`);
         return undefined;
@@ -3232,45 +3240,45 @@ export class Interpreter {
     const right = this.evaluateExpression(node.right);
 
     switch (node.operator) {
-      case "+":
+      case '+':
         return (left as number) + (right as number);
-      case "-":
+      case '-':
         return (left as number) - (right as number);
-      case "*":
+      case '*':
         return (left as number) * (right as number);
-      case "/":
+      case '/':
         return (left as number) / (right as number);
-      case "%":
+      case '%':
         return (left as number) % (right as number);
-      case "**":
+      case '**':
         return (left as number) ** (right as number);
-      case "==":
+      case '==':
         return left == right;
-      case "!=":
+      case '!=':
         return left != right;
-      case "===":
+      case '===':
         return left === right;
-      case "!==":
+      case '!==':
         return left !== right;
-      case "<":
+      case '<':
         return (left as number) < (right as number);
-      case "<=":
+      case '<=':
         return (left as number) <= (right as number);
-      case ">":
+      case '>':
         return (left as number) > (right as number);
-      case ">=":
+      case '>=':
         return (left as number) >= (right as number);
-      case "&":
+      case '&':
         return (left as number) & (right as number);
-      case "|":
+      case '|':
         return (left as number) | (right as number);
-      case "^":
+      case '^':
         return (left as number) ^ (right as number);
-      case "<<":
+      case '<<':
         return (left as number) << (right as number);
-      case ">>":
+      case '>>':
         return (left as number) >> (right as number);
-      case ">>>":
+      case '>>>':
         return (left as number) >>> (right as number);
       default:
         console.warn(`Unsupported binary operator: ${node.operator}`);
@@ -3282,11 +3290,11 @@ export class Interpreter {
     const left = this.evaluateExpression(node.left);
 
     switch (node.operator) {
-      case "&&":
+      case '&&':
         return left ? this.evaluateExpression(node.right) : left;
-      case "||":
+      case '||':
         return left ? left : this.evaluateExpression(node.right);
-      case "??":
+      case '??':
         return left !== null && left !== undefined
           ? left
           : this.evaluateExpression(node.right);
@@ -3300,15 +3308,15 @@ export class Interpreter {
     const arg = this.evaluateExpression(node.argument);
 
     switch (node.operator) {
-      case "!":
+      case '!':
         return !arg;
-      case "-":
+      case '-':
         return -(arg as number);
-      case "+":
+      case '+':
         return +(arg as number);
-      case "typeof":
+      case 'typeof':
         return typeof arg;
-      case "void":
+      case 'void':
         return undefined;
       default:
         console.warn(`Unsupported unary operator: ${node.operator}`);
@@ -3321,13 +3329,13 @@ export class Interpreter {
     let name: string;
     let currentValue: unknown;
 
-    if (argNode.type === "Identifier") {
+    if (argNode.type === 'Identifier') {
       name = argNode.name;
       currentValue = this.lookupVariable(name);
     } else {
       // MemberExpression - simplified handling
       console.warn(
-        "Update expression on member expressions not fully supported",
+        'Update expression on member expressions not fully supported'
       );
       return undefined;
     }
@@ -3336,7 +3344,7 @@ export class Interpreter {
     let newValue: number;
     let returnValue: number;
 
-    if (node.operator === "++") {
+    if (node.operator === '++') {
       newValue = numValue + 1;
       returnValue = node.prefix ? newValue : numValue;
     } else {
@@ -3360,8 +3368,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.incrementDecrement({ name, operator: node.operator as "++" | "--" }),
-      code,
+      description.incrementDecrement({
+        name,
+        operator: node.operator as '++' | '--',
+      }),
+      code
     );
 
     return returnValue;
@@ -3371,9 +3382,9 @@ export class Interpreter {
     const rightValue = this.evaluateExpression(node.right);
     let name: string;
 
-    if (node.left.type === "Identifier") {
+    if (node.left.type === 'Identifier') {
       name = (node.left as IdentifierNode).name;
-    } else if (node.left.type === "MemberExpression") {
+    } else if (node.left.type === 'MemberExpression') {
       // Handle member expression assignment (e.g., obj.prop = value)
       const memberNode = node.left as MemberExpressionNode;
       const obj = this.evaluateExpression(memberNode.object) as Record<
@@ -3384,7 +3395,7 @@ export class Interpreter {
 
       if (memberNode.computed) {
         propName = String(
-          this.evaluateExpression(memberNode.property as ExpressionNode),
+          this.evaluateExpression(memberNode.property as ExpressionNode)
         );
       } else {
         propName = (memberNode.property as IdentifierNode).name;
@@ -3392,24 +3403,24 @@ export class Interpreter {
 
       // Resolve object — handle `this` specially (ThisExpression in AST)
       const isThisExpr =
-        (memberNode.object as BaseNode).type === "ThisExpression";
+        (memberNode.object as BaseNode).type === 'ThisExpression';
       let resolvedObj: Record<string, unknown> | null = null;
       if (isThisExpr) {
         resolvedObj =
-          (this.lookupVariable("this") as Record<string, unknown>) ?? obj;
+          (this.lookupVariable('this') as Record<string, unknown>) ?? obj;
       } else {
         resolvedObj = obj;
       }
 
-      if (resolvedObj && typeof resolvedObj === "object") {
+      if (resolvedObj && typeof resolvedObj === 'object') {
         let finalValue = rightValue;
 
-        if (node.operator !== "=") {
+        if (node.operator !== '=') {
           const currentValue = resolvedObj[propName];
           finalValue = this.applyAssignmentOperator(
             node.operator,
             currentValue,
-            rightValue,
+            rightValue
           );
         }
 
@@ -3441,33 +3452,37 @@ export class Interpreter {
       }
 
       const objLabel = isThisExpr
-        ? "this"
-        : memberNode.object.type === "Identifier"
+        ? 'this'
+        : memberNode.object.type === 'Identifier'
           ? (memberNode.object as IdentifierNode).name
-          : "object";
+          : 'object';
 
       const code = extractSource(this.sourceCode, node);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        description.assigningProperty({ objLabel, propName, displayValue: displayValue(rightValue) }),
-        code,
+        description.assigningProperty({
+          objLabel,
+          propName,
+          displayValue: displayValue(rightValue),
+        }),
+        code
       );
 
       return rightValue;
     } else {
-      console.warn("Unsupported assignment target");
+      console.warn('Unsupported assignment target');
       return undefined;
     }
 
     // Get current value for compound assignments
     let finalValue = rightValue;
-    if (node.operator !== "=") {
+    if (node.operator !== '=') {
       const currentValue = this.lookupVariable(name);
       finalValue = this.applyAssignmentOperator(
         node.operator,
         currentValue,
-        rightValue,
+        rightValue
       );
     }
 
@@ -3490,8 +3505,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.assigningVariable({ name, displayValue: resolved.displayValue }),
-      code,
+      description.assigningVariable({
+        name,
+        displayValue: resolved.displayValue,
+      }),
+      code
     );
 
     return finalValue;
@@ -3500,32 +3518,32 @@ export class Interpreter {
   private applyAssignmentOperator(
     operator: string,
     left: unknown,
-    right: unknown,
+    right: unknown
   ): unknown {
     switch (operator) {
-      case "+=":
+      case '+=':
         return (left as number) + (right as number);
-      case "-=":
+      case '-=':
         return (left as number) - (right as number);
-      case "*=":
+      case '*=':
         return (left as number) * (right as number);
-      case "/=":
+      case '/=':
         return (left as number) / (right as number);
-      case "%=":
+      case '%=':
         return (left as number) % (right as number);
-      case "**=":
+      case '**=':
         return (left as number) ** (right as number);
-      case "&=":
+      case '&=':
         return (left as number) & (right as number);
-      case "|=":
+      case '|=':
         return (left as number) | (right as number);
-      case "^=":
+      case '^=':
         return (left as number) ^ (right as number);
-      case "<<=":
+      case '<<=':
         return (left as number) << (right as number);
-      case ">>=":
+      case '>>=':
         return (left as number) >> (right as number);
-      case ">>>=":
+      case '>>>=':
         return (left as number) >>> (right as number);
       default:
         return right;
@@ -3535,19 +3553,19 @@ export class Interpreter {
   private evaluateCallExpression(node: CallExpressionNode): unknown {
     // Check for console.log, console.warn, etc.
     if (
-      node.callee.type === "MemberExpression" &&
-      (node.callee as MemberExpressionNode).object.type === "Identifier" &&
+      node.callee.type === 'MemberExpression' &&
+      (node.callee as MemberExpressionNode).object.type === 'Identifier' &&
       ((node.callee as MemberExpressionNode).object as IdentifierNode).name ===
-        "console"
+        'console'
     ) {
       return this.handleConsoleCall(node);
     }
 
     // Check for setTimeout/setInterval
     if (
-      node.callee.type === "Identifier" &&
-      ["setTimeout", "setInterval"].includes(
-        (node.callee as IdentifierNode).name,
+      node.callee.type === 'Identifier' &&
+      ['setTimeout', 'setInterval'].includes(
+        (node.callee as IdentifierNode).name
       )
     ) {
       return this.handleTimerCall(node);
@@ -3555,9 +3573,9 @@ export class Interpreter {
 
     // Check for clearTimeout/clearInterval
     if (
-      node.callee.type === "Identifier" &&
-      ["clearTimeout", "clearInterval"].includes(
-        (node.callee as IdentifierNode).name,
+      node.callee.type === 'Identifier' &&
+      ['clearTimeout', 'clearInterval'].includes(
+        (node.callee as IdentifierNode).name
       )
     ) {
       return this.handleClearTimerCall(node);
@@ -3565,28 +3583,28 @@ export class Interpreter {
 
     // Check for fetch(url)
     if (
-      node.callee.type === "Identifier" &&
-      (node.callee as IdentifierNode).name === "fetch"
+      node.callee.type === 'Identifier' &&
+      (node.callee as IdentifierNode).name === 'fetch'
     ) {
       return this.handleFetchCall(node);
     }
 
     // Check for Promise.resolve / Promise.reject / Promise.all / Promise.race
     if (
-      node.callee.type === "MemberExpression" &&
-      (node.callee as MemberExpressionNode).object.type === "Identifier" &&
+      node.callee.type === 'MemberExpression' &&
+      (node.callee as MemberExpressionNode).object.type === 'Identifier' &&
       ((node.callee as MemberExpressionNode).object as IdentifierNode).name ===
-        "Promise"
+        'Promise'
     ) {
       return this.handlePromiseStaticCall(node);
     }
 
     // Check for static class method call: ClassName.staticMethod()
-    if (node.callee.type === "MemberExpression") {
+    if (node.callee.type === 'MemberExpression') {
       const memberCallee = node.callee as MemberExpressionNode;
-      if (memberCallee.object.type === "Identifier") {
+      if (memberCallee.object.type === 'Identifier') {
         const objVal = this.lookupVariable(
-          (memberCallee.object as IdentifierNode).name,
+          (memberCallee.object as IdentifierNode).name
         );
         if (this.isClassValue(objVal)) {
           const methodName = (memberCallee.property as IdentifierNode).name;
@@ -3596,23 +3614,23 @@ export class Interpreter {
     }
 
     // Check for promise.then() / promise.catch() / promise.finally()
-    if (node.callee.type === "MemberExpression") {
+    if (node.callee.type === 'MemberExpression') {
       const memberCallee = node.callee as MemberExpressionNode;
       const propName = (memberCallee.property as IdentifierNode).name;
-      if (["then", "catch", "finally"].includes(propName)) {
+      if (['then', 'catch', 'finally'].includes(propName)) {
         // Check if the object resolves to a promise wrapper
         const objValue = this.evaluateExpression(memberCallee.object);
         if (this.isPromiseWrapper(objValue)) {
           return this.handlePromiseChainCall(
             objValue as PromiseWrapper,
             propName,
-            node,
+            node
           );
         }
       }
 
       // Handle generator.next() / generator.return() / generator.throw()
-      if (["next", "return", "throw"].includes(propName)) {
+      if (['next', 'return', 'throw'].includes(propName)) {
         const objValue = this.evaluateExpression(memberCallee.object);
         if (this.isGeneratorWrapper(objValue)) {
           return this.handleGeneratorMethodCall(objValue, propName, node);
@@ -3620,12 +3638,12 @@ export class Interpreter {
       }
 
       // Handle response.json() on a FetchResponse runtime value
-      if (propName === "json") {
+      if (propName === 'json') {
         const objValue = this.evaluateExpression(memberCallee.object);
         if (
-          typeof objValue === "object" &&
+          typeof objValue === 'object' &&
           objValue !== null &&
-          "__isFetchResponse" in (objValue as Record<string, unknown>)
+          '__isFetchResponse' in (objValue as Record<string, unknown>)
         ) {
           return this.handleResponseJsonCall(objValue as FetchResponse, node);
         }
@@ -3633,35 +3651,35 @@ export class Interpreter {
 
       // Handle native array methods
       const arrayMethods = [
-        "join",
-        "push",
-        "pop",
-        "shift",
-        "unshift",
-        "slice",
-        "splice",
-        "concat",
-        "indexOf",
-        "includes",
-        "reverse",
-        "sort",
-        "map",
-        "filter",
-        "reduce",
-        "forEach",
-        "find",
-        "findIndex",
-        "some",
-        "every",
-        "flat",
-        "flatMap",
-        "fill",
-        "copyWithin",
-        "entries",
-        "keys",
-        "values",
-        "toString",
-        "toLocaleString",
+        'join',
+        'push',
+        'pop',
+        'shift',
+        'unshift',
+        'slice',
+        'splice',
+        'concat',
+        'indexOf',
+        'includes',
+        'reverse',
+        'sort',
+        'map',
+        'filter',
+        'reduce',
+        'forEach',
+        'find',
+        'findIndex',
+        'some',
+        'every',
+        'flat',
+        'flatMap',
+        'fill',
+        'copyWithin',
+        'entries',
+        'keys',
+        'values',
+        'toString',
+        'toLocaleString',
       ];
       if (arrayMethods.includes(propName)) {
         const objValue = this.evaluateExpression(memberCallee.object);
@@ -3672,34 +3690,34 @@ export class Interpreter {
 
       // Handle String methods
       const stringMethods = [
-        "charAt",
-        "charCodeAt",
-        "concat",
-        "includes",
-        "endsWith",
-        "indexOf",
-        "lastIndexOf",
-        "match",
-        "padEnd",
-        "padStart",
-        "repeat",
-        "replace",
-        "replaceAll",
-        "search",
-        "slice",
-        "split",
-        "startsWith",
-        "substring",
-        "toLowerCase",
-        "toUpperCase",
-        "trim",
-        "trimEnd",
-        "trimStart",
-        "toString",
+        'charAt',
+        'charCodeAt',
+        'concat',
+        'includes',
+        'endsWith',
+        'indexOf',
+        'lastIndexOf',
+        'match',
+        'padEnd',
+        'padStart',
+        'repeat',
+        'replace',
+        'replaceAll',
+        'search',
+        'slice',
+        'split',
+        'startsWith',
+        'substring',
+        'toLowerCase',
+        'toUpperCase',
+        'trim',
+        'trimEnd',
+        'trimStart',
+        'toString',
       ];
       if (stringMethods.includes(propName)) {
         const objValue = this.evaluateExpression(memberCallee.object);
-        if (typeof objValue === "string") {
+        if (typeof objValue === 'string') {
           return this.handleStringMethodCall(objValue, propName, node);
         }
       }
@@ -3726,14 +3744,14 @@ export class Interpreter {
       `console.${methodName}`,
       this.getLine(node),
       this.getColumn(node),
-      [],
+      []
     );
 
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
       description.callingConsole({ methodName }),
-      code,
+      code
     );
 
     // Add console entry
@@ -3746,29 +3764,29 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.consoleOutput({ methodName, args }),
-      code,
+      code
     );
   }
 
   private handleTimerCall(node: CallExpressionNode): number {
     const timerName = (node.callee as IdentifierNode).name as
-      | "setTimeout"
-      | "setInterval";
+      | 'setTimeout'
+      | 'setInterval';
     const code = extractSource(this.sourceCode, node);
 
     // Validate first argument is a function/arrow function
     if (
       node.arguments.length === 0 ||
-      (node.arguments[0].type !== "FunctionExpression" &&
-        node.arguments[0].type !== "ArrowFunctionExpression" &&
-        node.arguments[0].type !== "Identifier")
+      (node.arguments[0].type !== 'FunctionExpression' &&
+        node.arguments[0].type !== 'ArrowFunctionExpression' &&
+        node.arguments[0].type !== 'Identifier')
     ) {
       const numId = this.timerIdCounter++;
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
         description.timerInvalidCallback({ timerName }),
-        code,
+        code
       );
       return numId;
     }
@@ -3779,7 +3797,7 @@ export class Interpreter {
 
     // If it's an identifier, resolve to FunctionValue — store on the timer
     let resolvedTimerFn: FunctionValue | undefined;
-    if (callbackNode.type === "Identifier") {
+    if (callbackNode.type === 'Identifier') {
       const val = this.lookupVariable((callbackNode as IdentifierNode).name);
       if (val !== undefined && this.isFunctionValue(val)) {
         resolvedTimerFn = val;
@@ -3789,7 +3807,7 @@ export class Interpreter {
           this.getLine(node),
           this.getColumn(node),
           description.timerInvalidCallback({ timerName }),
-          code,
+          code
         );
         return numId;
       }
@@ -3799,7 +3817,7 @@ export class Interpreter {
     let delay = 0;
     if (node.arguments.length > 1) {
       const delayValue = this.evaluateExpression(
-        node.arguments[1] as ExpressionNode,
+        node.arguments[1] as ExpressionNode
       );
       delay = Number(delayValue) || 0;
     }
@@ -3833,7 +3851,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.timerRegistered({ timerName, delay: `${delay}ms` }),
-      code,
+      code
     );
 
     return numericId;
@@ -3845,7 +3863,7 @@ export class Interpreter {
 
     if (node.arguments.length > 0) {
       const idValue = this.evaluateExpression(
-        node.arguments[0] as ExpressionNode,
+        node.arguments[0] as ExpressionNode
       );
       const numericId = Number(idValue);
 
@@ -3860,13 +3878,13 @@ export class Interpreter {
         // Update WebAPI entry to show cancelled state
         const webAPI = this.webAPIs.find((w) => w.id === timer.id);
         if (webAPI) {
-          webAPI.status = "cancelled";
+          webAPI.status = 'cancelled';
         }
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
           description.timerCancelled({ calleeName }),
-          code,
+          code
         );
         return;
       }
@@ -3876,7 +3894,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.timerCancelled({ calleeName }),
-      code,
+      code
     );
   }
 
@@ -3889,25 +3907,25 @@ export class Interpreter {
     const urlArg =
       node.arguments.length > 0
         ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
-        : "https://api.example.com/data";
+        : 'https://api.example.com/data';
     const url = String(urlArg);
 
     // 1. Create a pending Promise for the fetch result
     const { promise: fetchPromise, wrapper } = this.createInternalPromise();
 
     // 2. Register in Web APIs
-    const fetchId = generateId("webapi", this.webAPICounter++);
+    const fetchId = generateId('webapi', this.webAPICounter++);
     const delay = 1500; // simulated network delay
 
     const entry: WebAPIEntry = {
       id: fetchId,
-      type: "fetch",
-      label: "fetch",
+      type: 'fetch',
+      label: 'fetch',
       callback: url,
       delay,
       elapsed: 0,
-      status: "running",
-      promiseState: "pending",
+      status: 'running',
+      promiseState: 'pending',
     };
     this.webAPIs.push(entry);
 
@@ -3926,7 +3944,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.fetchRegistered({ url }),
-      code,
+      code
     );
 
     return wrapper;
@@ -3934,28 +3952,28 @@ export class Interpreter {
 
   private handleResponseJsonCall(
     _response: FetchResponse,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): PromiseWrapper {
     const code = extractSource(this.sourceCode, node);
 
     // Create mock parsed data HeapObject
-    const dataHeapId = generateId("heap", this.heapCounter++);
+    const dataHeapId = generateId('heap', this.heapCounter++);
     const dataColor = getPointerColor(this.pointerCounter++);
     const dataHeapObj: HeapObject = {
       id: dataHeapId,
-      type: "object",
+      type: 'object',
       color: dataColor,
       label: '{ message: "Mock data" }',
       properties: [
         {
-          key: "message",
+          key: 'message',
           displayValue: '"Mock data from fetch"',
-          valueType: "primitive",
+          valueType: 'primitive',
         },
         {
-          key: "status",
+          key: 'status',
           displayValue: '"success"',
-          valueType: "primitive",
+          valueType: 'primitive',
         },
       ],
     };
@@ -3967,8 +3985,8 @@ export class Interpreter {
     // The runtime value for data — a plain object with the heap link
     const dataValue: Record<string, unknown> & { __heapId: string } = {
       __heapId: dataHeapId,
-      message: "Mock data from fetch",
-      status: "success",
+      message: 'Mock data from fetch',
+      status: 'success',
     };
 
     this.resolvePromise(jsonPromise, dataValue);
@@ -3977,7 +3995,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.responseJson(),
-      code,
+      code
     );
 
     return wrapper;
@@ -3992,56 +4010,51 @@ export class Interpreter {
       const webAPI = this.webAPIs.find((w) => w.id === fetch.id);
       if (webAPI) {
         webAPI.elapsed = fetch.delay;
-        webAPI.status = "completed";
-        webAPI.promiseState = "fulfilled";
+        webAPI.status = 'completed';
+        webAPI.promiseState = 'fulfilled';
       }
 
-      this.snapshot(
-        0,
-        0,
-        description.fetchCompleted(),
-        "",
-      );
+      this.snapshot(0, 0, description.fetchCompleted(), '');
 
       // Create mock Response HeapObject
-      const responseHeapId = generateId("heap", this.heapCounter++);
+      const responseHeapId = generateId('heap', this.heapCounter++);
       const responseColor = getPointerColor(this.pointerCounter++);
 
       // Create a placeholder heap entry for the json() function
-      const jsonFnHeapId = generateId("heap", this.heapCounter++);
+      const jsonFnHeapId = generateId('heap', this.heapCounter++);
       this.heap.push({
         id: jsonFnHeapId,
-        type: "function",
+        type: 'function',
         color: getPointerColor(this.pointerCounter++),
-        label: "json()",
-        functionSource: "json()",
+        label: 'json()',
+        functionSource: 'json()',
       });
 
       const responseHeapObj: HeapObject = {
         id: responseHeapId,
-        type: "object",
+        type: 'object',
         color: responseColor,
-        label: "Response",
+        label: 'Response',
         properties: [
           {
-            key: "status",
-            displayValue: "200",
-            valueType: "primitive",
+            key: 'status',
+            displayValue: '200',
+            valueType: 'primitive',
           },
           {
-            key: "ok",
-            displayValue: "true",
-            valueType: "primitive",
+            key: 'ok',
+            displayValue: 'true',
+            valueType: 'primitive',
           },
           {
-            key: "url",
+            key: 'url',
             displayValue: `"${fetch.url}"`,
-            valueType: "primitive",
+            valueType: 'primitive',
           },
           {
-            key: "json",
-            displayValue: "ⓕ",
-            valueType: "function",
+            key: 'json',
+            displayValue: 'ⓕ',
+            valueType: 'function',
             heapReferenceId: jsonFnHeapId,
             pointerColor: getPointerColor(this.pointerCounter - 1),
           },
@@ -4071,16 +4084,16 @@ export class Interpreter {
   private handleArrayMethodCall(
     arr: unknown[],
     method: string,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): unknown {
     const args = node.arguments.map((arg) =>
-      this.evaluateExpression(arg as ExpressionNode),
+      this.evaluateExpression(arg as ExpressionNode)
     );
 
     // Type-safe method invocation
     type ArrayMethod = keyof unknown[];
     const fn = (arr as unknown[])[method as ArrayMethod];
-    if (typeof fn === "function") {
+    if (typeof fn === 'function') {
       return fn.apply(arr, args);
     }
     return undefined;
@@ -4090,16 +4103,16 @@ export class Interpreter {
   private handleStringMethodCall(
     str: string,
     method: string,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): unknown {
     const args = node.arguments.map((arg) =>
-      this.evaluateExpression(arg as ExpressionNode),
+      this.evaluateExpression(arg as ExpressionNode)
     );
 
     // Type-safe method invocation
     type StringMethod = keyof string;
     const fn = (str as string)[method as StringMethod];
-    if (typeof fn === "function") {
+    if (typeof fn === 'function') {
       return (fn as (...args: unknown[]) => unknown).apply(str, args);
     }
     return undefined;
@@ -4110,13 +4123,13 @@ export class Interpreter {
     let funcValue: unknown;
     let receiver: Record<string, unknown> | null = null; // `this` for method calls
 
-    if (node.callee.type === "Identifier") {
+    if (node.callee.type === 'Identifier') {
       funcName = (node.callee as IdentifierNode).name;
       funcValue = this.lookupVariable(funcName);
 
       // Check if this is a static method call on a class: ClassName.method()
       // (handled below in MemberExpression branch when callee is member)
-    } else if (node.callee.type === "MemberExpression") {
+    } else if (node.callee.type === 'MemberExpression') {
       // Method call
       const memberExpr = node.callee as MemberExpressionNode;
       const propName = memberExpr.computed
@@ -4129,7 +4142,7 @@ export class Interpreter {
       >;
 
       // Look up method: first check own properties, then search class prototype chain
-      if (obj && typeof obj === "object") {
+      if (obj && typeof obj === 'object') {
         funcValue = obj[propName];
         // If not found directly, look in class method registry
         if (funcValue === undefined || funcValue === null) {
@@ -4143,16 +4156,16 @@ export class Interpreter {
         // funcName stays as propName; no receiver for static
       }
     } else if (
-      node.callee.type === "FunctionExpression" ||
-      node.callee.type === "ArrowFunctionExpression"
+      node.callee.type === 'FunctionExpression' ||
+      node.callee.type === 'ArrowFunctionExpression'
     ) {
       // IIFE - immediately invoked function expression
-      funcName = "<anonymous>";
+      funcName = '<anonymous>';
       funcValue = this.createFunctionValue(
-        node.callee as FunctionExpressionNode | ArrowFunctionExpressionNode,
+        node.callee as FunctionExpressionNode | ArrowFunctionExpressionNode
       );
     } else {
-      console.warn("Unsupported callee type:", node.callee.type);
+      console.warn('Unsupported callee type:', node.callee.type);
       return undefined;
     }
 
@@ -4176,13 +4189,13 @@ export class Interpreter {
     // Evaluate arguments, handling spread
     const evaluatedArgs: unknown[] = [];
     for (const arg of node.arguments) {
-      if (arg.type === "SpreadElement") {
+      if (arg.type === 'SpreadElement') {
         const spreadValue = this.evaluateExpression(
-          (arg as SpreadElementNode).argument,
+          (arg as SpreadElementNode).argument
         );
         if (Array.isArray(spreadValue)) {
           evaluatedArgs.push(...spreadValue);
-        } else if (spreadValue && typeof spreadValue === "object") {
+        } else if (spreadValue && typeof spreadValue === 'object') {
           evaluatedArgs.push(...Object.values(spreadValue));
         }
       } else {
@@ -4207,7 +4220,7 @@ export class Interpreter {
     }
 
     const code = extractSource(this.sourceCode, node);
-    const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
+    const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(', ');
 
     // Inject captured closure envs into envStack so lookupVariable finds them.
     const capturedMeta = funcValue.capturedEnvMeta;
@@ -4224,16 +4237,16 @@ export class Interpreter {
 
     // If called as a method on an instance, inject `this` into the local env + memory
     if (receiver !== null) {
-      this.getCurrentEnv()["this"] = receiver;
+      this.getCurrentEnv()['this'] = receiver;
       const instanceHeapId = this.objectHeapMap.get(receiver);
       const instanceHeap = instanceHeapId
         ? this.heap.find((h) => h.id === instanceHeapId)
         : undefined;
       const thisEntry: MemoryEntry = {
-        name: "this",
-        kind: "param",
-        valueType: "object",
-        displayValue: "[Pointer]",
+        name: 'this',
+        kind: 'param',
+        valueType: 'object',
+        displayValue: '[Pointer]',
         heapReferenceId: instanceHeap?.id,
         pointerColor: instanceHeap?.color,
       };
@@ -4249,7 +4262,7 @@ export class Interpreter {
         argsDisplay,
         receiver,
       }),
-      code,
+      code
     );
 
     // Execute function body
@@ -4258,10 +4271,10 @@ export class Interpreter {
 
     if (
       funcValue.isArrow &&
-      !("body" in funcValue.body && funcValue.body.type === "BlockStatement")
+      !('body' in funcValue.body && funcValue.body.type === 'BlockStatement')
     ) {
       this.returnValue = this.evaluateExpression(
-        funcValue.body as ExpressionNode,
+        funcValue.body as ExpressionNode
       );
       this.hasReturned = true;
     } else {
@@ -4284,13 +4297,16 @@ export class Interpreter {
 
     const returnDescription = hasClosure
       ? description.returningWithClosure({ funcName })
-      : description.returningValue({ funcName, displayValue: displayValue(returnVal) });
+      : description.returningValue({
+          funcName,
+          displayValue: displayValue(returnVal),
+        });
 
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
       returnDescription,
-      code,
+      code
     );
 
     return returnVal;
@@ -4302,7 +4318,7 @@ export class Interpreter {
    */
   private findMethodOnClass(
     obj: Record<string, unknown>,
-    methodName: string,
+    methodName: string
   ): FunctionValue | undefined {
     // Find which class this object belongs to by checking objectHeapMap
     const heapId = this.objectHeapMap.get(obj);
@@ -4317,7 +4333,7 @@ export class Interpreter {
         // by verifying the [[Prototype]] chain in the heap
         const instanceHeap = this.heap.find((h) => h.id === heapId);
         const protoRef = instanceHeap?.properties?.find(
-          (p) => p.key === "[[Prototype]]",
+          (p) => p.key === '[[Prototype]]'
         );
         if (
           protoRef?.heapReferenceId === classVal.heapObjectId ||
@@ -4345,7 +4361,7 @@ export class Interpreter {
   private callStaticMethod(
     classVal: ClassValue,
     methodName: string,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): unknown {
     const fnVal = classVal.staticProps[methodName];
     if (!this.isFunctionValue(fnVal)) {
@@ -4355,26 +4371,30 @@ export class Interpreter {
 
     const code = extractSource(this.sourceCode, node);
     const evaluatedArgs = node.arguments.map((a) =>
-      this.evaluateExpression(a as ExpressionNode),
+      this.evaluateExpression(a as ExpressionNode)
     );
     const params = fnVal.params.map((name: string, i: number) => ({
       name,
       value: evaluatedArgs[i],
     }));
-    const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(", ");
+    const argsDisplay = evaluatedArgs.map((v) => displayValue(v)).join(', ');
 
     this.pushFrame(
       `${classVal.name}.${methodName}`,
       this.getLine(node),
       this.getColumn(node),
-      params,
+      params
     );
 
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.callingMethod({ className: classVal.name, methodName, argsDisplay }),
-      code,
+      description.callingMethod({
+        className: classVal.name,
+        methodName,
+        argsDisplay,
+      }),
+      code
     );
 
     this.hasReturned = false;
@@ -4390,8 +4410,12 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.methodReturned({ className: classVal.name, methodName, displayValue: displayValue(returnVal) }),
-      code,
+      description.methodReturned({
+        className: classVal.name,
+        methodName,
+        displayValue: displayValue(returnVal),
+      }),
+      code
     );
 
     return returnVal;
@@ -4404,7 +4428,7 @@ export class Interpreter {
   private isInstanceOf(heapId: string, classVal: ClassValue): boolean {
     const heap = this.heap.find((h) => h.id === heapId);
     if (!heap) return false;
-    const protoRef = heap.properties?.find((p) => p.key === "[[Prototype]]");
+    const protoRef = heap.properties?.find((p) => p.key === '[[Prototype]]');
     if (!protoRef?.heapReferenceId) return false;
     if (protoRef.heapReferenceId === classVal.heapObjectId) return true;
     // Recurse up the chain
@@ -4421,8 +4445,8 @@ export class Interpreter {
   private evaluateMemberExpression(node: MemberExpressionNode): unknown {
     // Special: `this` is a ThisExpression node (not Identifier) in the AST
     let obj: unknown;
-    if ((node.object as BaseNode).type === "ThisExpression") {
-      obj = this.lookupVariable("this");
+    if ((node.object as BaseNode).type === 'ThisExpression') {
+      obj = this.lookupVariable('this');
     } else {
       obj = this.evaluateExpression(node.object);
     }
@@ -4437,32 +4461,32 @@ export class Interpreter {
 
     if (node.computed) {
       propName = String(
-        this.evaluateExpression(node.property as ExpressionNode),
+        this.evaluateExpression(node.property as ExpressionNode)
       );
     } else {
       propName = (node.property as IdentifierNode).name;
     }
 
     // Handle array length property
-    if (Array.isArray(obj) && propName === "length") {
+    if (Array.isArray(obj) && propName === 'length') {
       return obj.length;
     }
 
     // Handle FetchResponse runtime value — map to its logical properties
     if (
-      typeof obj === "object" &&
+      typeof obj === 'object' &&
       obj !== null &&
-      "__isFetchResponse" in (obj as Record<string, unknown>)
+      '__isFetchResponse' in (obj as Record<string, unknown>)
     ) {
       const fetchResp = obj as unknown as FetchResponse;
-      if (propName === "ok") return true;
-      if (propName === "status") return 200;
-      if (propName === "url") return fetchResp.url;
+      if (propName === 'ok') return true;
+      if (propName === 'status') return 200;
+      if (propName === 'url') return fetchResp.url;
       // "json" is handled in evaluateCallExpression
     }
 
     // For class instances: if property not found directly, search prototype chain methods
-    if (typeof obj === "object" && obj !== null && !(propName in objRecord)) {
+    if (typeof obj === 'object' && obj !== null && !(propName in objRecord)) {
       const method = this.findMethodOnClass(objRecord, propName);
       if (method) return method;
     }
@@ -4471,19 +4495,19 @@ export class Interpreter {
   }
 
   private evaluateObjectExpression(
-    node: ObjectExpressionNode,
+    node: ObjectExpressionNode
   ): Record<string, unknown> {
     const obj: Record<string, unknown> = {};
 
     for (const prop of node.properties) {
       // Handle spread: { ...base, extra: true }
-      if (prop.type === "SpreadElement") {
+      if (prop.type === 'SpreadElement') {
         const spreadValue = this.evaluateExpression(
-          (prop as SpreadElementNode).argument,
+          (prop as SpreadElementNode).argument
         );
         if (
           spreadValue &&
-          typeof spreadValue === "object" &&
+          typeof spreadValue === 'object' &&
           !Array.isArray(spreadValue)
         ) {
           Object.assign(obj, spreadValue);
@@ -4494,9 +4518,9 @@ export class Interpreter {
       const propNode = prop as PropertyNode;
       let key: string;
 
-      if (propNode.key.type === "Identifier") {
+      if (propNode.key.type === 'Identifier') {
         key = propNode.key.name;
-      } else if (propNode.key.type === "Literal") {
+      } else if (propNode.key.type === 'Literal') {
         key = String(propNode.key.value);
       } else {
         continue;
@@ -4515,14 +4539,14 @@ export class Interpreter {
     for (const element of node.elements) {
       if (element === null) {
         arr.push(undefined);
-      } else if (element.type === "SpreadElement") {
+      } else if (element.type === 'SpreadElement') {
         // Handle spread: [1, ...other, 3]
         const spreadValue = this.evaluateExpression(
-          (element as SpreadElementNode).argument,
+          (element as SpreadElementNode).argument
         );
         if (Array.isArray(spreadValue)) {
           arr.push(...spreadValue);
-        } else if (spreadValue && typeof spreadValue === "object") {
+        } else if (spreadValue && typeof spreadValue === 'object') {
           // Spread object values (like Object.values)
           arr.push(...Object.values(spreadValue));
         }
@@ -4535,7 +4559,7 @@ export class Interpreter {
   }
 
   private evaluateTemplateLiteral(node: TemplateLiteralNode): string {
-    let result = "";
+    let result = '';
 
     for (let i = 0; i < node.quasis.length; i++) {
       result += node.quasis[i].value.cooked;
@@ -4550,7 +4574,7 @@ export class Interpreter {
   }
 
   private evaluateConditionalExpression(
-    node: ConditionalExpressionNode,
+    node: ConditionalExpressionNode
   ): unknown {
     const test = this.evaluateExpression(node.test);
     return test
@@ -4568,9 +4592,9 @@ export class Interpreter {
 
   private isPromiseWrapper(value: unknown): value is PromiseWrapper {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isPromise" in value &&
+      '__isPromise' in value &&
       (value as PromiseWrapper).__isPromise === true
     );
   }
@@ -4581,29 +4605,29 @@ export class Interpreter {
     wrapper: PromiseWrapper;
   } {
     const id = `promise-${this.promiseCounter++}`;
-    const heapId = generateId("heap", this.heapCounter++);
+    const heapId = generateId('heap', this.heapCounter++);
     const color = getPointerColor(this.pointerCounter++);
 
     const heapObj: HeapObject = {
       id: heapId,
-      type: "object",
+      type: 'object',
       color,
-      label: "Promise",
+      label: 'Promise',
       properties: [
         {
-          key: "[[PromiseState]]",
+          key: '[[PromiseState]]',
           displayValue: '"pending"',
-          valueType: "primitive",
+          valueType: 'primitive',
         },
         {
-          key: "[[PromiseResult]]",
-          displayValue: "undefined",
-          valueType: "primitive",
+          key: '[[PromiseResult]]',
+          displayValue: 'undefined',
+          valueType: 'primitive',
         },
         {
-          key: "[[PromiseFulfillReactions]]",
-          displayValue: "[]",
-          valueType: "primitive",
+          key: '[[PromiseFulfillReactions]]',
+          displayValue: '[]',
+          valueType: 'primitive',
         },
       ],
     };
@@ -4612,7 +4636,7 @@ export class Interpreter {
     const promise: InternalPromise = {
       id,
       heapObjectId: heapId,
-      state: "pending",
+      state: 'pending',
       result: undefined,
       fulfillReactions: [],
       rejectReactions: [],
@@ -4629,37 +4653,37 @@ export class Interpreter {
 
     const reactionLabels = promise.fulfillReactions
       .map((r) => r.callbackSource.slice(0, 25))
-      .join(", ");
+      .join(', ');
 
     heapObj.properties = [
       {
-        key: "[[PromiseState]]",
+        key: '[[PromiseState]]',
         displayValue: `"${promise.state}"`,
-        valueType: "primitive",
+        valueType: 'primitive',
       },
       {
-        key: "[[PromiseResult]]",
+        key: '[[PromiseResult]]',
         displayValue:
-          promise.state === "pending"
-            ? "undefined"
+          promise.state === 'pending'
+            ? 'undefined'
             : displayValue(promise.result),
-        valueType: "primitive",
+        valueType: 'primitive',
       },
       {
-        key: "[[PromiseFulfillReactions]]",
+        key: '[[PromiseFulfillReactions]]',
         displayValue:
-          promise.fulfillReactions.length === 0 ? "[]" : `[${reactionLabels}]`,
-        valueType: "primitive",
+          promise.fulfillReactions.length === 0 ? '[]' : `[${reactionLabels}]`,
+        valueType: 'primitive',
       },
     ];
   }
 
   // Settle a promise (fulfill or reject) and schedule reactions as microtasks.
   private resolvePromise(promise: InternalPromise, value: unknown): void {
-    if (promise.state !== "pending") return; // already settled
+    if (promise.state !== 'pending') return; // already settled
 
     // If resolved with another promise wrapper, adopt its state (simplified: use value directly)
-    promise.state = "fulfilled";
+    promise.state = 'fulfilled';
     promise.result = value;
     this.syncPromiseHeap(promise);
 
@@ -4671,9 +4695,9 @@ export class Interpreter {
   }
 
   private rejectPromise(promise: InternalPromise, reason: unknown): void {
-    if (promise.state !== "pending") return;
+    if (promise.state !== 'pending') return;
 
-    promise.state = "rejected";
+    promise.state = 'rejected';
     promise.result = reason;
     this.syncPromiseHeap(promise);
 
@@ -4687,11 +4711,11 @@ export class Interpreter {
   private scheduleMicrotask(reaction: PromiseReaction, value: unknown): void {
     // Check if this reaction is an async-resume marker
     const asyncResumeId = (reaction as unknown as Record<string, unknown>)[
-      "__asyncResumeId"
+      '__asyncResumeId'
     ] as string | undefined;
     if (asyncResumeId) {
       const isRejection = !!(reaction as unknown as Record<string, unknown>)[
-        "__isRejection"
+        '__isRejection'
       ];
       const continuation = this.asyncContinuations.get(asyncResumeId);
       if (continuation) {
@@ -4711,7 +4735,7 @@ export class Interpreter {
         this.microtaskQueue.push({
           id: asyncResumeId,
           callbackLabel: reaction.callbackSource,
-          sourceType: "promise",
+          sourceType: 'promise',
           sourceId: reaction.id,
         });
       }
@@ -4738,9 +4762,9 @@ export class Interpreter {
       id: microtaskId,
       callbackLabel:
         reaction.callbackSource.length > 35
-          ? reaction.callbackSource.slice(0, 35) + "..."
+          ? reaction.callbackSource.slice(0, 35) + '...'
           : reaction.callbackSource,
-      sourceType: "promise",
+      sourceType: 'promise',
       sourceId: reaction.id,
     };
     this.microtaskQueue.push(queueItem);
@@ -4750,14 +4774,14 @@ export class Interpreter {
   private evaluateNewExpression(node: NewExpressionNode): unknown {
     const callee = node.callee;
     if (
-      callee.type === "Identifier" &&
-      (callee as IdentifierNode).name === "Promise"
+      callee.type === 'Identifier' &&
+      (callee as IdentifierNode).name === 'Promise'
     ) {
       return this.handleNewPromise(node);
     }
 
     // Check for user-defined class
-    if (callee.type === "Identifier") {
+    if (callee.type === 'Identifier') {
       const className = (callee as IdentifierNode).name;
       const classVal = this.lookupVariable(className);
       if (this.isClassValue(classVal)) {
@@ -4770,8 +4794,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.unsupportedNew({ name: callee.type === "Identifier" ? (callee as IdentifierNode).name : "?" }),
-      code,
+      description.unsupportedNew({
+        name:
+          callee.type === 'Identifier' ? (callee as IdentifierNode).name : '?',
+      }),
+      code
     );
     return undefined;
   }
@@ -4782,18 +4809,18 @@ export class Interpreter {
    */
   private handleNewClass(
     classVal: ClassValue,
-    node: NewExpressionNode,
+    node: NewExpressionNode
   ): Record<string, unknown> {
     const code = extractSource(this.sourceCode, node);
     const args = node.arguments.map((a) =>
-      this.evaluateExpression(a as ExpressionNode),
+      this.evaluateExpression(a as ExpressionNode)
     );
 
     // 1. Create the instance heap object
     const instanceHeapObj = this.addHeapObject(
-      "object",
+      'object',
       `${classVal.name} instance`,
-      [],
+      []
     );
     // Mark as a class instance so the heap card renders correctly
     (instanceHeapObj as HeapObject & { __className?: string }).__className =
@@ -4803,9 +4830,9 @@ export class Interpreter {
     const classHeap = this.heap.find((h) => h.id === classVal.heapObjectId);
     instanceHeapObj.properties = [
       {
-        key: "[[Prototype]]",
+        key: '[[Prototype]]',
         displayValue: `${classVal.name}.prototype`,
-        valueType: "object",
+        valueType: 'object',
         heapReferenceId: classHeap?.id,
         pointerColor: classHeap?.color,
       },
@@ -4814,8 +4841,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.instantiatingClass({ className: classVal.name, argsDisplay: args.map((a) => displayValue(a)).join(", ") }),
-      code,
+      description.instantiatingClass({
+        className: classVal.name,
+        argsDisplay: args.map((a) => displayValue(a)).join(', '),
+      }),
+      code
     );
 
     // 2. Runtime "this" object — a plain JS object whose properties we'll populate
@@ -4838,7 +4868,7 @@ export class Interpreter {
     thisObj: Record<string, unknown>,
     args: unknown[],
     instanceHeapObj: HeapObject,
-    callNode: NewExpressionNode,
+    callNode: NewExpressionNode
   ): void {
     const code = extractSource(this.sourceCode, callNode);
 
@@ -4852,7 +4882,7 @@ export class Interpreter {
             thisObj,
             args,
             instanceHeapObj,
-            callNode,
+            callNode
           );
         }
       }
@@ -4868,16 +4898,16 @@ export class Interpreter {
       `${classVal.name}.constructor`,
       callNode.loc?.start.line ?? 0,
       callNode.loc?.start.column ?? 0,
-      params,
+      params
     );
 
     // Inject `this` as a special memory entry at top of the current frame
     const resolved = this.resolveValueForMemory(thisObj);
     const thisEntry: MemoryEntry = {
-      name: "this",
-      kind: "param",
-      valueType: "object",
-      displayValue: "[Pointer]",
+      name: 'this',
+      kind: 'param',
+      valueType: 'object',
+      displayValue: '[Pointer]',
       heapReferenceId: instanceHeapObj.id,
       pointerColor: instanceHeapObj.color,
     };
@@ -4889,13 +4919,13 @@ export class Interpreter {
     void resolved;
 
     // Store `this` in env so constructor body can read it
-    this.getCurrentEnv()["this"] = thisObj;
+    this.getCurrentEnv()['this'] = thisObj;
 
     this.snapshot(
       callNode.loc?.start.line ?? 0,
       callNode.loc?.start.column ?? 0,
       description.executingConstructor({ className: classVal.name }),
-      code,
+      code
     );
 
     // Execute constructor body, handling super() calls
@@ -4906,7 +4936,7 @@ export class Interpreter {
       classVal,
       thisObj,
       instanceHeapObj,
-      callNode,
+      callNode
     );
     this.hasReturned = false;
     this.returnValue = undefined;
@@ -4917,7 +4947,7 @@ export class Interpreter {
       callNode.loc?.start.line ?? 0,
       callNode.loc?.start.column ?? 0,
       description.constructorCompleted({ className: classVal.name }),
-      code,
+      code
     );
   }
 
@@ -4930,29 +4960,29 @@ export class Interpreter {
     classVal: ClassValue,
     thisObj: Record<string, unknown>,
     instanceHeapObj: HeapObject,
-    callNode: NewExpressionNode,
+    callNode: NewExpressionNode
   ): void {
     for (const stmt of body.body) {
       if (this.hasReturned || this.stepIndex >= MAX_STEPS) break;
 
       // Detect super() call: ExpressionStatement → CallExpression with callee=super
       if (
-        stmt.type === "ExpressionStatement" &&
-        (stmt as ExpressionStatementNode).expression.type === "CallExpression"
+        stmt.type === 'ExpressionStatement' &&
+        (stmt as ExpressionStatementNode).expression.type === 'CallExpression'
       ) {
         const callExpr = (stmt as ExpressionStatementNode)
           .expression as CallExpressionNode;
         if (
-          (callExpr.callee as BaseNode).type === "Super" ||
-          (callExpr.callee.type === "Identifier" &&
-            (callExpr.callee as IdentifierNode).name === "super")
+          (callExpr.callee as BaseNode).type === 'Super' ||
+          (callExpr.callee.type === 'Identifier' &&
+            (callExpr.callee as IdentifierNode).name === 'super')
         ) {
           this.handleSuperCall(
             callExpr,
             classVal,
             thisObj,
             instanceHeapObj,
-            callNode,
+            callNode
           );
           continue;
         }
@@ -4960,19 +4990,19 @@ export class Interpreter {
 
       // Detect `this.prop = value` assignment
       if (
-        stmt.type === "ExpressionStatement" &&
+        stmt.type === 'ExpressionStatement' &&
         (stmt as ExpressionStatementNode).expression.type ===
-          "AssignmentExpression"
+          'AssignmentExpression'
       ) {
         const assign = (stmt as ExpressionStatementNode)
           .expression as AssignmentExpressionNode;
         if (
-          assign.left.type === "MemberExpression" &&
-          ((assign.left as MemberExpressionNode).object.type === "Identifier"
+          assign.left.type === 'MemberExpression' &&
+          ((assign.left as MemberExpressionNode).object.type === 'Identifier'
             ? ((assign.left as MemberExpressionNode).object as IdentifierNode)
-                .name === "this"
+                .name === 'this'
             : ((assign.left as MemberExpressionNode).object as BaseNode)
-                .type === "ThisExpression")
+                .type === 'ThisExpression')
         ) {
           const memberNode = assign.left as MemberExpressionNode;
           const propName = (memberNode.property as IdentifierNode).name;
@@ -4983,8 +5013,11 @@ export class Interpreter {
           this.snapshot(
             this.getLine(stmt),
             this.getColumn(stmt),
-            description.assigningThisProperty({ propName, displayValue: displayValue(val) }),
-            stmtCode,
+            description.assigningThisProperty({
+              propName,
+              displayValue: displayValue(val),
+            }),
+            stmtCode
           );
           continue;
         }
@@ -5005,11 +5038,11 @@ export class Interpreter {
     classVal: ClassValue,
     thisObj: Record<string, unknown>,
     instanceHeapObj: HeapObject,
-    callNode: NewExpressionNode,
+    callNode: NewExpressionNode
   ): void {
     const code = extractSource(this.sourceCode, callExpr);
     const superArgs = callExpr.arguments.map((a) =>
-      this.evaluateExpression(a as ExpressionNode),
+      this.evaluateExpression(a as ExpressionNode)
     );
     const parentClassName = classVal.superClassName;
     if (!parentClassName) return;
@@ -5020,8 +5053,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(callExpr),
       this.getColumn(callExpr),
-      description.callingSuperConstructor({ parentClassName, argsDisplay: superArgs.map((a) => displayValue(a)).join(", ") }),
-      code,
+      description.callingSuperConstructor({
+        parentClassName,
+        argsDisplay: superArgs.map((a) => displayValue(a)).join(', '),
+      }),
+      code
     );
 
     if (!parentClass.constructor) return;
@@ -5036,27 +5072,27 @@ export class Interpreter {
       `${parentClassName}.constructor`,
       callExpr.loc?.start.line ?? 0,
       callExpr.loc?.start.column ?? 0,
-      params,
+      params
     );
 
     // Inject `this` into parent constructor frame
     const thisEntry: MemoryEntry = {
-      name: "this",
-      kind: "param",
-      valueType: "object",
-      displayValue: "[Pointer]",
+      name: 'this',
+      kind: 'param',
+      valueType: 'object',
+      displayValue: '[Pointer]',
       heapReferenceId: instanceHeapObj.id,
       pointerColor: instanceHeapObj.color,
     };
     const currentBlock = this.memoryBlocks[this.memoryBlocks.length - 1];
     if (currentBlock) currentBlock.entries.unshift(thisEntry);
-    this.getCurrentEnv()["this"] = thisObj;
+    this.getCurrentEnv()['this'] = thisObj;
 
     this.snapshot(
       callExpr.loc?.start.line ?? 0,
       callExpr.loc?.start.column ?? 0,
       description.executingParentConstructor({ parentClassName }),
-      code,
+      code
     );
 
     this.hasReturned = false;
@@ -5066,7 +5102,7 @@ export class Interpreter {
       parentClass,
       thisObj,
       instanceHeapObj,
-      callNode,
+      callNode
     );
     this.hasReturned = false;
     this.returnValue = undefined;
@@ -5080,16 +5116,16 @@ export class Interpreter {
    */
   private syncInstanceHeapObject(
     instanceHeapObj: HeapObject,
-    thisObj: Record<string, unknown>,
+    thisObj: Record<string, unknown>
   ): void {
     // Keep the [[Prototype]] entry (always first) and rebuild the rest
     const protoEntry = instanceHeapObj.properties?.find(
-      (p) => p.key === "[[Prototype]]",
+      (p) => p.key === '[[Prototype]]'
     );
     const newProps: HeapObjectProperty[] = protoEntry ? [protoEntry] : [];
 
     for (const [key, val] of Object.entries(thisObj)) {
-      if (key === "this") continue; // skip internal env entry
+      if (key === 'this') continue; // skip internal env entry
       const propResolved = this.resolveValueForMemoryShallow(val);
       newProps.push({
         key,
@@ -5101,7 +5137,7 @@ export class Interpreter {
     }
 
     instanceHeapObj.properties = newProps;
-    instanceHeapObj.label = `${instanceHeapObj.label.split(" instance")[0]} instance`;
+    instanceHeapObj.label = `${instanceHeapObj.label.split(' instance')[0]} instance`;
   }
 
   private handleNewPromise(node: NewExpressionNode): PromiseWrapper {
@@ -5112,7 +5148,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.newPromise(),
-      code,
+      code
     );
 
     // Executor must be a function/arrow expression (first arg)
@@ -5120,8 +5156,8 @@ export class Interpreter {
 
     const executorArg = node.arguments[0] as ExpressionNode;
     const executorNode =
-      executorArg.type === "FunctionExpression" ||
-      executorArg.type === "ArrowFunctionExpression"
+      executorArg.type === 'FunctionExpression' ||
+      executorArg.type === 'ArrowFunctionExpression'
         ? (executorArg as FunctionExpressionNode | ArrowFunctionExpressionNode)
         : null;
 
@@ -5135,48 +5171,48 @@ export class Interpreter {
     // Build special resolve/reject functions stored in env
     const resolveFn: BuiltinFn = {
       __isBuiltin: true,
-      kind: "promise-resolve",
+      kind: 'promise-resolve',
       promiseId: promise.id,
     };
     const rejectFn: BuiltinFn = {
       __isBuiltin: true,
-      kind: "promise-reject",
+      kind: 'promise-reject',
       promiseId: promise.id,
     };
 
     const executorParams = executorNode.params.map(
-      (p) => (p as IdentifierNode).name,
+      (p) => (p as IdentifierNode).name
     );
-    const resolveParamName = executorParams[0] ?? "resolve";
-    const rejectParamName = executorParams[1] ?? "reject";
+    const resolveParamName = executorParams[0] ?? 'resolve';
+    const rejectParamName = executorParams[1] ?? 'reject';
 
     // Push executor frame with resolve + reject as params
     this.pushFrame(
-      "Promise executor",
+      'Promise executor',
       this.getLine(executorNode),
       this.getColumn(executorNode),
       [
         { name: resolveParamName, value: resolveFn },
         { name: rejectParamName, value: rejectFn },
-      ],
+      ]
     );
 
     this.snapshot(
       this.getLine(executorNode),
       this.getColumn(executorNode),
       description.executingPromiseExecutor(),
-      executorSource,
+      executorSource
     );
 
     this.hasReturned = false;
     this.returnValue = undefined;
 
     if (
-      executorNode.type === "ArrowFunctionExpression" &&
+      executorNode.type === 'ArrowFunctionExpression' &&
       (executorNode as ArrowFunctionExpressionNode).expression
     ) {
       this.evaluateExpression(
-        (executorNode as ArrowFunctionExpressionNode).body as ExpressionNode,
+        (executorNode as ArrowFunctionExpressionNode).body as ExpressionNode
       );
     } else {
       this.visitBlockStatement(executorNode.body as BlockStatementNode);
@@ -5193,13 +5229,13 @@ export class Interpreter {
 
   // Handle Promise.resolve(v), Promise.reject(r), Promise.all([...]), Promise.race([...])
   private handlePromiseStaticCall(
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): PromiseWrapper | unknown {
     const memberExpr = node.callee as MemberExpressionNode;
     const methodName = (memberExpr.property as IdentifierNode).name;
     const code = extractSource(this.sourceCode, node);
 
-    if (methodName === "resolve") {
+    if (methodName === 'resolve') {
       const value =
         node.arguments.length > 0
           ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
@@ -5212,12 +5248,12 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.promiseResolveStatic({ displayValue: displayValue(value) }),
-        code,
+        code
       );
       return wrapper;
     }
 
-    if (methodName === "reject") {
+    if (methodName === 'reject') {
       const reason =
         node.arguments.length > 0
           ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
@@ -5230,20 +5266,20 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.promiseRejectStatic({ displayValue: displayValue(reason) }),
-        code,
+        code
       );
       return wrapper;
     }
 
-    if (methodName === "all") {
+    if (methodName === 'all') {
       return this.handlePromiseAll(node, false);
     }
 
-    if (methodName === "race") {
+    if (methodName === 'race') {
       return this.handlePromiseRace(node);
     }
 
-    if (methodName === "allSettled") {
+    if (methodName === 'allSettled') {
       return this.handlePromiseAll(node, true);
     }
 
@@ -5251,14 +5287,14 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.promiseMethodNotSupported({ methodName }),
-      code,
+      code
     );
     return undefined;
   }
 
   private handlePromiseAll(
     node: CallExpressionNode,
-    settled: boolean,
+    settled: boolean
   ): PromiseWrapper {
     const code = extractSource(this.sourceCode, node);
     const { promise: resultPromise, wrapper } = this.createInternalPromise();
@@ -5268,22 +5304,26 @@ export class Interpreter {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        settled ? description.promiseAllSettledEmpty() : description.promiseAllEmpty(),
-        code,
+        settled
+          ? description.promiseAllSettledEmpty()
+          : description.promiseAllEmpty(),
+        code
       );
       return wrapper;
     }
 
     const iterableArg = this.evaluateExpression(
-      node.arguments[0] as ExpressionNode,
+      node.arguments[0] as ExpressionNode
     );
     if (!Array.isArray(iterableArg)) {
       this.resolvePromise(resultPromise, []);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        description.promiseNotIterable({ method: settled ? "allSettled" : "all" }),
-        code,
+        description.promiseNotIterable({
+          method: settled ? 'allSettled' : 'all',
+        }),
+        code
       );
       return wrapper;
     }
@@ -5295,25 +5335,25 @@ export class Interpreter {
       if (this.isPromiseWrapper(item)) {
         const p = this.promises.get((item as PromiseWrapper).promiseId);
         if (p) {
-          if (p.state === "fulfilled") {
+          if (p.state === 'fulfilled') {
             values.push(
-              settled ? { status: "fulfilled", value: p.result } : p.result,
+              settled ? { status: 'fulfilled', value: p.result } : p.result
             );
-          } else if (p.state === "rejected") {
+          } else if (p.state === 'rejected') {
             if (!settled) {
               hasRejected = true;
               this.rejectPromise(resultPromise, p.result);
               break;
             } else {
-              values.push({ status: "rejected", reason: p.result });
+              values.push({ status: 'rejected', reason: p.result });
             }
           } else {
             // pending — treat as undefined for simplicity
-            values.push(settled ? { status: "pending" } : undefined);
+            values.push(settled ? { status: 'pending' } : undefined);
           }
         }
       } else {
-        values.push(settled ? { status: "fulfilled", value: item } : item);
+        values.push(settled ? { status: 'fulfilled', value: item } : item);
       }
     }
 
@@ -5325,9 +5365,17 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       settled
-        ? description.promiseAllSettled({ count: iterableArg.length, hasRejected, values: values.length })
-        : description.promiseAll({ count: iterableArg.length, hasRejected, values: values.length }),
-      code,
+        ? description.promiseAllSettled({
+            count: iterableArg.length,
+            hasRejected,
+            values: values.length,
+          })
+        : description.promiseAll({
+            count: iterableArg.length,
+            hasRejected,
+            values: values.length,
+          }),
+      code
     );
     return wrapper;
   }
@@ -5341,20 +5389,20 @@ export class Interpreter {
         this.getLine(node),
         this.getColumn(node),
         description.promiseRaceEmpty(),
-        code,
+        code
       );
       return wrapper;
     }
 
     const iterableArg = this.evaluateExpression(
-      node.arguments[0] as ExpressionNode,
+      node.arguments[0] as ExpressionNode
     );
     if (!Array.isArray(iterableArg)) {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        description.promiseNotIterable({ method: "race" }),
-        code,
+        description.promiseNotIterable({ method: 'race' }),
+        code
       );
       return wrapper;
     }
@@ -5362,8 +5410,8 @@ export class Interpreter {
     for (const item of iterableArg) {
       if (this.isPromiseWrapper(item)) {
         const p = this.promises.get((item as PromiseWrapper).promiseId);
-        if (p && p.state !== "pending") {
-          if (p.state === "fulfilled") {
+        if (p && p.state !== 'pending') {
+          if (p.state === 'fulfilled') {
             this.resolvePromise(resultPromise, p.result);
           } else {
             this.rejectPromise(resultPromise, p.result);
@@ -5382,9 +5430,12 @@ export class Interpreter {
       description.promiseRace({
         count: iterableArg.length,
         state: resultPromise.state,
-        displayValue: resultPromise.state !== "pending" ? displayValue(resultPromise.result) : undefined,
+        displayValue:
+          resultPromise.state !== 'pending'
+            ? displayValue(resultPromise.result)
+            : undefined,
       }),
-      code,
+      code
     );
     return wrapper;
   }
@@ -5393,7 +5444,7 @@ export class Interpreter {
   private handlePromiseChainCall(
     wrapper: PromiseWrapper,
     method: string,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): PromiseWrapper {
     const code = extractSource(this.sourceCode, node);
     const sourcePromise = this.promises.get(wrapper.promiseId);
@@ -5404,7 +5455,7 @@ export class Interpreter {
       this.createInternalPromise();
 
     const getCallbackNode = (
-      index: number,
+      index: number
     ): {
       node: FunctionExpressionNode | ArrowFunctionExpressionNode | null;
       fnValue: FunctionValue | null;
@@ -5412,15 +5463,15 @@ export class Interpreter {
       const arg = node.arguments[index];
       if (!arg) return { node: null, fnValue: null };
       if (
-        arg.type === "FunctionExpression" ||
-        arg.type === "ArrowFunctionExpression"
+        arg.type === 'FunctionExpression' ||
+        arg.type === 'ArrowFunctionExpression'
       ) {
         return {
           node: arg as FunctionExpressionNode | ArrowFunctionExpressionNode,
           fnValue: null,
         };
       }
-      if (arg.type === "Identifier") {
+      if (arg.type === 'Identifier') {
         const val = this.lookupVariable((arg as IdentifierNode).name);
         if (val !== undefined && this.isFunctionValue(val)) {
           return { node: null, fnValue: val };
@@ -5431,11 +5482,11 @@ export class Interpreter {
 
     const getCallbackSource = (index: number): string => {
       const arg = node.arguments[index];
-      if (!arg) return "(no callback)";
+      if (!arg) return '(no callback)';
       return extractSource(this.sourceCode, arg as BaseNode);
     };
 
-    if (method === "then") {
+    if (method === 'then') {
       const { node: onFulfilledNode, fnValue: onFulfilledFn } =
         getCallbackNode(0);
       const { node: onRejectedNode, fnValue: onRejectedFn } =
@@ -5444,37 +5495,37 @@ export class Interpreter {
       if (onFulfilledNode || onFulfilledFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
-          type: "fulfill",
+          type: 'fulfill',
           callbackNode: onFulfilledNode,
           callbackSource: getCallbackSource(0),
           resultPromiseId: resultPromise.id,
           resolvedFnValue: onFulfilledFn ?? undefined,
         };
 
-        if (sourcePromise.state === "fulfilled") {
+        if (sourcePromise.state === 'fulfilled') {
           this.scheduleMicrotask(reaction, sourcePromise.result);
-        } else if (sourcePromise.state === "pending") {
+        } else if (sourcePromise.state === 'pending') {
           sourcePromise.fulfillReactions.push(reaction);
           this.syncPromiseHeap(sourcePromise);
         }
         // If already rejected, onFulfilled is skipped — resultPromise stays pending
         // (simplified: propagate rejection)
-        if (sourcePromise.state === "rejected") {
+        if (sourcePromise.state === 'rejected') {
           this.rejectPromise(resultPromise, sourcePromise.result);
         }
       } else {
         // Empty .then() — pass value through to next promise
-        if (sourcePromise.state === "fulfilled") {
+        if (sourcePromise.state === 'fulfilled') {
           this.resolvePromise(resultPromise, sourcePromise.result);
-        } else if (sourcePromise.state === "rejected") {
+        } else if (sourcePromise.state === 'rejected') {
           this.rejectPromise(resultPromise, sourcePromise.result);
         } else {
           // pending — add identity reactions to propagate when settled
           const identityFulfillReaction: PromiseReaction = {
             id: `reaction-${this.reactionCounter++}`,
-            type: "fulfill",
+            type: 'fulfill',
             callbackNode: null as unknown,
-            callbackSource: "(identity)",
+            callbackSource: '(identity)',
             resultPromiseId: resultPromise.id,
           };
           sourcePromise.fulfillReactions.push(identityFulfillReaction);
@@ -5484,43 +5535,43 @@ export class Interpreter {
       if (onRejectedNode || onRejectedFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
-          type: "reject",
+          type: 'reject',
           callbackNode: onRejectedNode,
           callbackSource: getCallbackSource(1),
           resultPromiseId: resultPromise.id,
           resolvedFnValue: onRejectedFn ?? undefined,
         };
 
-        if (sourcePromise.state === "rejected") {
+        if (sourcePromise.state === 'rejected') {
           this.scheduleMicrotask(reaction, sourcePromise.result);
-        } else if (sourcePromise.state === "pending") {
+        } else if (sourcePromise.state === 'pending') {
           sourcePromise.rejectReactions.push(reaction);
         }
       }
-    } else if (method === "catch") {
+    } else if (method === 'catch') {
       const { node: onRejectedNode, fnValue: onRejectedFn } =
         getCallbackNode(0);
 
       if (onRejectedNode || onRejectedFn) {
         const reaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
-          type: "reject",
+          type: 'reject',
           callbackNode: onRejectedNode,
           callbackSource: getCallbackSource(0),
           resultPromiseId: resultPromise.id,
           resolvedFnValue: onRejectedFn ?? undefined,
         };
 
-        if (sourcePromise.state === "rejected") {
+        if (sourcePromise.state === 'rejected') {
           this.scheduleMicrotask(reaction, sourcePromise.result);
-        } else if (sourcePromise.state === "pending") {
+        } else if (sourcePromise.state === 'pending') {
           sourcePromise.rejectReactions.push(reaction);
         } else {
           // fulfilled — propagate to result promise
           this.resolvePromise(resultPromise, sourcePromise.result);
         }
       }
-    } else if (method === "finally") {
+    } else if (method === 'finally') {
       const { node: onFinallyNode, fnValue: onFinallyFn } = getCallbackNode(0);
       const finallySource = getCallbackSource(0);
 
@@ -5528,7 +5579,7 @@ export class Interpreter {
         // Both fulfill and reject call the same callback, then propagate original value
         const fulfillReaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
-          type: "fulfill",
+          type: 'fulfill',
           callbackNode: onFinallyNode,
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
@@ -5537,7 +5588,7 @@ export class Interpreter {
         };
         const rejectReaction: PromiseReaction = {
           id: `reaction-${this.reactionCounter++}`,
-          type: "reject",
+          type: 'reject',
           callbackNode: onFinallyNode,
           callbackSource: finallySource,
           resultPromiseId: resultPromise.id,
@@ -5545,9 +5596,9 @@ export class Interpreter {
           resolvedFnValue: onFinallyFn ?? undefined,
         };
 
-        if (sourcePromise.state === "fulfilled") {
+        if (sourcePromise.state === 'fulfilled') {
           this.scheduleMicrotask(fulfillReaction, sourcePromise.result);
-        } else if (sourcePromise.state === "rejected") {
+        } else if (sourcePromise.state === 'rejected') {
           this.scheduleMicrotask(rejectReaction, sourcePromise.result);
         } else {
           sourcePromise.fulfillReactions.push(fulfillReaction);
@@ -5559,25 +5610,25 @@ export class Interpreter {
 
     // Generate educational description for the step
     let chainDesc: string;
-    if (method === "then") {
-      if (sourcePromise.state === "fulfilled") {
+    if (method === 'then') {
+      if (sourcePromise.state === 'fulfilled') {
         chainDesc = description.thenRegistered();
-      } else if (sourcePromise.state === "rejected") {
+      } else if (sourcePromise.state === 'rejected') {
         chainDesc = description.thenSkipped();
       } else {
         chainDesc = description.thenRegistered();
       }
-    } else if (method === "catch") {
-      if (sourcePromise.state === "rejected") {
+    } else if (method === 'catch') {
+      if (sourcePromise.state === 'rejected') {
         chainDesc = description.catchQueued();
-      } else if (sourcePromise.state === "fulfilled") {
+      } else if (sourcePromise.state === 'fulfilled') {
         chainDesc = description.catchSkipped();
       } else {
         chainDesc = description.catchRegistered();
       }
     } else {
       // finally
-      if (sourcePromise.state !== "pending") {
+      if (sourcePromise.state !== 'pending') {
         chainDesc = description.finallyQueued();
       } else {
         chainDesc = description.finallyRegistered();
@@ -5600,7 +5651,7 @@ export class Interpreter {
       this.resumeAsyncFunction(
         microtask.id,
         microtask.resolveValue,
-        continuation.isRejection,
+        continuation.isRejection
       );
       return;
     }
@@ -5644,7 +5695,7 @@ export class Interpreter {
 
     const displaySource =
       microtask.callbackSource.length > 20
-        ? microtask.callbackSource.slice(0, 20) + "..."
+        ? microtask.callbackSource.slice(0, 20) + '...'
         : microtask.callbackSource;
     const lineNum = callbackNode ? this.getLine(callbackNode) : 0;
     const colNum = callbackNode ? this.getColumn(callbackNode) : 0;
@@ -5652,16 +5703,18 @@ export class Interpreter {
     this.pushFrame(displaySource, lineNum, colNum, frameParams);
 
     this.eventLoop = {
-      phase: "draining-microtasks",
+      phase: 'draining-microtasks',
       description:
-        "Event Loop: draining Microtask Queue (priority over Task Queue)",
+        'Event Loop: draining Microtask Queue (priority over Task Queue)',
     };
 
     this.snapshot(
       lineNum,
       colNum,
-      description.executingMicrotask({ displayValue: displayValue(microtask.resolveValue) }),
-      microtask.callbackSource,
+      description.executingMicrotask({
+        displayValue: displayValue(microtask.resolveValue),
+      }),
+      microtask.callbackSource
     );
 
     this.hasReturned = false;
@@ -5669,11 +5722,11 @@ export class Interpreter {
 
     if (callbackNode) {
       if (
-        callbackNode.type === "ArrowFunctionExpression" &&
+        callbackNode.type === 'ArrowFunctionExpression' &&
         (callbackNode as ArrowFunctionExpressionNode).expression
       ) {
         this.returnValue = this.evaluateExpression(
-          (callbackNode as ArrowFunctionExpressionNode).body as ExpressionNode,
+          (callbackNode as ArrowFunctionExpressionNode).body as ExpressionNode
         );
         this.hasReturned = true;
       } else {
@@ -5710,20 +5763,20 @@ export class Interpreter {
         if (this.isPromiseWrapper(valueToResolve)) {
           // Callback returned a promise — adopt its state
           const innerPromise = this.promises.get(
-            (valueToResolve as PromiseWrapper).promiseId,
+            (valueToResolve as PromiseWrapper).promiseId
           );
           if (innerPromise) {
-            if (innerPromise.state === "fulfilled") {
+            if (innerPromise.state === 'fulfilled') {
               this.resolvePromise(resultPromise, innerPromise.result);
-            } else if (innerPromise.state === "rejected") {
+            } else if (innerPromise.state === 'rejected') {
               this.rejectPromise(resultPromise, innerPromise.result);
             } else {
               // pending inner promise — chain reactions
               innerPromise.fulfillReactions.push({
                 id: `reaction-${this.reactionCounter++}`,
-                type: "fulfill",
+                type: 'fulfill',
                 callbackNode: null,
-                callbackSource: "(chain)",
+                callbackSource: '(chain)',
                 resultPromiseId: resultPromise.id,
               });
             }
@@ -5738,7 +5791,7 @@ export class Interpreter {
   // Handle builtin resolve/reject calls inside Promise executor
   private handleBuiltinCall(
     node: CallExpressionNode,
-    builtin: BuiltinFn,
+    builtin: BuiltinFn
   ): unknown {
     const code = extractSource(this.sourceCode, node);
     const promise = this.promises.get(builtin.promiseId);
@@ -5749,21 +5802,25 @@ export class Interpreter {
         ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
         : undefined;
 
-    if (builtin.kind === "promise-resolve") {
+    if (builtin.kind === 'promise-resolve') {
       this.resolvePromise(promise, value);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        description.promiseResolveCallback({ displayValue: displayValue(value) }),
-        code,
+        description.promiseResolveCallback({
+          displayValue: displayValue(value),
+        }),
+        code
       );
     } else {
       this.rejectPromise(promise, value);
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
-        description.promiseRejectCallback({ displayValue: displayValue(value) }),
-        code,
+        description.promiseRejectCallback({
+          displayValue: displayValue(value),
+        }),
+        code
       );
     }
 
@@ -5773,26 +5830,30 @@ export class Interpreter {
   // === Function Creation ===
 
   private createFunctionValue(
-    node: FunctionExpressionNode | ArrowFunctionExpressionNode,
+    node: FunctionExpressionNode | ArrowFunctionExpressionNode
   ): FunctionValue {
     // Extract param names (for simple params) and store nodes for destructuring
     const params: string[] = [];
     for (const p of node.params) {
-      if (p.type === "Identifier") {
+      if (p.type === 'Identifier') {
         params.push((p as IdentifierNode).name);
-      } else if (p.type === "AssignmentPattern") {
+      } else if (p.type === 'AssignmentPattern') {
         // Default parameter: extract the variable name from the left side
         const left = (p as AssignmentPatternNode).left;
-        params.push(left.type === "Identifier" ? (left as IdentifierNode).name : `__pattern_${params.length}`);
+        params.push(
+          left.type === 'Identifier'
+            ? (left as IdentifierNode).name
+            : `__pattern_${params.length}`
+        );
       } else {
         // Placeholder name for pattern params - actual binding happens at call time
         params.push(`__pattern_${params.length}`);
       }
     }
     const source = extractSource(this.sourceCode, node);
-    const isArrow = node.type === "ArrowFunctionExpression";
+    const isArrow = node.type === 'ArrowFunctionExpression';
     const isGenerator =
-      node.type === "FunctionExpression" &&
+      node.type === 'FunctionExpression' &&
       (node as FunctionExpressionNode).generator === true;
 
     return {
@@ -5809,17 +5870,21 @@ export class Interpreter {
   }
 
   private createFunctionValueFromDeclaration(
-    node: FunctionDeclarationNode,
+    node: FunctionDeclarationNode
   ): FunctionValue {
     // Extract param names (for simple params) and store nodes for destructuring
     const params: string[] = [];
     for (const p of node.params) {
-      if (p.type === "Identifier") {
+      if (p.type === 'Identifier') {
         params.push((p as IdentifierNode).name);
-      } else if (p.type === "AssignmentPattern") {
+      } else if (p.type === 'AssignmentPattern') {
         // Default parameter: extract the variable name from the left side
         const left = (p as AssignmentPatternNode).left;
-        params.push(left.type === "Identifier" ? (left as IdentifierNode).name : `__pattern_${params.length}`);
+        params.push(
+          left.type === 'Identifier'
+            ? (left as IdentifierNode).name
+            : `__pattern_${params.length}`
+        );
       } else {
         params.push(`__pattern_${params.length}`);
       }
@@ -5857,10 +5922,13 @@ export class Interpreter {
       // callStack[i] exists for function frames. Block envs pushed mid-loop
       // (for per-iteration let/const scoping) have no own callStack entry;
       // associate them with the innermost function frame instead.
-      const frameForEntry = this.callStack[i] ?? this.callStack[this.callStack.length - 1];
+      const frameForEntry =
+        this.callStack[i] ?? this.callStack[this.callStack.length - 1];
       if (!frameForEntry) continue;
 
-      const block = this.memoryBlocks.find((b) => b.frameId === frameForEntry.id);
+      const block = this.memoryBlocks.find(
+        (b) => b.frameId === frameForEntry.id
+      );
       if (!block) continue;
 
       const kinds = this.envKindsMap.get(env) ?? {};
@@ -5887,7 +5955,7 @@ export class Interpreter {
    * Build ClosureScopeEntry[] from CapturedEnvMeta[] for display on HeapObject.
    */
   private buildClosureScopeEntries(
-    meta: CapturedEnvMeta[] | undefined,
+    meta: CapturedEnvMeta[] | undefined
   ): ClosureScopeEntry[] {
     if (!meta || meta.length === 0) return [];
 
@@ -5902,7 +5970,7 @@ export class Interpreter {
           valueType: resolved.valueType,
           heapReferenceId: resolved.heapReferenceId,
           pointerColor: resolved.pointerColor,
-          isMutable: kind === "let" || kind === "var" || kind === "param",
+          isMutable: kind === 'let' || kind === 'var' || kind === 'param',
         };
       });
 
@@ -5929,8 +5997,8 @@ export class Interpreter {
         ? this.heap.find((h) => h.id === existingId)
         : undefined;
       return {
-        displayValue: "ⓕ",
-        valueType: "function",
+        displayValue: 'ⓕ',
+        valueType: 'function',
         heapReferenceId: existing?.id,
         pointerColor: existing?.color,
       };
@@ -5941,26 +6009,26 @@ export class Interpreter {
         ? this.heap.find((h) => h.id === p.heapObjectId)
         : undefined;
       return {
-        displayValue: "[Pointer]",
-        valueType: "object",
+        displayValue: '[Pointer]',
+        valueType: 'object',
         heapReferenceId: heapObj?.id,
         pointerColor: heapObj?.color,
       };
     }
-    if (val !== null && typeof val === "object") {
+    if (val !== null && typeof val === 'object') {
       const existingId = this.objectHeapMap.get(val as object);
       const existing = existingId
         ? this.heap.find((h) => h.id === existingId)
         : undefined;
       return {
-        displayValue: "[Pointer]",
-        valueType: "object",
+        displayValue: '[Pointer]',
+        valueType: 'object',
         heapReferenceId: existing?.id,
         pointerColor: existing?.color,
       };
     }
     const dv = displayValue(val);
-    return { displayValue: dv, valueType: "primitive" };
+    return { displayValue: dv, valueType: 'primitive' };
   }
 
   /**
@@ -5986,9 +6054,9 @@ export class Interpreter {
 
   private isThrownError(value: unknown): value is ThrownError {
     return (
-      typeof value === "object" &&
+      typeof value === 'object' &&
       value !== null &&
-      "__isThrownError" in value &&
+      '__isThrownError' in value &&
       (value as ThrownError).__isThrownError === true
     );
   }
@@ -6002,7 +6070,7 @@ export class Interpreter {
     funcValue: FunctionValue,
     funcName: string,
     params: Array<{ name: string; value: unknown }>,
-    callNode: CallExpressionNode,
+    callNode: CallExpressionNode
   ): PromiseWrapper {
     const code = extractSource(this.sourceCode, callNode);
 
@@ -6011,22 +6079,22 @@ export class Interpreter {
       this.createInternalPromise();
 
     // 2. Push async CallStackFrame
-    const frameId = generateId("frame", this.frameCounter);
+    const frameId = generateId('frame', this.frameCounter);
     const color = getFrameColor(this.frameCounter++);
 
     const frame: CallStackFrame = {
       id: frameId,
       name: funcName,
-      type: "async",
+      type: 'async',
       line: this.getLine(callNode),
       column: this.getColumn(callNode),
       scope: {
         name: funcName,
-        type: "function",
+        type: 'function',
         variables: params.map((p) => ({
           name: p.name,
           value: p.value,
-          kind: "param" as VariableKind,
+          kind: 'param' as VariableKind,
         })),
         parentScope:
           this.callStack.length > 0
@@ -6035,14 +6103,14 @@ export class Interpreter {
       },
       color,
       isAsync: true,
-      status: "executing",
+      status: 'executing',
     };
 
     const paramEntries: MemoryEntry[] = params.map((p) => {
       const resolved = this.resolveValueForMemory(p.value);
       return {
         name: p.name,
-        kind: "param" as const,
+        kind: 'param' as const,
         valueType: resolved.valueType,
         displayValue: resolved.displayValue,
         heapReferenceId: resolved.heapReferenceId,
@@ -6053,7 +6121,7 @@ export class Interpreter {
     const memoryBlock: MemoryBlock = {
       frameId,
       label: `Local: ${funcName}`,
-      type: "local",
+      type: 'local',
       color,
       entries: paramEntries,
       suspended: false,
@@ -6068,11 +6136,11 @@ export class Interpreter {
 
     this.scopes.push({
       name: funcName,
-      type: "function",
+      type: 'function',
       variables: params.map((p) => ({
         name: p.name,
         value: p.value,
-        kind: "param" as VariableKind,
+        kind: 'param' as VariableKind,
       })),
       parentScope:
         this.scopes.length > 0
@@ -6084,7 +6152,7 @@ export class Interpreter {
       this.getLine(callNode),
       this.getColumn(callNode),
       description.callingAsyncFunction({ funcName }),
-      code,
+      code
     );
 
     // 3. Execute body — visitAsyncFunctionBody handles await suspension
@@ -6094,13 +6162,13 @@ export class Interpreter {
       funcName,
       frameId,
       color,
-      returnPromise.id,
+      returnPromise.id
     );
 
     // 4. If the function completed without suspension (no await hit), settle the promise
-    if (result !== "suspended") {
+    if (result !== 'suspended') {
       const returnVal =
-        result === "completed-with-return" ? this.returnValue : undefined;
+        result === 'completed-with-return' ? this.returnValue : undefined;
       this.hasReturned = false;
       this.returnValue = undefined;
 
@@ -6111,16 +6179,22 @@ export class Interpreter {
         this.snapshot(
           this.getLine(callNode),
           this.getColumn(callNode),
-          description.asyncFunctionThrew({ funcName, displayValue: displayValue((returnVal as ThrownError).reason) }),
-          code,
+          description.asyncFunctionThrew({
+            funcName,
+            displayValue: displayValue((returnVal as ThrownError).reason),
+          }),
+          code
         );
       } else {
         this.resolvePromise(returnPromise, returnVal);
         this.snapshot(
           this.getLine(callNode),
           this.getColumn(callNode),
-          description.asyncFunctionCompleted({ funcName, displayValue: displayValue(returnVal) }),
-          code,
+          description.asyncFunctionCompleted({
+            funcName,
+            displayValue: displayValue(returnVal),
+          }),
+          code
         );
       }
     }
@@ -6140,13 +6214,13 @@ export class Interpreter {
     funcName: string,
     frameId: string,
     frameColor: string,
-    returnPromiseId: string,
-  ): "suspended" | "completed-with-return" | "completed" {
+    returnPromiseId: string
+  ): 'suspended' | 'completed-with-return' | 'completed' {
     // Pre-check: if hasReturned was set before the loop (e.g. by `return await`), honour it
-    if (this.hasReturned) return "completed-with-return";
+    if (this.hasReturned) return 'completed-with-return';
 
     for (let i = 0; i < statements.length; i++) {
-      if (this.stepIndex >= MAX_STEPS) return "completed";
+      if (this.stepIndex >= MAX_STEPS) return 'completed';
 
       const stmt = statements[i];
 
@@ -6177,12 +6251,12 @@ export class Interpreter {
           this.getLine(stmt),
           this.getColumn(stmt),
           description.awaitCheckingPromise(),
-          awaitCode,
+          awaitCode
         );
 
         // Suspend the async frame
         const frame = this.callStack.find((f) => f.id === frameId);
-        if (frame) frame.status = "suspended";
+        if (frame) frame.status = 'suspended';
         const block = this.memoryBlocks.find((b) => b.frameId === frameId);
         if (block) block.suspended = true;
 
@@ -6190,7 +6264,7 @@ export class Interpreter {
           this.getLine(stmt),
           this.getColumn(stmt),
           description.asyncFunctionSuspended({ funcName }),
-          awaitCode,
+          awaitCode
         );
 
         // Save continuation (remaining statements after this one)
@@ -6218,27 +6292,27 @@ export class Interpreter {
         this.envStack.pop();
         this.scopes.pop();
 
-        return "suspended";
+        return 'suspended';
       }
 
       // No await — execute normally
       this.visitStatement(stmt);
 
       if (this.hasReturned) {
-        return "completed-with-return";
+        return 'completed-with-return';
       }
 
       // Propagate thrown errors (e.g. from rejected await inside a try block
       // that wasn't caught, or from the AwaitExpression fallback path)
       if (this.isThrownError(this.returnValue)) {
         this.hasReturned = true;
-        return "completed-with-return";
+        return 'completed-with-return';
       }
 
-      if (this.stepIndex >= MAX_STEPS) return "completed";
+      if (this.stepIndex >= MAX_STEPS) return 'completed';
     }
 
-    return "completed";
+    return 'completed';
   }
 
   /**
@@ -6247,7 +6321,7 @@ export class Interpreter {
    */
   private scheduleAsyncContinuation(
     continuation: AsyncContinuation,
-    awaitedPromise: InternalPromise,
+    awaitedPromise: InternalPromise
   ): void {
     // Create a synthetic microtask id
     const microtaskId = `async-resume-${this.microtaskCounter++}`;
@@ -6258,11 +6332,11 @@ export class Interpreter {
     const queueItem: QueueItem = {
       id: microtaskId,
       callbackLabel: `resume ${continuation.functionName}`,
-      sourceType: "promise",
+      sourceType: 'promise',
       sourceId: awaitedPromise.id,
     };
 
-    if (awaitedPromise.state === "fulfilled") {
+    if (awaitedPromise.state === 'fulfilled') {
       // Already settled — schedule immediately
       const pendingMicrotask: PendingMicrotask = {
         id: microtaskId,
@@ -6274,7 +6348,7 @@ export class Interpreter {
       };
       this.pendingMicrotasks.push(pendingMicrotask);
       this.microtaskQueue.push(queueItem);
-    } else if (awaitedPromise.state === "rejected") {
+    } else if (awaitedPromise.state === 'rejected') {
       // Already rejected — resume with thrown error
       const pendingMicrotask: PendingMicrotask = {
         id: microtaskId,
@@ -6291,27 +6365,27 @@ export class Interpreter {
       // Pending — add a synthetic reaction so we get notified when it settles
       const fulfillReaction: PromiseReaction = {
         id: `reaction-${this.reactionCounter++}`,
-        type: "fulfill",
+        type: 'fulfill',
         callbackNode: null as unknown,
         callbackSource: `resume ${continuation.functionName}`,
         resultPromiseId: continuation.returnPromiseId,
       };
       // Override: we use a special marker to route through async resume instead
       (fulfillReaction as unknown as Record<string, unknown>)[
-        "__asyncResumeId"
+        '__asyncResumeId'
       ] = microtaskId;
 
       const rejectReaction: PromiseReaction = {
         id: `reaction-${this.reactionCounter++}`,
-        type: "reject",
+        type: 'reject',
         callbackNode: null as unknown,
         callbackSource: `resume ${continuation.functionName} (rejection)`,
         resultPromiseId: continuation.returnPromiseId,
       };
       (rejectReaction as unknown as Record<string, unknown>)[
-        "__asyncResumeId"
+        '__asyncResumeId'
       ] = microtaskId;
-      (rejectReaction as unknown as Record<string, unknown>)["__isRejection"] =
+      (rejectReaction as unknown as Record<string, unknown>)['__isRejection'] =
         true;
 
       awaitedPromise.fulfillReactions.push(fulfillReaction);
@@ -6330,7 +6404,7 @@ export class Interpreter {
   private resumeAsyncFunction(
     microtaskId: string,
     resolvedValue: unknown,
-    isRejection: boolean,
+    isRejection: boolean
   ): void {
     const continuation = this.asyncContinuations.get(microtaskId);
     if (!continuation) return;
@@ -6339,10 +6413,10 @@ export class Interpreter {
     // Restore the frame status
     const frame = this.callStack.find((f) => f.id === continuation.frameId);
     if (frame) {
-      frame.status = "executing";
+      frame.status = 'executing';
     }
     const block = this.memoryBlocks.find(
-      (b) => b.frameId === continuation.frameId,
+      (b) => b.frameId === continuation.frameId
     );
     if (block) {
       block.suspended = false;
@@ -6352,7 +6426,7 @@ export class Interpreter {
     this.envStack.push(continuation.localEnv);
     this.scopes.push({
       name: continuation.functionName,
-      type: "function",
+      type: 'function',
       variables: [],
     });
 
@@ -6363,15 +6437,18 @@ export class Interpreter {
     this.snapshot(
       0,
       0,
-      description.asyncFunctionResumed({ funcName: continuation.functionName, displayValue: displayValue(resolvedValue) }),
-      "",
+      description.asyncFunctionResumed({
+        funcName: continuation.functionName,
+        displayValue: displayValue(resolvedValue),
+      }),
+      ''
     );
 
     // If the await result goes into a variable, assign it now
     if (continuation.awaitResultVarName && !isRejection) {
       const varName = continuation.awaitResultVarName;
 
-      if (varName === "__return__") {
+      if (varName === '__return__') {
         // `return await <expr>` — the async function should return with resolvedValue
         this.hasReturned = true;
         this.returnValue = resolvedValue;
@@ -6406,8 +6483,11 @@ export class Interpreter {
         this.snapshot(
           0,
           0,
-          description.asyncContinuationRejected({ funcName: continuation.functionName, displayValue: displayValue(resolvedValue) }),
-          "",
+          description.asyncContinuationRejected({
+            funcName: continuation.functionName,
+            displayValue: displayValue(resolvedValue),
+          }),
+          ''
         );
       }
       return;
@@ -6420,12 +6500,12 @@ export class Interpreter {
       continuation.functionName,
       continuation.frameId,
       continuation.frameColor,
-      continuation.returnPromiseId,
+      continuation.returnPromiseId
     );
 
-    if (result !== "suspended") {
+    if (result !== 'suspended') {
       const returnVal =
-        result === "completed-with-return" ? this.returnValue : undefined;
+        result === 'completed-with-return' ? this.returnValue : undefined;
       this.hasReturned = false;
       this.returnValue = undefined;
 
@@ -6437,16 +6517,21 @@ export class Interpreter {
           this.snapshot(
             0,
             0,
-            description.asyncContinuationThrew({ funcName: continuation.functionName }),
-            "",
+            description.asyncContinuationThrew({
+              funcName: continuation.functionName,
+            }),
+            ''
           );
         } else {
           this.resolvePromise(returnPromise, returnVal);
           this.snapshot(
             0,
             0,
-            description.asyncContinuationCompleted({ funcName: continuation.functionName, displayValue: displayValue(returnVal) }),
-            "",
+            description.asyncContinuationCompleted({
+              funcName: continuation.functionName,
+              displayValue: displayValue(returnVal),
+            }),
+            ''
           );
         }
       }
@@ -6458,28 +6543,28 @@ export class Interpreter {
    * Returns the await node or null.
    */
   private findAwaitInStatement(
-    stmt: StatementNode,
+    stmt: StatementNode
   ): AwaitExpressionNode | null {
-    if (stmt.type === "VariableDeclaration") {
+    if (stmt.type === 'VariableDeclaration') {
       const decl = stmt as VariableDeclarationNode;
       for (const d of decl.declarations) {
-        if (d.init && d.init.type === "AwaitExpression") {
+        if (d.init && d.init.type === 'AwaitExpression') {
           return d.init as AwaitExpressionNode;
         }
       }
     }
-    if (stmt.type === "ExpressionStatement") {
+    if (stmt.type === 'ExpressionStatement') {
       const expr = (stmt as ExpressionStatementNode).expression;
-      if (expr.type === "AwaitExpression") return expr as AwaitExpressionNode;
-      if (expr.type === "AssignmentExpression") {
+      if (expr.type === 'AwaitExpression') return expr as AwaitExpressionNode;
+      if (expr.type === 'AssignmentExpression') {
         const right = (expr as AssignmentExpressionNode).right;
-        if (right.type === "AwaitExpression")
+        if (right.type === 'AwaitExpression')
           return right as AwaitExpressionNode;
       }
     }
-    if (stmt.type === "ReturnStatement") {
+    if (stmt.type === 'ReturnStatement') {
       const ret = stmt as ReturnStatementNode;
-      if (ret.argument && ret.argument.type === "AwaitExpression") {
+      if (ret.argument && ret.argument.type === 'AwaitExpression') {
         return ret.argument as AwaitExpressionNode;
       }
     }
@@ -6495,7 +6580,7 @@ export class Interpreter {
     awaitedValue: unknown;
     resultVarName: string | null;
   } {
-    if (stmt.type === "VariableDeclaration") {
+    if (stmt.type === 'VariableDeclaration') {
       const decl = stmt as VariableDeclarationNode;
       const d = decl.declarations[0];
       const awaitNode = d.init as AwaitExpressionNode;
@@ -6503,15 +6588,15 @@ export class Interpreter {
       // Declare the variable as undefined for now (will be assigned on resume)
       // For await, we only support simple identifiers
       const varName =
-        d.id.type === "Identifier"
+        d.id.type === 'Identifier'
           ? (d.id as IdentifierNode).name
-          : "__await_result__";
+          : '__await_result__';
       this.setVariable(varName, undefined, true);
       const entry: MemoryEntry = {
         name: varName,
         kind: decl.kind as VariableKind,
-        valueType: "primitive",
-        displayValue: "undefined",
+        valueType: 'primitive',
+        displayValue: 'undefined',
       };
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
       const currentScope = this.scopes[this.scopes.length - 1];
@@ -6533,31 +6618,31 @@ export class Interpreter {
       return { awaitedValue, resultVarName: varName };
     }
 
-    if (stmt.type === "ExpressionStatement") {
+    if (stmt.type === 'ExpressionStatement') {
       const expr = (stmt as ExpressionStatementNode).expression;
-      if (expr.type === "AwaitExpression") {
+      if (expr.type === 'AwaitExpression') {
         const awaitedValue = this.evaluateExpression(
-          (expr as AwaitExpressionNode).argument,
+          (expr as AwaitExpressionNode).argument
         );
         return { awaitedValue, resultVarName: null };
       }
-      if (expr.type === "AssignmentExpression") {
+      if (expr.type === 'AssignmentExpression') {
         const assignNode = expr as AssignmentExpressionNode;
         const awaitNode = assignNode.right as AwaitExpressionNode;
         const awaitedValue = this.evaluateExpression(awaitNode.argument);
         const varName =
-          assignNode.left.type === "Identifier"
+          assignNode.left.type === 'Identifier'
             ? (assignNode.left as IdentifierNode).name
             : null;
         return { awaitedValue, resultVarName: varName };
       }
     }
 
-    if (stmt.type === "ReturnStatement") {
+    if (stmt.type === 'ReturnStatement') {
       const ret = stmt as ReturnStatementNode;
       const awaitNode = ret.argument as AwaitExpressionNode;
       const awaitedValue = this.evaluateExpression(awaitNode.argument);
-      return { awaitedValue, resultVarName: "__return__" };
+      return { awaitedValue, resultVarName: '__return__' };
     }
 
     return { awaitedValue: undefined, resultVarName: null };
@@ -6600,8 +6685,10 @@ export class Interpreter {
       this.snapshot(
         this.getLine(catchClause.body),
         this.getColumn(catchClause.body),
-        description.errorCaught({ displayValue: displayValue(thrownError.reason) }),
-        catchCode,
+        description.errorCaught({
+          displayValue: displayValue(thrownError.reason),
+        }),
+        catchCode
       );
 
       // Push error variable into current scope if param exists
@@ -6610,8 +6697,8 @@ export class Interpreter {
         this.setVariable(errName, thrownError.reason, true);
         const entry: MemoryEntry = {
           name: errName,
-          kind: "let" as VariableKind,
-          valueType: "primitive",
+          kind: 'let' as VariableKind,
+          valueType: 'primitive',
           displayValue: displayValue(thrownError.reason),
         };
         this.addMemoryEntry(this.getCurrentFrameId(), entry);
@@ -6620,7 +6707,7 @@ export class Interpreter {
           currentScope.variables.push({
             name: errName,
             value: thrownError.reason,
-            kind: "let" as VariableKind,
+            kind: 'let' as VariableKind,
           });
         }
       }
@@ -6641,7 +6728,7 @@ export class Interpreter {
         this.getLine(node.finalizer),
         this.getColumn(node.finalizer),
         description.enteringFinally(),
-        finallyCode,
+        finallyCode
       );
       const savedAgain = this.hasReturned;
       const savedRetAgain = this.returnValue;
@@ -6678,7 +6765,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.throwStatement({ displayValue: displayValue(value) }),
-      code,
+      code
     );
     this.returnValue = this.makeThrownError(value);
     this.hasReturned = true;
@@ -6690,7 +6777,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.breakStatement(),
-      code,
+      code
     );
     throw new BreakSignal();
   }
@@ -6701,7 +6788,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.continueStatement(),
-      code,
+      code
     );
     throw new ContinueSignal();
   }
@@ -6716,39 +6803,39 @@ export class Interpreter {
     funcValue: FunctionValue,
     funcName: string,
     params: Array<{ name: string; value: unknown }>,
-    callNode: CallExpressionNode,
+    callNode: CallExpressionNode
   ): GeneratorWrapper {
     const code = extractSource(this.sourceCode, callNode);
     const generatorId = `gen-${this.generatorCounter++}`;
 
     // Get the function's heap object ID for reference
-    const functionHeapId = this.objectHeapMap.get(funcValue) ?? "";
+    const functionHeapId = this.objectHeapMap.get(funcValue) ?? '';
     const functionHeap = functionHeapId
       ? this.heap.find((h) => h.id === functionHeapId)
       : undefined;
 
     // Create generator HeapObject with properties
-    const genHeapObj = this.addHeapObject("object", `Generator (${funcName})`, [
+    const genHeapObj = this.addHeapObject('object', `Generator (${funcName})`, [
       {
-        key: "[[GeneratorState]]",
+        key: '[[GeneratorState]]',
         displayValue: '"suspended"',
-        valueType: "primitive",
+        valueType: 'primitive',
       },
       {
-        key: "[[GeneratorFunction]]",
+        key: '[[GeneratorFunction]]',
         displayValue: `ⓕ* ${funcName}`,
-        valueType: "function",
+        valueType: 'function',
         heapReferenceId: functionHeapId || undefined,
         pointerColor: functionHeap?.color,
       },
-      { key: "next", displayValue: "ⓕ", valueType: "function" },
-      { key: "return", displayValue: "ⓕ", valueType: "function" },
-      { key: "throw", displayValue: "ⓕ", valueType: "function" },
+      { key: 'next', displayValue: 'ⓕ', valueType: 'function' },
+      { key: 'return', displayValue: 'ⓕ', valueType: 'function' },
+      { key: 'throw', displayValue: 'ⓕ', valueType: 'function' },
     ]);
-    genHeapObj.generatorState = "suspended";
+    genHeapObj.generatorState = 'suspended';
 
     // Create the continuation for this generator
-    const frameId = generateId("gen-frame", this.frameCounter++);
+    const frameId = generateId('gen-frame', this.frameCounter++);
     const frameColor = getFrameColor(this.frameCounter);
     const localEnv: Record<string, unknown> = {};
     for (const p of params) localEnv[p.name] = p.value;
@@ -6780,12 +6867,12 @@ export class Interpreter {
     // Map the wrapper to its heap object
     this.objectHeapMap.set(wrapper, genHeapObj.id);
 
-    const argsDisplay = params.map((p) => displayValue(p.value)).join(", ");
+    const argsDisplay = params.map((p) => displayValue(p.value)).join(', ');
     this.snapshot(
       this.getLine(callNode),
       this.getColumn(callNode),
       description.generatorCreated({ funcName, argsDisplay }),
-      code,
+      code
     );
 
     return wrapper;
@@ -6797,7 +6884,7 @@ export class Interpreter {
   private handleGeneratorMethodCall(
     wrapper: GeneratorWrapper,
     method: string,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): unknown {
     const code = extractSource(this.sourceCode, node);
     const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
@@ -6808,12 +6895,12 @@ export class Interpreter {
     }
 
     // Check if generator is already closed
-    if (genHeap.generatorState === "closed") {
+    if (genHeap.generatorState === 'closed') {
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
         description.generatorAlreadyClosed({ method }),
-        code,
+        code
       );
       return { value: undefined, done: true };
     }
@@ -6824,11 +6911,11 @@ export class Interpreter {
         ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
         : undefined;
 
-    if (method === "return") {
+    if (method === 'return') {
       return this.executeGeneratorReturn(wrapper, argValue, node);
     }
 
-    if (method === "throw") {
+    if (method === 'throw') {
       return this.executeGeneratorThrow(wrapper, argValue, node);
     }
 
@@ -6842,7 +6929,7 @@ export class Interpreter {
   private executeGeneratorNext(
     wrapper: GeneratorWrapper,
     inputValue: unknown,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): unknown {
     const code = extractSource(this.sourceCode, node);
     const continuation = this.generatorContinuations.get(wrapper.generatorId);
@@ -6855,46 +6942,46 @@ export class Interpreter {
     // Safety check for infinite loops
     continuation.nextCallCount++;
     if (continuation.nextCallCount > Interpreter.MAX_GENERATOR_NEXT_CALLS) {
-      genHeap.generatorState = "closed";
-      this.updateGeneratorHeapState(genHeap, "closed");
+      genHeap.generatorState = 'closed';
+      this.updateGeneratorHeapState(genHeap, 'closed');
       this.snapshot(
         this.getLine(node),
         this.getColumn(node),
         description.generatorMaxIterations(),
-        code,
+        code
       );
       return { value: undefined, done: true };
     }
 
     const funcValue = wrapper.functionValue;
     const funcName =
-      funcValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? "<generator>";
+      funcValue.source.match(/function\*?\s*(\w+)/)?.[1] ?? '<generator>';
 
     // Update generator state to executing
-    genHeap.generatorState = "executing";
-    this.updateGeneratorHeapState(genHeap, "executing");
+    genHeap.generatorState = 'executing';
+    this.updateGeneratorHeapState(genHeap, 'executing');
 
     // Push the generator frame
     const frame: CallStackFrame = {
       id: continuation.frameId,
       name: funcName,
-      type: "generator",
+      type: 'generator',
       line: this.getLine(node),
       column: this.getColumn(node),
       scope: {
         name: funcName,
-        type: "function",
+        type: 'function',
         variables: Object.entries(continuation.localEnv).map(
           ([name, value]) => ({
             name,
             value,
-            kind: "let" as VariableKind,
-          }),
+            kind: 'let' as VariableKind,
+          })
         ),
       },
       color: continuation.frameColor,
       isGenerator: true,
-      status: "executing",
+      status: 'executing',
     };
 
     // Create memory entries from local environment
@@ -6903,19 +6990,19 @@ export class Interpreter {
         const resolved = this.resolveValueForMemory(value);
         return {
           name,
-          kind: "let" as const,
+          kind: 'let' as const,
           valueType: resolved.valueType,
           displayValue: resolved.displayValue,
           heapReferenceId: resolved.heapReferenceId,
           pointerColor: resolved.pointerColor,
         };
-      },
+      }
     );
 
     const memoryBlock: MemoryBlock = {
       frameId: continuation.frameId,
       label: `Local: ${funcName}`,
-      type: "local",
+      type: 'local',
       color: continuation.frameColor,
       entries: memEntries,
       suspended: false,
@@ -6923,12 +7010,12 @@ export class Interpreter {
 
     // Check if frame already exists (resumed generator)
     const existingFrameIndex = this.callStack.findIndex(
-      (f) => f.id === continuation.frameId,
+      (f) => f.id === continuation.frameId
     );
     if (existingFrameIndex >= 0) {
       this.callStack[existingFrameIndex] = frame;
       const existingBlockIndex = this.memoryBlocks.findIndex(
-        (b) => b.frameId === continuation.frameId,
+        (b) => b.frameId === continuation.frameId
       );
       if (existingBlockIndex >= 0) {
         this.memoryBlocks[existingBlockIndex] = memoryBlock;
@@ -6942,11 +7029,11 @@ export class Interpreter {
     this.envStack.push(continuation.localEnv);
     this.scopes.push({
       name: funcName,
-      type: "function",
+      type: 'function',
       variables: Object.entries(continuation.localEnv).map(([name, value]) => ({
         name,
         value,
-        kind: "let" as VariableKind,
+        kind: 'let' as VariableKind,
       })),
     });
 
@@ -6960,8 +7047,11 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.generatorNext({ inputValue: inputValue !== undefined ? displayValue(inputValue) : undefined }),
-      code,
+      description.generatorNext({
+        inputValue:
+          inputValue !== undefined ? displayValue(inputValue) : undefined,
+      }),
+      code
     );
 
     // Execute the remaining statements until yield or completion
@@ -6969,7 +7059,7 @@ export class Interpreter {
       continuation.remainingStatements,
       funcName,
       continuation,
-      wrapper,
+      wrapper
     );
 
     return result;
@@ -6982,7 +7072,7 @@ export class Interpreter {
     statements: StatementNode[],
     _funcName: string,
     continuation: GeneratorContinuation,
-    wrapper: GeneratorWrapper,
+    wrapper: GeneratorWrapper
   ): { value: unknown; done: boolean } {
     const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
     if (!genHeap) {
@@ -7013,19 +7103,19 @@ export class Interpreter {
         continuation.localEnv = { ...this.getCurrentEnv() };
 
         // Suspend the generator
-        genHeap.generatorState = "suspended";
+        genHeap.generatorState = 'suspended';
         genHeap.lastYieldedValue = displayValue(yieldedValue);
         this.updateGeneratorHeapState(
           genHeap,
-          "suspended",
-          displayValue(yieldedValue),
+          'suspended',
+          displayValue(yieldedValue)
         );
 
         // Update frame and memory block as suspended
         const frame = this.callStack.find((f) => f.id === continuation.frameId);
-        if (frame) frame.status = "suspended";
+        if (frame) frame.status = 'suspended';
         const block = this.memoryBlocks.find(
-          (b) => b.frameId === continuation.frameId,
+          (b) => b.frameId === continuation.frameId
         );
         if (block) block.suspended = true;
 
@@ -7033,8 +7123,10 @@ export class Interpreter {
         this.snapshot(
           this.getLine(stmt),
           this.getColumn(stmt),
-          description.yieldStatement({ displayValue: displayValue(yieldedValue) }),
-          yieldCode,
+          description.yieldStatement({
+            displayValue: displayValue(yieldedValue),
+          }),
+          yieldCode
         );
 
         // Pop env/scope but keep frame and memory block (suspended)
@@ -7058,7 +7150,7 @@ export class Interpreter {
           wrapper,
           genHeap,
           continuation,
-          returnVal,
+          returnVal
         );
       }
 
@@ -7076,10 +7168,10 @@ export class Interpreter {
     wrapper: GeneratorWrapper,
     genHeap: HeapObject,
     _continuation: GeneratorContinuation,
-    returnValue: unknown,
+    returnValue: unknown
   ): { value: unknown; done: boolean } {
-    genHeap.generatorState = "closed";
-    this.updateGeneratorHeapState(genHeap, "closed");
+    genHeap.generatorState = 'closed';
+    this.updateGeneratorHeapState(genHeap, 'closed');
 
     // Remove the generator frame and memory
     this.popFrame();
@@ -7089,12 +7181,15 @@ export class Interpreter {
 
     const funcName =
       wrapper.functionValue.source.match(/function\*?\s*(\w+)/)?.[1] ??
-      "<generator>";
+      '<generator>';
     this.snapshot(
       0,
       0,
-      description.generatorCompleted({ funcName, displayValue: displayValue(returnValue) }),
-      "",
+      description.generatorCompleted({
+        funcName,
+        displayValue: displayValue(returnValue),
+      }),
+      ''
     );
 
     return { value: returnValue, done: true };
@@ -7106,25 +7201,25 @@ export class Interpreter {
   private executeGeneratorReturn(
     wrapper: GeneratorWrapper,
     value: unknown,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): { value: unknown; done: boolean } {
     const code = extractSource(this.sourceCode, node);
     const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
     const continuation = this.generatorContinuations.get(wrapper.generatorId);
 
     if (genHeap) {
-      genHeap.generatorState = "closed";
-      this.updateGeneratorHeapState(genHeap, "closed");
+      genHeap.generatorState = 'closed';
+      this.updateGeneratorHeapState(genHeap, 'closed');
     }
 
     // Remove frame and memory if they exist
     if (continuation) {
       const frameIndex = this.callStack.findIndex(
-        (f) => f.id === continuation.frameId,
+        (f) => f.id === continuation.frameId
       );
       if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
       const blockIndex = this.memoryBlocks.findIndex(
-        (b) => b.frameId === continuation.frameId,
+        (b) => b.frameId === continuation.frameId
       );
       if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
       this.generatorContinuations.delete(wrapper.generatorId);
@@ -7134,7 +7229,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.generatorReturn({ displayValue: displayValue(value) }),
-      code,
+      code
     );
 
     return { value, done: true };
@@ -7146,7 +7241,7 @@ export class Interpreter {
   private executeGeneratorThrow(
     wrapper: GeneratorWrapper,
     error: unknown,
-    node: CallExpressionNode,
+    node: CallExpressionNode
   ): { value: unknown; done: boolean } {
     const code = extractSource(this.sourceCode, node);
     const genHeap = this.heap.find((h) => h.id === wrapper.heapObjectId);
@@ -7155,17 +7250,17 @@ export class Interpreter {
     // For now, just close the generator and propagate error
     // TODO: implement try/catch within generator body
     if (genHeap) {
-      genHeap.generatorState = "closed";
-      this.updateGeneratorHeapState(genHeap, "closed");
+      genHeap.generatorState = 'closed';
+      this.updateGeneratorHeapState(genHeap, 'closed');
     }
 
     if (continuation) {
       const frameIndex = this.callStack.findIndex(
-        (f) => f.id === continuation.frameId,
+        (f) => f.id === continuation.frameId
       );
       if (frameIndex >= 0) this.callStack.splice(frameIndex, 1);
       const blockIndex = this.memoryBlocks.findIndex(
-        (b) => b.frameId === continuation.frameId,
+        (b) => b.frameId === continuation.frameId
       );
       if (blockIndex >= 0) this.memoryBlocks.splice(blockIndex, 1);
       this.generatorContinuations.delete(wrapper.generatorId);
@@ -7175,7 +7270,7 @@ export class Interpreter {
       this.getLine(node),
       this.getColumn(node),
       description.generatorThrow({ displayValue: displayValue(error) }),
-      code,
+      code
     );
 
     return { value: undefined, done: true };
@@ -7186,8 +7281,8 @@ export class Interpreter {
    */
   private updateGeneratorHeapState(
     genHeap: HeapObject,
-    state: "suspended" | "executing" | "closed",
-    lastYieldValue?: string,
+    state: 'suspended' | 'executing' | 'closed',
+    lastYieldValue?: string
   ): void {
     if (!genHeap.properties) return;
 
@@ -7198,7 +7293,7 @@ export class Interpreter {
     };
 
     const stateProp = genHeap.properties.find(
-      (p) => p.key === "[[GeneratorState]]",
+      (p) => p.key === '[[GeneratorState]]'
     );
     if (stateProp) {
       stateProp.displayValue = stateStrMap[state];
@@ -7213,28 +7308,28 @@ export class Interpreter {
    * Check if a statement contains a YieldExpression at the top level.
    */
   private findYieldInStatement(
-    stmt: StatementNode,
+    stmt: StatementNode
   ): YieldExpressionNode | null {
-    if (stmt.type === "VariableDeclaration") {
+    if (stmt.type === 'VariableDeclaration') {
       const decl = stmt as VariableDeclarationNode;
       for (const d of decl.declarations) {
-        if (d.init && d.init.type === "YieldExpression") {
+        if (d.init && d.init.type === 'YieldExpression') {
           return d.init as YieldExpressionNode;
         }
       }
     }
-    if (stmt.type === "ExpressionStatement") {
+    if (stmt.type === 'ExpressionStatement') {
       const expr = (stmt as ExpressionStatementNode).expression;
-      if (expr.type === "YieldExpression") return expr as YieldExpressionNode;
-      if (expr.type === "AssignmentExpression") {
+      if (expr.type === 'YieldExpression') return expr as YieldExpressionNode;
+      if (expr.type === 'AssignmentExpression') {
         const right = (expr as AssignmentExpressionNode).right;
-        if (right.type === "YieldExpression")
+        if (right.type === 'YieldExpression')
           return right as YieldExpressionNode;
       }
     }
-    if (stmt.type === "ReturnStatement") {
+    if (stmt.type === 'ReturnStatement') {
       const ret = stmt as ReturnStatementNode;
-      if (ret.argument && ret.argument.type === "YieldExpression") {
+      if (ret.argument && ret.argument.type === 'YieldExpression') {
         return ret.argument as YieldExpressionNode;
       }
     }
@@ -7248,7 +7343,7 @@ export class Interpreter {
     yieldedValue: unknown;
     resultVarName: string | null;
   } {
-    if (stmt.type === "VariableDeclaration") {
+    if (stmt.type === 'VariableDeclaration') {
       const decl = stmt as VariableDeclarationNode;
       const d = decl.declarations[0];
       const yieldNode = d.init as YieldExpressionNode;
@@ -7256,33 +7351,33 @@ export class Interpreter {
         ? this.evaluateExpression(yieldNode.argument)
         : undefined;
       const varName =
-        d.id.type === "Identifier"
+        d.id.type === 'Identifier'
           ? (d.id as IdentifierNode).name
-          : "__yield_result__";
+          : '__yield_result__';
 
       // Declare the variable as undefined (will be assigned on resume with next(value))
       this.setVariable(varName, undefined, true);
       const entry: MemoryEntry = {
         name: varName,
         kind: decl.kind as VariableKind,
-        valueType: "primitive",
-        displayValue: "undefined",
+        valueType: 'primitive',
+        displayValue: 'undefined',
       };
       this.addMemoryEntry(this.getCurrentFrameId(), entry);
 
       return { yieldedValue, resultVarName: varName };
     }
 
-    if (stmt.type === "ExpressionStatement") {
+    if (stmt.type === 'ExpressionStatement') {
       const expr = (stmt as ExpressionStatementNode).expression;
-      if (expr.type === "YieldExpression") {
+      if (expr.type === 'YieldExpression') {
         const yieldNode = expr as YieldExpressionNode;
         const yieldedValue = yieldNode.argument
           ? this.evaluateExpression(yieldNode.argument)
           : undefined;
         return { yieldedValue, resultVarName: null };
       }
-      if (expr.type === "AssignmentExpression") {
+      if (expr.type === 'AssignmentExpression') {
         const assign = expr as AssignmentExpressionNode;
         const right = assign.right as YieldExpressionNode;
         const yieldedValue = right.argument
@@ -7306,12 +7401,12 @@ export class Interpreter {
 
     // Determine the loop variable name
     let varName: string;
-    let varKind: VariableKind = "let";
-    if (node.left.type === "VariableDeclaration") {
+    let varKind: VariableKind = 'let';
+    if (node.left.type === 'VariableDeclaration') {
       const decl = node.left as VariableDeclarationNode;
       const id = decl.declarations[0].id;
       varName =
-        id.type === "Identifier" ? (id as IdentifierNode).name : "__item__";
+        id.type === 'Identifier' ? (id as IdentifierNode).name : '__item__';
       varKind = decl.kind as VariableKind;
     } else {
       varName = (node.left as IdentifierNode).name;
@@ -7320,8 +7415,10 @@ export class Interpreter {
     this.snapshot(
       this.getLine(node),
       this.getColumn(node),
-      description.forOfStart({ isGenerator: this.isGeneratorWrapper(iterableValue) }),
-      code,
+      description.forOfStart({
+        isGenerator: this.isGeneratorWrapper(iterableValue),
+      }),
+      code
     );
 
     let iterations = 0;
@@ -7335,12 +7432,12 @@ export class Interpreter {
           undefined,
           // Create a synthetic call node for the internal next() call
           {
-            type: "CallExpression",
+            type: 'CallExpression',
             callee: node.right,
             arguments: [],
             start: node.start,
             end: node.end,
-          } as CallExpressionNode,
+          } as CallExpressionNode
         ) as { value: unknown; done: boolean };
 
         if (result.done) {
@@ -7348,7 +7445,7 @@ export class Interpreter {
         }
 
         // Declare/assign the loop variable
-        if (iterations === 0 && node.left.type === "VariableDeclaration") {
+        if (iterations === 0 && node.left.type === 'VariableDeclaration') {
           this.setVariable(varName, result.value, true);
           this.recordVarKind(varName, varKind);
         } else {
@@ -7379,8 +7476,10 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          description.forOfGeneratorValue({ displayValue: displayValue(result.value) }),
-          code,
+          description.forOfGeneratorValue({
+            displayValue: displayValue(result.value),
+          }),
+          code
         );
 
         // Execute loop body
@@ -7409,7 +7508,7 @@ export class Interpreter {
       ) {
         const value = iterableValue[i];
 
-        if (i === 0 && node.left.type === "VariableDeclaration") {
+        if (i === 0 && node.left.type === 'VariableDeclaration') {
           this.setVariable(varName, value, true);
           this.recordVarKind(varName, varKind);
         } else {
@@ -7440,8 +7539,12 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          description.forOfIteration({ iteration: i + 1, varName, displayValue: resolved.displayValue }),
-          code,
+          description.forOfIteration({
+            iteration: i + 1,
+            varName,
+            displayValue: resolved.displayValue,
+          }),
+          code
         );
 
         try {
@@ -7458,7 +7561,7 @@ export class Interpreter {
         if (this.hasReturned) return;
         iterations++;
       }
-    } else if (typeof iterableValue === "string") {
+    } else if (typeof iterableValue === 'string') {
       // Handle string iteration
       for (
         let i = 0;
@@ -7469,7 +7572,7 @@ export class Interpreter {
       ) {
         const char = iterableValue[i];
 
-        if (i === 0 && node.left.type === "VariableDeclaration") {
+        if (i === 0 && node.left.type === 'VariableDeclaration') {
           this.setVariable(varName, char, true);
           this.recordVarKind(varName, varKind);
         } else {
@@ -7496,8 +7599,12 @@ export class Interpreter {
         this.snapshot(
           this.getLine(node),
           this.getColumn(node),
-          description.forOfIteration({ iteration: i + 1, varName, displayValue: resolved.displayValue }),
-          code,
+          description.forOfIteration({
+            iteration: i + 1,
+            varName,
+            displayValue: resolved.displayValue,
+          }),
+          code
         );
 
         try {

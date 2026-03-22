@@ -1,13 +1,13 @@
-import { Link } from "react-router-dom";
-import { CheckCircle, Circle, ChevronRight } from "lucide-react";
-import { ConceptBadge } from "@/components/ui/ConceptBadge";
-import { THEME } from "@/constants/theme";
-import { ALL_CHALLENGES, getChallengesByLevel } from "@/challenges/index";
-import { isCompleted, getCompletedCount } from "@/lib/progress";
-import type { Challenge, ChallengeLevel } from "@/challenges/types";
-import { FaTrophy } from "react-icons/fa";
-import { LEVEL_CONFIG, LEVELS } from "@/constants/level-config";
-import { RiFireLine } from "react-icons/ri";
+import { Link } from 'react-router-dom';
+import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
+import { ConceptBadge } from '@/components/ui/ConceptBadge';
+import { THEME } from '@/constants/theme';
+import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
+import { isCompleted, getCompletedCount } from '@/lib/progress';
+import type { Challenge, ChallengeLevel } from '@/challenges/types';
+import { FaTrophy } from 'react-icons/fa';
+import { LEVEL_CONFIG, LEVELS } from '@/constants/level-config';
+import { RiFireLine } from 'react-icons/ri';
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -17,30 +17,30 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
   const completed = isCompleted(challenge.id);
 
   return (
-    <Link to={`/challenges/${challenge.id}`} className="block">
+    <Link to={`/challenges/${challenge.id}`} className='block'>
       <div
-        className="flex items-start gap-3 p-4 rounded-lg transition-colors duration-150 cursor-pointer group"
+        className='flex items-start gap-3 p-4 rounded-lg transition-colors duration-150 cursor-pointer group'
         style={
-          { "--hover-bg": THEME.colors.bg.tertiary } as React.CSSProperties
+          { '--hover-bg': THEME.colors.bg.tertiary } as React.CSSProperties
         }
         onMouseEnter={(e) =>
           (e.currentTarget.style.backgroundColor = THEME.colors.bg.tertiary)
         }
         onMouseLeave={(e) =>
-          (e.currentTarget.style.backgroundColor = "transparent")
+          (e.currentTarget.style.backgroundColor = 'transparent')
         }
       >
-        <div className="shrink-0 mt-0.5">
+        <div className='shrink-0 mt-0.5'>
           {completed ? (
-            <CheckCircle size={22} style={{ color: "#22c55e" }} />
+            <CheckCircle size={22} style={{ color: '#22c55e' }} />
           ) : (
             <Circle size={22} style={{ color: THEME.colors.text.muted }} />
           )}
         </div>
 
-        <div className="flex-1 min-w-0">
+        <div className='flex-1 min-w-0'>
           <h3
-            className="font-semibold transition-colors duration-150"
+            className='font-semibold transition-colors duration-150'
             style={{
               color: THEME.colors.text.primary,
               fontFamily: THEME.fonts.ui,
@@ -49,12 +49,12 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
             {challenge.title}
           </h3>
           <p
-            className="text-sm mt-1 line-clamp-1"
+            className='text-sm mt-1 line-clamp-1'
             style={{ color: THEME.colors.text.muted }}
           >
             {challenge.description}
           </p>
-          <div className="flex flex-wrap gap-1.5 mt-2">
+          <div className='flex flex-wrap gap-1.5 mt-2'>
             {challenge.concepts.map((concept) => (
               <ConceptBadge key={concept} concept={concept} />
             ))}
@@ -63,7 +63,7 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
 
         <ChevronRight
           size={18}
-          className="shrink-0 mt-1 transition-colors duration-150"
+          className='shrink-0 mt-1 transition-colors duration-150'
           style={{ color: THEME.colors.text.muted }}
         />
       </div>
@@ -83,25 +83,25 @@ function LevelSection({ level, challenges }: LevelSectionProps) {
   const completedCount = challenges.filter((c) => isCompleted(c.id)).length;
 
   return (
-    <div className="mb-6">
+    <div className='mb-6'>
       <div
-        className="flex items-center justify-between px-4 py-3 rounded-t-lg mb-0.5"
+        className='flex items-center justify-between px-4 py-3 rounded-t-lg mb-0.5'
         style={{
           borderLeft: `3px solid ${config.color}`,
           backgroundColor: THEME.colors.bg.secondary,
         }}
       >
         <div
-          className="flex items-center gap-2"
+          className='flex items-center gap-2'
           style={{ color: config.color, fontFamily: THEME.fonts.ui }}
         >
           <RiFireLine />
-          <span className="font-bold text-sm uppercase tracking-wide">
+          <span className='font-bold text-sm uppercase tracking-wide'>
             {config.label}
           </span>
         </div>
         <span
-          className="text-sm font-medium"
+          className='text-sm font-medium'
           style={{ color: THEME.colors.text.muted }}
         >
           {completedCount}/{challenges.length}
@@ -109,14 +109,14 @@ function LevelSection({ level, challenges }: LevelSectionProps) {
       </div>
 
       <div
-        className="rounded-b-lg overflow-hidden"
+        className='rounded-b-lg overflow-hidden'
         style={{ backgroundColor: THEME.colors.bg.secondary }}
       >
         {challenges.map((challenge, i) => (
           <div key={challenge.id}>
             {i > 0 && (
               <div
-                className="mx-4"
+                className='mx-4'
                 style={{ borderTop: `1px solid rgba(255,255,255,0.05)` }}
               />
             )}
@@ -134,15 +134,15 @@ export default function ChallengesListPage() {
 
   return (
     <div
-      className="h-full overflow-y-auto flex flex-col"
+      className='h-full overflow-y-auto flex flex-col'
       style={{ backgroundColor: THEME.colors.bg.primary }}
     >
-      <main className="flex-1 px-4 py-8 max-w-4xl mx-auto w-full">
+      <main className='flex-1 px-4 py-8 max-w-4xl mx-auto w-full'>
         {/* Header */}
-        <div className="flex items-start justify-between mb-8">
+        <div className='flex items-start justify-between mb-8'>
           <div>
             <h1
-              className="text-3xl font-bold flex items-center gap-3"
+              className='text-3xl font-bold flex items-center gap-3'
               style={{
                 color: THEME.colors.text.primary,
                 fontFamily: THEME.fonts.ui,
@@ -152,14 +152,14 @@ export default function ChallengesListPage() {
               Challenges
             </h1>
             <p
-              className="mt-1 text-sm"
+              className='mt-1 text-sm'
               style={{ color: THEME.colors.text.secondary }}
             >
               Master JavaScript runtime internals by solving challenges
             </p>
           </div>
           <div
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0"
+            className='flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0'
             style={{ backgroundColor: THEME.colors.bg.tertiary }}
           >
             <span style={{ color: THEME.colors.text.accent }}>
@@ -173,7 +173,7 @@ export default function ChallengesListPage() {
 
         {/* Level sections */}
         {ALL_CHALLENGES.length === 0 ? (
-          <p className="text-center" style={{ color: THEME.colors.text.muted }}>
+          <p className='text-center' style={{ color: THEME.colors.text.muted }}>
             No challenges available
           </p>
         ) : (

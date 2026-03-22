@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
-import MonacoEditor, { type OnMount } from "@monaco-editor/react";
-import type * as Monaco from "monaco-editor";
-import { RiFireLine } from "react-icons/ri";
-import { motion } from "framer-motion";
+import { useState, useEffect, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import MonacoEditor, { type OnMount } from '@monaco-editor/react';
+import type * as Monaco from 'monaco-editor';
+import { RiFireLine } from 'react-icons/ri';
+import { motion } from 'framer-motion';
 import {
   ArrowLeft,
   ArrowRight,
@@ -15,70 +15,70 @@ import {
   Loader2,
   CheckCircle,
   XCircle,
-} from "lucide-react";
-import { ConceptBadge } from "@/components/ui/ConceptBadge";
-import { THEME } from "@/constants/theme";
-import { getChallengeById, ALL_CHALLENGES } from "@/challenges";
-import { markAttempt, markCompleted, getAttempts } from "@/lib/progress";
-import { generateSteps } from "@/engine";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
-import type { ChallengeResult } from "@/challenges/types";
-import { LEVEL_CONFIG } from "@/constants/level-config";
+} from 'lucide-react';
+import { ConceptBadge } from '@/components/ui/ConceptBadge';
+import { THEME } from '@/constants/theme';
+import { getChallengeById, ALL_CHALLENGES } from '@/challenges';
+import { markAttempt, markCompleted, getAttempts } from '@/lib/progress';
+import { generateSteps } from '@/engine';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
+import type { ChallengeResult } from '@/challenges/types';
+import { LEVEL_CONFIG } from '@/constants/level-config';
 
-const THEME_NAME = "js-visualizer-dark";
+const THEME_NAME = 'js-visualizer-dark';
 
 function defineEditorTheme(monaco: typeof Monaco) {
   monaco.editor.defineTheme(THEME_NAME, {
-    base: "vs-dark",
+    base: 'vs-dark',
     inherit: false,
     rules: [
       {
-        token: "keyword",
-        foreground: THEME.colors.syntax.keyword.replace("#", ""),
+        token: 'keyword',
+        foreground: THEME.colors.syntax.keyword.replace('#', ''),
       },
       {
-        token: "string",
-        foreground: THEME.colors.syntax.string.replace("#", ""),
+        token: 'string',
+        foreground: THEME.colors.syntax.string.replace('#', ''),
       },
       {
-        token: "number",
-        foreground: THEME.colors.syntax.number.replace("#", ""),
+        token: 'number',
+        foreground: THEME.colors.syntax.number.replace('#', ''),
       },
       {
-        token: "identifier",
-        foreground: THEME.colors.text.primary.replace("#", ""),
+        token: 'identifier',
+        foreground: THEME.colors.text.primary.replace('#', ''),
       },
       {
-        token: "comment",
-        foreground: THEME.colors.syntax.comment.replace("#", ""),
+        token: 'comment',
+        foreground: THEME.colors.syntax.comment.replace('#', ''),
       },
       {
-        token: "delimiter",
-        foreground: THEME.colors.text.secondary.replace("#", ""),
+        token: 'delimiter',
+        foreground: THEME.colors.text.secondary.replace('#', ''),
       },
       {
-        token: "type",
-        foreground: THEME.colors.syntax.function.replace("#", ""),
+        token: 'type',
+        foreground: THEME.colors.syntax.function.replace('#', ''),
       },
       {
-        token: "variable",
-        foreground: THEME.colors.syntax.variable.replace("#", ""),
+        token: 'variable',
+        foreground: THEME.colors.syntax.variable.replace('#', ''),
       },
     ],
     colors: {
-      "editor.background": THEME.colors.bg.secondary,
-      "editor.foreground": THEME.colors.text.primary,
-      "editor.lineHighlightBackground": "#00000000",
-      "editor.selectionBackground": "#22d3ee22",
-      "editor.inactiveSelectionBackground": "#22d3ee11",
-      "editorCursor.foreground": THEME.colors.text.accent,
-      "editorLineNumber.foreground": THEME.colors.text.muted,
-      "editorLineNumber.activeForeground": THEME.colors.text.accent,
-      "editorGutter.background": THEME.colors.bg.secondary,
-      "editor.selectionHighlightBackground": "#22d3ee15",
-      "scrollbarSlider.background": "#ffffff15",
-      "scrollbarSlider.hoverBackground": "#ffffff25",
-      "scrollbarSlider.activeBackground": "#ffffff35",
+      'editor.background': THEME.colors.bg.secondary,
+      'editor.foreground': THEME.colors.text.primary,
+      'editor.lineHighlightBackground': '#00000000',
+      'editor.selectionBackground': '#22d3ee22',
+      'editor.inactiveSelectionBackground': '#22d3ee11',
+      'editorCursor.foreground': THEME.colors.text.accent,
+      'editorLineNumber.foreground': THEME.colors.text.muted,
+      'editorLineNumber.activeForeground': THEME.colors.text.accent,
+      'editorGutter.background': THEME.colors.bg.secondary,
+      'editor.selectionHighlightBackground': '#22d3ee15',
+      'scrollbarSlider.background': '#ffffff15',
+      'scrollbarSlider.hoverBackground': '#ffffff25',
+      'scrollbarSlider.activeBackground': '#ffffff35',
     },
   });
 }
@@ -96,26 +96,26 @@ function HintButton({ hint }: { hint: string }) {
         setShowHint(false);
       }
     }
-    document.addEventListener("mousedown", handleMouseDown);
-    return () => document.removeEventListener("mousedown", handleMouseDown);
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
   }, [showHint]);
 
   return (
-    <div className="relative" ref={ref}>
+    <div className='relative' ref={ref}>
       <button
         onClick={() => setShowHint((v) => !v)}
-        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-          border border-white/10 transition-all"
+        className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
+          border border-white/10 transition-all'
         style={{ color: THEME.colors.text.secondary }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLButtonElement).style.borderColor =
-            "rgba(255,255,255,0.2)";
+            'rgba(255,255,255,0.2)';
           (e.currentTarget as HTMLButtonElement).style.color =
             THEME.colors.text.primary;
         }}
         onMouseLeave={(e) => {
           (e.currentTarget as HTMLButtonElement).style.borderColor =
-            "rgba(255,255,255,0.1)";
+            'rgba(255,255,255,0.1)';
           (e.currentTarget as HTMLButtonElement).style.color =
             THEME.colors.text.secondary;
         }}
@@ -126,15 +126,15 @@ function HintButton({ hint }: { hint: string }) {
 
       {showHint && (
         <div
-          className="absolute bottom-full left-0 mb-2 w-72 p-3 rounded-lg text-sm border shadow-lg z-50"
+          className='absolute bottom-full left-0 mb-2 w-72 p-3 rounded-lg text-sm border shadow-lg z-50'
           style={{
             background: THEME.colors.bg.elevated,
             borderColor: THEME.colors.border.editor,
             color: THEME.colors.text.secondary,
           }}
         >
-          <div className="flex items-start gap-2">
-            <Lightbulb size={14} className="text-yellow-500 shrink-0 mt-0.5" />
+          <div className='flex items-start gap-2'>
+            <Lightbulb size={14} className='text-yellow-500 shrink-0 mt-0.5' />
             <p>{hint}</p>
           </div>
         </div>
@@ -158,9 +158,9 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
     return (
       <button
         disabled
-        title="Submit at least once to unlock the solution"
-        className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-          border border-white/5 cursor-not-allowed opacity-50"
+        title='Submit at least once to unlock the solution'
+        className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
+          border border-white/5 cursor-not-allowed opacity-50'
         style={{ color: THEME.colors.text.muted }}
       >
         <BookOpen size={16} />
@@ -172,18 +172,18 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
 
   return (
     <button
-      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-        border border-white/10 transition-all"
+      className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
+        border border-white/10 transition-all'
       style={{ color: THEME.colors.text.secondary }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor =
-          "rgba(255,255,255,0.2)";
+          'rgba(255,255,255,0.2)';
         (e.currentTarget as HTMLButtonElement).style.color =
           THEME.colors.text.primary;
       }}
       onMouseLeave={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor =
-          "rgba(255,255,255,0.1)";
+          'rgba(255,255,255,0.1)';
         (e.currentTarget as HTMLButtonElement).style.color =
           THEME.colors.text.secondary;
       }}
@@ -209,7 +209,7 @@ export default function ChallengeDetailPage() {
       ? ALL_CHALLENGES[challengeIndex + 1]
       : null;
 
-  const [code, setCode] = useState(challenge?.starterCode ?? "");
+  const [code, setCode] = useState(challenge?.starterCode ?? '');
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Used to force SolutionButton to re-read attempts after a submit
@@ -218,20 +218,20 @@ export default function ChallengeDetailPage() {
   if (!challenge) {
     return (
       <div
-        className="h-full overflow-y-auto flex flex-col"
+        className='h-full overflow-y-auto flex flex-col'
         style={{ background: THEME.colors.bg.primary }}
       >
-        <main className="flex-1 flex items-center justify-center">
-          <div className="text-center">
+        <main className='flex-1 flex items-center justify-center'>
+          <div className='text-center'>
             <p
-              className="text-lg mb-4"
+              className='text-lg mb-4'
               style={{ color: THEME.colors.text.secondary }}
             >
               Challenge not found.
             </p>
             <Link
-              to="/challenges"
-              className="text-sm no-underline"
+              to='/challenges'
+              className='text-sm no-underline'
               style={{ color: THEME.colors.text.accent }}
             >
               ← Back to Challenges
@@ -259,7 +259,7 @@ export default function ChallengeDetailPage() {
           setResult({
             passed: false,
             feedback: `Code error: ${errMsg}`,
-            details: "Check your syntax and try again.",
+            details: 'Check your syntax and try again.',
           });
           setIsSubmitting(false);
         }, 300);
@@ -283,8 +283,8 @@ export default function ChallengeDetailPage() {
       setSubmitCount((c) => c + 1);
       setResult({
         passed: false,
-        feedback: `Code error: ${error instanceof Error ? error.message : "Unknown error"}`,
-        details: "Check your syntax and try again.",
+        feedback: `Code error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        details: 'Check your syntax and try again.',
       });
       setIsSubmitting(false);
     }
@@ -293,7 +293,7 @@ export default function ChallengeDetailPage() {
   function handleVisualize() {
     useVisualizerStore.getState().setSourceCode(code);
     useVisualizerStore.getState().reset();
-    navigate("/");
+    navigate('/');
   }
 
   const handleMount: OnMount = (_editor, monaco) => {
@@ -303,17 +303,17 @@ export default function ChallengeDetailPage() {
 
   return (
     <div
-      className="h-full overflow-y-auto flex flex-col"
+      className='h-full overflow-y-auto flex flex-col'
       style={{ background: THEME.colors.bg.primary }}
     >
       <main
-        className="flex-1 px-4 py-8 w-full mx-auto"
-        style={{ maxWidth: "768px" }}
+        className='flex-1 px-4 py-8 w-full mx-auto'
+        style={{ maxWidth: '768px' }}
       >
         {/* Back link */}
         <Link
-          to="/challenges"
-          className="inline-flex items-center gap-1.5 text-sm no-underline transition-colors mb-6"
+          to='/challenges'
+          className='inline-flex items-center gap-1.5 text-sm no-underline transition-colors mb-6'
           style={{ color: THEME.colors.text.secondary }}
           onMouseEnter={(e) =>
             (e.currentTarget.style.color = THEME.colors.text.accent)
@@ -327,9 +327,9 @@ export default function ChallengeDetailPage() {
         </Link>
 
         {/* Level badge + position */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className='flex items-center gap-2 mb-3'>
           <span
-            className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+            className='inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full'
             style={{
               backgroundColor: `${levelConfig.color}20`,
               color: levelConfig.color,
@@ -338,14 +338,14 @@ export default function ChallengeDetailPage() {
             <RiFireLine />
             {levelConfig.label}
           </span>
-          <span className="text-xs" style={{ color: THEME.colors.text.muted }}>
+          <span className='text-xs' style={{ color: THEME.colors.text.muted }}>
             Challenge {challengeIndex + 1} of {totalChallenges}
           </span>
         </div>
 
         {/* Title */}
         <h1
-          className="text-2xl font-bold mb-4"
+          className='text-2xl font-bold mb-4'
           style={{
             color: THEME.colors.text.primary,
             fontFamily: THEME.fonts.ui,
@@ -356,14 +356,14 @@ export default function ChallengeDetailPage() {
 
         {/* Description */}
         <p
-          className="leading-relaxed mb-4"
+          className='leading-relaxed mb-4'
           style={{ color: THEME.colors.text.secondary }}
         >
           {challenge.description}
         </p>
 
         {/* Concept badges */}
-        <div className="flex flex-wrap gap-1.5 mb-6">
+        <div className='flex flex-wrap gap-1.5 mb-6'>
           {challenge.concepts.map((concept) => (
             <ConceptBadge key={concept} concept={concept} />
           ))}
@@ -371,11 +371,11 @@ export default function ChallengeDetailPage() {
 
         {/* Code editor */}
         <div
-          className="rounded-lg border overflow-hidden mb-6"
+          className='rounded-lg border overflow-hidden mb-6'
           style={{ borderColor: THEME.colors.border.editor }}
         >
           <div
-            className="px-3 py-2 text-xs font-medium border-b"
+            className='px-3 py-2 text-xs font-medium border-b'
             style={{
               borderColor: THEME.colors.border.editor,
               background: THEME.colors.bg.secondary,
@@ -386,23 +386,23 @@ export default function ChallengeDetailPage() {
             CODE
           </div>
           <MonacoEditor
-            height="300px"
-            language="javascript"
+            height='300px'
+            language='javascript'
             theme={THEME_NAME}
             value={code}
-            onChange={(value) => setCode(value ?? "")}
+            onChange={(value) => setCode(value ?? '')}
             onMount={handleMount}
             options={{
               minimap: { enabled: false },
               fontSize: 14,
               fontFamily: THEME.fonts.code,
-              lineNumbers: "on",
+              lineNumbers: 'on',
               scrollBeyondLastLine: false,
               automaticLayout: true,
               padding: { top: 12, bottom: 12 },
-              wordWrap: "on",
+              wordWrap: 'on',
               tabSize: 2,
-              renderLineHighlight: "none",
+              renderLineHighlight: 'none',
               readOnly: false,
               folding: false,
               overviewRulerBorder: false,
@@ -411,40 +411,40 @@ export default function ChallengeDetailPage() {
         </div>
 
         {/* Action buttons */}
-        <div className="flex items-center gap-3 mb-6">
+        <div className='flex items-center gap-3 mb-6'>
           <HintButton hint={challenge.hint} />
           <SolutionButton key={submitCount} challengeId={challenge.id} />
 
-          <div className="flex-1" />
+          <div className='flex-1' />
 
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
-              transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className='inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
+              transition-all disabled:opacity-50 disabled:cursor-not-allowed'
             style={{
-              background: "rgba(6, 182, 212, 0.1)",
-              color: "#22d3ee",
-              border: "1px solid rgba(6, 182, 212, 0.3)",
+              background: 'rgba(6, 182, 212, 0.1)',
+              color: '#22d3ee',
+              border: '1px solid rgba(6, 182, 212, 0.3)',
             }}
             onMouseEnter={(e) => {
               if (!isSubmitting) {
                 (e.currentTarget as HTMLButtonElement).style.background =
-                  "rgba(6, 182, 212, 0.2)";
+                  'rgba(6, 182, 212, 0.2)';
                 (e.currentTarget as HTMLButtonElement).style.borderColor =
-                  "rgba(6, 182, 212, 0.5)";
+                  'rgba(6, 182, 212, 0.5)';
               }
             }}
             onMouseLeave={(e) => {
               (e.currentTarget as HTMLButtonElement).style.background =
-                "rgba(6, 182, 212, 0.1)";
+                'rgba(6, 182, 212, 0.1)';
               (e.currentTarget as HTMLButtonElement).style.borderColor =
-                "rgba(6, 182, 212, 0.3)";
+                'rgba(6, 182, 212, 0.3)';
             }}
           >
             {isSubmitting ? (
               <>
-                <Loader2 size={16} className="animate-spin" />
+                <Loader2 size={16} className='animate-spin' />
                 Checking...
               </>
             ) : (
@@ -471,41 +471,41 @@ export default function ChallengeDetailPage() {
             }
             transition={
               result.passed
-                ? { type: "spring", stiffness: 300, damping: 25 }
+                ? { type: 'spring', stiffness: 300, damping: 25 }
                 : { duration: 0.4 }
             }
-            className="rounded-lg border p-5"
+            className='rounded-lg border p-5'
             style={{
               borderColor: result.passed
-                ? "rgba(34,197,94,0.3)"
-                : "rgba(239,68,68,0.3)",
+                ? 'rgba(34,197,94,0.3)'
+                : 'rgba(239,68,68,0.3)',
               background: result.passed
-                ? "rgba(34,197,94,0.05)"
-                : "rgba(239,68,68,0.05)",
+                ? 'rgba(34,197,94,0.05)'
+                : 'rgba(239,68,68,0.05)',
             }}
           >
             {/* Header */}
             <div
-              className="flex items-center gap-2 text-lg font-semibold mb-3"
-              style={{ color: result.passed ? "#4ade80" : "#f87171" }}
+              className='flex items-center gap-2 text-lg font-semibold mb-3'
+              style={{ color: result.passed ? '#4ade80' : '#f87171' }}
             >
               {result.passed ? (
                 <CheckCircle size={22} />
               ) : (
                 <XCircle size={22} />
               )}
-              {result.passed ? "PASSED" : "NOT QUITE"}
+              {result.passed ? 'PASSED' : 'NOT QUITE'}
             </div>
 
             {/* Feedback */}
-            <p className="mb-2" style={{ color: THEME.colors.text.secondary }}>
+            <p className='mb-2' style={{ color: THEME.colors.text.secondary }}>
               {result.feedback}
             </p>
 
             {/* Details on failure */}
             {!result.passed && result.details && (
               <p
-                className="text-sm mb-4"
+                className='text-sm mb-4'
                 style={{ color: THEME.colors.text.muted }}
               >
                 {result.details}
@@ -513,25 +513,25 @@ export default function ChallengeDetailPage() {
             )}
 
             {/* Action buttons */}
-            <div className="flex items-center gap-3 mt-4">
+            <div className='flex items-center gap-3 mt-4'>
               {result.passed ? (
                 <>
                   <button
                     onClick={handleVisualize}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
-                      transition-all"
+                    className='inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
+                      transition-all'
                     style={{
-                      background: "rgba(6, 182, 212, 0.1)",
-                      color: "#22d3ee",
-                      border: "1px solid rgba(6, 182, 212, 0.3)",
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      color: '#22d3ee',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
                     }}
                     onMouseEnter={(e) => {
                       (e.currentTarget as HTMLButtonElement).style.background =
-                        "rgba(6, 182, 212, 0.2)";
+                        'rgba(6, 182, 212, 0.2)';
                     }}
                     onMouseLeave={(e) => {
                       (e.currentTarget as HTMLButtonElement).style.background =
-                        "rgba(6, 182, 212, 0.1)";
+                        'rgba(6, 182, 212, 0.1)';
                     }}
                   >
                     <Play size={14} />
@@ -541,20 +541,20 @@ export default function ChallengeDetailPage() {
                   {nextChallenge && (
                     <Link
                       to={`/challenges/${nextChallenge.id}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
-                        border border-white/10 no-underline transition-all"
+                      className='inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
+                        border border-white/10 no-underline transition-all'
                       style={{ color: THEME.colors.text.secondary }}
                       onMouseEnter={(e) => {
                         (
                           e.currentTarget as HTMLAnchorElement
-                        ).style.borderColor = "rgba(255,255,255,0.2)";
+                        ).style.borderColor = 'rgba(255,255,255,0.2)';
                         (e.currentTarget as HTMLAnchorElement).style.color =
                           THEME.colors.text.primary;
                       }}
                       onMouseLeave={(e) => {
                         (
                           e.currentTarget as HTMLAnchorElement
-                        ).style.borderColor = "rgba(255,255,255,0.1)";
+                        ).style.borderColor = 'rgba(255,255,255,0.1)';
                         (e.currentTarget as HTMLAnchorElement).style.color =
                           THEME.colors.text.secondary;
                       }}
@@ -567,18 +567,18 @@ export default function ChallengeDetailPage() {
               ) : (
                 <button
                   onClick={() => setResult(null)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
-                    border border-white/10 transition-all"
+                  className='inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
+                    border border-white/10 transition-all'
                   style={{ color: THEME.colors.text.secondary }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(255,255,255,0.2)";
+                      'rgba(255,255,255,0.2)';
                     (e.currentTarget as HTMLButtonElement).style.color =
                       THEME.colors.text.primary;
                   }}
                   onMouseLeave={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
-                      "rgba(255,255,255,0.1)";
+                      'rgba(255,255,255,0.1)';
                     (e.currentTarget as HTMLButtonElement).style.color =
                       THEME.colors.text.secondary;
                   }}
