@@ -18,7 +18,7 @@ export const intermediateChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const outputs = last.console.map((e) => e.args.join(' '));
       const worldIdx = outputs.findIndex((o) => o.includes('World'));
@@ -26,11 +26,11 @@ export const intermediateChallenges: Challenge[] = [
       const usedTimer = steps.some((s) => s.webAPIs.length > 0);
 
       if (!usedTimer)
-        return { passed: false, feedback: '❌ You must use setTimeout.' };
+        return { passed: false, feedback: 'You must use setTimeout.' };
       if (worldIdx === -1 || helloIdx === -1)
         return {
           passed: false,
-          feedback: '❌ Console must contain both "World" and "Hello".',
+          feedback: 'Console must contain both "World" and "Hello".',
         };
       if (worldIdx < helloIdx) {
         return {
@@ -41,7 +41,7 @@ export const intermediateChallenges: Challenge[] = [
       return {
         passed: false,
         feedback:
-          '❌ "Hello" appeared before "World". The sync code should run first.',
+          '"Hello" appeared before "World". The sync code should run first.',
       };
     },
   },
@@ -68,7 +68,7 @@ export const intermediateChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Max Task Queue size was ${maxQueue}. Need at least 2 simultaneous.`,
+        feedback: `Max Task Queue size was ${maxQueue}. Need at least 2 simultaneous.`,
       };
     },
   },
@@ -88,7 +88,7 @@ export const intermediateChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const promiseIdx = outputs.findIndex((o) => o.includes('promise'));
@@ -97,12 +97,12 @@ export const intermediateChallenges: Challenge[] = [
       if (promiseIdx === -1)
         return {
           passed: false,
-          feedback: '❌ No "promise" in console output.',
+          feedback: 'No "promise" in console output.',
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: '❌ No "timeout" in console output.',
+          feedback: 'No "timeout" in console output.',
         };
       if (promiseIdx < timeoutIdx) {
         return {
@@ -112,7 +112,7 @@ export const intermediateChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: '❌ setTimeout ran before Promise. Check your code.',
+        feedback: 'setTimeout ran before Promise. Check your code.',
       };
     },
   },
@@ -147,11 +147,11 @@ export const intermediateChallenges: Challenge[] = [
         return {
           passed: false,
           feedback:
-            '❌ No [[Scope]] detected. Return a function from inside another function.',
+            'No [[Scope]] detected. Return a function from inside another function.',
         };
       return {
         passed: false,
-        feedback: '❌ Call the closure function and log the result.',
+        feedback: 'Call the closure function and log the result.',
       };
     },
   },
@@ -186,11 +186,11 @@ export const intermediateChallenges: Challenge[] = [
         return {
           passed: false,
           feedback:
-            '❌ No suspended frame detected. Use await inside an async function.',
+            'No suspended frame detected. Use await inside an async function.',
         };
       return {
         passed: false,
-        feedback: '❌ Log something before and after the await.',
+        feedback: 'Log something before and after the await.',
       };
     },
   },

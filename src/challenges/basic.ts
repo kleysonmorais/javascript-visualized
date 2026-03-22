@@ -25,7 +25,7 @@ export const basicChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Max stack depth was ${maxDepth - 1} frame(s). You need at least 3.`,
+        feedback: `Max stack depth was ${maxDepth - 1} frame(s). You need at least 3.`,
         details:
           'Try calling a function from inside another function, and that function from inside yet another.',
       };
@@ -47,11 +47,11 @@ export const basicChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const globalBlock = last.memoryBlocks.find((b) => b.type === 'global');
       if (!globalBlock)
-        return { passed: false, feedback: '❌ No Global Memory found.' };
+        return { passed: false, feedback: 'No Global Memory found.' };
 
       const hasNumber = globalBlock.entries.some(
         (e) => e.valueType === 'primitive' && /^\d+/.test(e.displayValue)
@@ -76,7 +76,7 @@ export const basicChallenges: Challenge[] = [
       if (!hasString) missing.push('string');
       if (!hasObject) missing.push('object with [Pointer]');
       if (!hasHeap) missing.push('HeapObject');
-      return { passed: false, feedback: `❌ Missing: ${missing.join(', ')}.` };
+      return { passed: false, feedback: `Missing: ${missing.join(', ')}.` };
     },
   },
   {
@@ -94,7 +94,7 @@ export const basicChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const helloCount = last.console.filter((e) =>
         e.args.some((a) => a.includes('Hello'))
@@ -109,12 +109,12 @@ export const basicChallenges: Challenge[] = [
       if (helloCount > 3) {
         return {
           passed: false,
-          feedback: `❌ Too many! You logged "Hello" ${helloCount} times. Need exactly 3.`,
+          feedback: `Too many! You logged "Hello" ${helloCount} times. Need exactly 3.`,
         };
       }
       return {
         passed: false,
-        feedback: `❌ Only ${helloCount} "Hello"(s). Need exactly 3. Try using a loop.`,
+        feedback: `Only ${helloCount} "Hello"(s). Need exactly 3. Try using a loop.`,
       };
     },
   },
@@ -133,7 +133,7 @@ export const basicChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const hasFnEntry = last.memoryBlocks.some((b) =>
         b.entries.some((e) => e.valueType === 'function')
@@ -149,9 +149,9 @@ export const basicChallenges: Challenge[] = [
       if (!hasFnEntry)
         return {
           passed: false,
-          feedback: '❌ No ⓕ found in Memory. Declare a function.',
+          feedback: 'No ⓕ found in Memory. Declare a function.',
         };
-      return { passed: false, feedback: '❌ Function not found in the Heap.' };
+      return { passed: false, feedback: 'Function not found in the Heap.' };
     },
   },
   {
@@ -169,11 +169,11 @@ export const basicChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
 
       const globalBlock = last.memoryBlocks.find((b) => b.type === 'global');
       if (!globalBlock)
-        return { passed: false, feedback: '❌ No Global Memory found.' };
+        return { passed: false, feedback: 'No Global Memory found.' };
 
       const objectEntries = globalBlock.entries.filter(
         (e) => e.valueType === 'object' && e.heapReferenceId
@@ -182,7 +182,7 @@ export const basicChallenges: Challenge[] = [
       if (objectEntries.length < 2) {
         return {
           passed: false,
-          feedback: `❌ Need 2 variables pointing to an object. Found ${objectEntries.length}.`,
+          feedback: `Need 2 variables pointing to an object. Found ${objectEntries.length}.`,
         };
       }
 
@@ -202,7 +202,7 @@ export const basicChallenges: Challenge[] = [
       return {
         passed: false,
         feedback:
-          '❌ The variables point to different objects. Assign one to the other: const b = a.',
+          'The variables point to different objects. Assign one to the other: const b = a.',
       };
     },
   },

@@ -18,16 +18,16 @@ export const advancedChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const hasTimeout = steps.some((s) =>
         s.webAPIs.some((a) => a.type === 'setTimeout')
       );
       const hasMicrotask = steps.some((s) => s.microtaskQueue.length > 0);
       if (!hasTimeout)
-        return { passed: false, feedback: '❌ You must use setTimeout.' };
+        return { passed: false, feedback: 'You must use setTimeout.' };
       if (!hasMicrotask)
-        return { passed: false, feedback: '❌ You must use Promise.resolve.' };
+        return { passed: false, feedback: 'You must use Promise.resolve.' };
       if (
         outputs.length >= 4 &&
         outputs[0].includes('1') &&
@@ -39,7 +39,7 @@ export const advancedChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Got: ${outputs.join(', ')}. Expected: 1, 2, 3, 4.`,
+        feedback: `Got: ${outputs.join(', ')}. Expected: 1, 2, 3, 4.`,
       };
     },
   },
@@ -60,19 +60,19 @@ export const advancedChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const thenOutputs = outputs.filter((o) => o.includes('then'));
       const timeoutIdx = outputs.findIndex((o) => o.includes('timeout'));
       if (thenOutputs.length < 3)
         return {
           passed: false,
-          feedback: `❌ Only ${thenOutputs.length} .then() outputs. Need 3.`,
+          feedback: `Only ${thenOutputs.length} .then() outputs. Need 3.`,
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: '❌ No setTimeout callback output found.',
+          feedback: 'No setTimeout callback output found.',
         };
       const lastThenIdx = outputs.lastIndexOf(
         thenOutputs[thenOutputs.length - 1]
@@ -85,7 +85,7 @@ export const advancedChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: '❌ Some .then() callbacks ran after setTimeout.',
+        feedback: 'Some .then() callbacks ran after setTimeout.',
       };
     },
   },
@@ -106,7 +106,7 @@ export const advancedChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       if (
         outputs.length >= 5 &&
@@ -123,7 +123,7 @@ export const advancedChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Expected: 1, 2, 3, 4, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
+        feedback: `Expected: 1, 2, 3, 4, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
       };
     },
   },
@@ -144,7 +144,7 @@ export const advancedChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = ['1', '1', '2', '3', '5'];
       const match = expected.every(
@@ -158,7 +158,7 @@ export const advancedChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Expected: 1, 1, 2, 3, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
+        feedback: `Expected: 1, 1, 2, 3, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
       };
     },
   },
@@ -217,7 +217,7 @@ export const advancedChallenges: Challenge[] = [
       if (!hadConsole) missing.push('Console');
       return {
         passed: false,
-        feedback: `❌ Missing stops: ${missing.join(', ')}.`,
+        feedback: `Missing stops: ${missing.join(', ')}.`,
       };
     },
   },

@@ -17,19 +17,19 @@ export const expertChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const microOutputs = outputs.filter((o) => o.includes('micro'));
       const timeoutIdx = outputs.findIndex((o) => o.includes('timeout'));
       if (microOutputs.length < 3)
         return {
           passed: false,
-          feedback: `❌ Only ${microOutputs.length} micro outputs. Need 3 nested levels.`,
+          feedback: `Only ${microOutputs.length} micro outputs. Need 3 nested levels.`,
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: '❌ Need a setTimeout callback in the output.',
+          feedback: 'Need a setTimeout callback in the output.',
         };
       const lastMicroIdx = Math.max(
         ...microOutputs.map((m) => outputs.indexOf(m))
@@ -43,7 +43,7 @@ export const expertChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: '❌ Some microtasks ran after the setTimeout callback.',
+        feedback: 'Some microtasks ran after the setTimeout callback.',
       };
     },
   },
@@ -64,7 +64,7 @@ export const expertChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       if (
         outputs.length >= 4 &&
@@ -80,7 +80,7 @@ export const expertChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Expected: A, B, C, D. Got: ${outputs.slice(0, 4).join(', ')}`,
+        feedback: `Expected: A, B, C, D. Got: ${outputs.slice(0, 4).join(', ')}`,
       };
     },
   },
@@ -101,7 +101,7 @@ export const expertChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = ['A1', 'B1', 'A2', 'B2', 'A3', 'B3'];
       const match = expected.every((v, i) => outputs[i] === v);
@@ -114,7 +114,7 @@ export const expertChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Expected: ${expected.join(', ')}. Got: ${outputs.slice(0, 6).join(', ')}`,
+        feedback: `Expected: ${expected.join(', ')}. Got: ${outputs.slice(0, 6).join(', ')}`,
       };
     },
   },
@@ -135,7 +135,7 @@ export const expertChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' '));
       const unique = new Set(outputs);
       if (outputs.length >= 3 && unique.size >= 3) {
@@ -148,12 +148,12 @@ export const expertChallenges: Challenge[] = [
       if (outputs.length < 3)
         return {
           passed: false,
-          feedback: `❌ Need 3 outputs. Got ${outputs.length}.`,
+          feedback: `Need 3 outputs. Got ${outputs.length}.`,
         };
       return {
         passed: false,
         feedback:
-          '❌ The outputs are not all different. Each closure should produce a unique result.',
+          'The outputs are not all different. Each closure should produce a unique result.',
       };
     },
   },
@@ -180,7 +180,7 @@ export const expertChallenges: Challenge[] = [
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: '❌ No execution steps generated.' };
+        return { passed: false, feedback: 'No execution steps generated.' };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = [
         'sync-1',
@@ -200,7 +200,7 @@ export const expertChallenges: Challenge[] = [
       }
       return {
         passed: false,
-        feedback: `❌ Expected:\n${expected.join(', ')}\nGot:\n${outputs.slice(0, 7).join(', ')}`,
+        feedback: `Expected:\n${expected.join(', ')}\nGot:\n${outputs.slice(0, 7).join(', ')}`,
       };
     },
   },
