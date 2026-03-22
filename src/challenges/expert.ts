@@ -38,7 +38,7 @@ export const expertChallenges: Challenge[] = [
         return {
           passed: true,
           feedback:
-            '✅ All 3 nested microtasks drained before the macrotask! Event Loop mastery.',
+            'All 3 nested microtasks drained before the macrotask! Event Loop mastery.',
         };
       }
       return {
@@ -75,8 +75,7 @@ export const expertChallenges: Challenge[] = [
       ) {
         return {
           passed: true,
-          feedback:
-            '✅ A, B, C, D — you understand the Promise constructor trap!',
+          feedback: 'A, B, C, D — you understand the Promise constructor trap!',
         };
       }
       return {
@@ -110,7 +109,7 @@ export const expertChallenges: Challenge[] = [
         return {
           passed: true,
           feedback:
-            '✅ Perfect interleaving! You understand concurrent async execution.',
+            'Perfect interleaving! You understand concurrent async execution.',
         };
       }
       return {
@@ -143,7 +142,7 @@ export const expertChallenges: Challenge[] = [
         return {
           passed: true,
           feedback:
-            '✅ Three independent closures — each with its own captured scope!',
+            'Three independent closures — each with its own captured scope!',
         };
       }
       if (outputs.length < 3)
@@ -196,7 +195,7 @@ export const expertChallenges: Challenge[] = [
       if (match) {
         return {
           passed: true,
-          feedback: '✅ FLAWLESS. You have mastered the Event Loop. 🎻🎺🥁',
+          feedback: 'FLAWLESS. You have mastered the Event Loop. 🎻🎺🥁',
         };
       }
       return {

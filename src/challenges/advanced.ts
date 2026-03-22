@@ -35,7 +35,7 @@ export const advancedChallenges: Challenge[] = [
         outputs[2].includes('3') &&
         outputs[3].includes('4')
       ) {
-        return { passed: true, feedback: '✅ 1, 2, 3, 4 — perfect order!' };
+        return { passed: true, feedback: '1, 2, 3, 4 — perfect order!' };
       }
       return {
         passed: false,
@@ -80,7 +80,7 @@ export const advancedChallenges: Challenge[] = [
       if (lastThenIdx < timeoutIdx) {
         return {
           passed: true,
-          feedback: '✅ All 3 microtasks ran before the macrotask!',
+          feedback: 'All 3 microtasks ran before the macrotask!',
         };
       }
       return {
@@ -118,7 +118,7 @@ export const advancedChallenges: Challenge[] = [
       ) {
         return {
           passed: true,
-          feedback: '✅ 1, 2, 3, 4, 5 — counter works with closures!',
+          feedback: '1, 2, 3, 4, 5 — counter works with closures!',
         };
       }
       return {
@@ -153,7 +153,7 @@ export const advancedChallenges: Challenge[] = [
       if (match) {
         return {
           passed: true,
-          feedback: '✅ 1, 1, 2, 3, 5 — Fibonacci with generators!',
+          feedback: '1, 1, 2, 3, 5 — Fibonacci with generators!',
         };
       }
       return {
@@ -206,7 +206,7 @@ export const advancedChallenges: Challenge[] = [
         return {
           passed: true,
           feedback:
-            '✅ Full journey complete! The value traveled through every component.',
+            'Full journey complete! The value traveled through every component.',
         };
       }
       const missing = [];

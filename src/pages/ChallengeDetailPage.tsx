@@ -105,7 +105,7 @@ function HintButton({ hint }: { hint: string }) {
       <button
         onClick={() => setShowHint((v) => !v)}
         className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-          border border-white/10 transition-all'
+          border border-white/10 transition-all cursor-pointer'
         style={{ color: THEME.colors.text.secondary }}
         onMouseEnter={(e) => {
           (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -173,7 +173,7 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
   return (
     <button
       className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-        border border-white/10 transition-all'
+        border border-white/10 transition-all cursor-pointer'
       style={{ color: THEME.colors.text.secondary }}
       onMouseEnter={(e) => {
         (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -421,7 +421,7 @@ export default function ChallengeDetailPage() {
             onClick={handleSubmit}
             disabled={isSubmitting}
             className='inline-flex items-center gap-2 px-6 py-2.5 rounded-lg font-medium
-              transition-all disabled:opacity-50 disabled:cursor-not-allowed'
+              transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer'
             style={{
               background: 'rgba(6, 182, 212, 0.1)',
               color: '#22d3ee',
@@ -519,7 +519,7 @@ export default function ChallengeDetailPage() {
                   <button
                     onClick={handleVisualize}
                     className='inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
-                      transition-all'
+                      transition-all cursor-pointer'
                     style={{
                       background: 'rgba(6, 182, 212, 0.1)',
                       color: '#22d3ee',

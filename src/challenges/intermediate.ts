@@ -35,7 +35,7 @@ export const intermediateChallenges: Challenge[] = [
       if (worldIdx < helloIdx) {
         return {
           passed: true,
-          feedback: '✅ "World" first, "Hello" second — setTimeout worked!',
+          feedback: '"World" first, "Hello" second — setTimeout worked!',
         };
       }
       return {
@@ -63,7 +63,7 @@ export const intermediateChallenges: Challenge[] = [
       if (maxQueue >= 2) {
         return {
           passed: true,
-          feedback: `✅ ${maxQueue} callbacks in the Task Queue at once!`,
+          feedback: `${maxQueue} callbacks in the Task Queue at once!`,
         };
       }
       return {
@@ -107,7 +107,7 @@ export const intermediateChallenges: Challenge[] = [
       if (promiseIdx < timeoutIdx) {
         return {
           passed: true,
-          feedback: '✅ Microtask before macrotask — Promise wins!',
+          feedback: 'Microtask before macrotask — Promise wins!',
         };
       }
       return {
@@ -140,8 +140,7 @@ export const intermediateChallenges: Challenge[] = [
       if (hasClosureScope && hasOutput) {
         return {
           passed: true,
-          feedback:
-            '✅ Closure created! The variable survived beyond its scope.',
+          feedback: 'Closure created! The variable survived beyond its scope.',
         };
       }
       if (!hasClosureScope)
@@ -180,7 +179,7 @@ export const intermediateChallenges: Challenge[] = [
       if (hadSuspended && hasOutput) {
         return {
           passed: true,
-          feedback: '✅ Async function suspended and resumed!',
+          feedback: 'Async function suspended and resumed!',
         };
       }
       if (!hadSuspended)

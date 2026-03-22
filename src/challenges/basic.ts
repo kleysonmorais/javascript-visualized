@@ -20,7 +20,7 @@ export const basicChallenges: Challenge[] = [
       if (maxDepth >= 4) {
         return {
           passed: true,
-          feedback: `✅ Nice! You reached ${maxDepth - 1} frames deep.`,
+          feedback: `Nice! You reached ${maxDepth - 1} frames deep.`,
         };
       }
       return {
@@ -67,8 +67,7 @@ export const basicChallenges: Challenge[] = [
       if (hasNumber && hasString && hasObject && hasHeap) {
         return {
           passed: true,
-          feedback:
-            '✅ Perfect! Number and string in Memory, object in the Heap.',
+          feedback: 'Perfect! Number and string in Memory, object in the Heap.',
         };
       }
 
@@ -104,7 +103,7 @@ export const basicChallenges: Challenge[] = [
       if (helloCount === 3) {
         return {
           passed: true,
-          feedback: '✅ Hello, Hello, Hello! Exactly 3 times.',
+          feedback: 'Hello, Hello, Hello! Exactly 3 times.',
         };
       }
       if (helloCount > 3) {
@@ -144,7 +143,7 @@ export const basicChallenges: Challenge[] = [
       if (hasFnEntry && hasFnHeap) {
         return {
           passed: true,
-          feedback: '✅ ⓕ found in Memory and function source in the Heap!',
+          feedback: 'ⓕ found in Memory and function source in the Heap!',
         };
       }
       if (!hasFnEntry)
@@ -197,7 +196,7 @@ export const basicChallenges: Challenge[] = [
         return {
           passed: true,
           feedback:
-            '✅ Both variables share the same pointer color — same object!',
+            'Both variables share the same pointer color — same object!',
         };
       }
       return {
