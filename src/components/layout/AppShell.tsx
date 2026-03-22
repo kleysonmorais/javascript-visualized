@@ -57,7 +57,7 @@ export function AppShell() {
 
   return (
     <div
-      className="h-screen min-w-[320px] flex flex-col overflow-hidden"
+      className="h-full min-w-[320px] flex flex-col overflow-hidden"
       style={{
         backgroundColor: THEME.colors.bg.primary,
         fontFamily: THEME.fonts.ui,
