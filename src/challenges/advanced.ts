@@ -11,8 +11,19 @@ export const advancedChallenges: Challenge[] = [
     hint: 'Sync code runs first, then microtasks (Promise), then macrotasks (setTimeout). Plan which number goes where.',
     starterCode:
       '// Output: 1, 2, 3, 4 (in order)\n// Must use setTimeout AND Promise.resolve\n',
-    solutionCode:
-      'console.log("1");\nPromise.resolve().then(() => {\n  console.log("3");\n  setTimeout(() => console.log("4"), 0);\n});\nconsole.log("2");',
+    solutionCode: `// Sync — runs immediately (1st)
+console.log("1");
+
+// Microtask — scheduled after sync, runs before any macrotask
+Promise.resolve().then(() => {
+  console.log("3"); // 3rd: microtask runs after sync block
+
+  // Macrotask scheduled FROM INSIDE the microtask — runs last
+  setTimeout(() => console.log("4"), 0);
+});
+
+// Sync — runs immediately after "1" (2nd)
+console.log("2");`,
     solutionExplanation:
       '"1" and "2" are sync. "3" is a microtask that runs next. Inside "3", we schedule "4" as a macrotask that runs last.',
     validate: (steps) => {
@@ -53,8 +64,14 @@ export const advancedChallenges: Challenge[] = [
     hint: 'Chain Promise.resolve().then().then().then(). All chained microtasks drain before the Event Loop picks a macrotask.',
     starterCode:
       '// Chain 3 .then() callbacks\n// All must run before setTimeout\n',
-    solutionCode:
-      'setTimeout(() => console.log("timeout"), 0);\nPromise.resolve()\n  .then(() => console.log("then-1"))\n  .then(() => console.log("then-2"))\n  .then(() => console.log("then-3"));',
+    solutionCode: `// Macrotask: waits in Task Queue until ALL microtasks have drained
+setTimeout(() => console.log("timeout"), 0);
+
+// Each .then() creates a new microtask, chained one after another
+Promise.resolve()
+  .then(() => console.log("then-1")) // microtask 1
+  .then(() => console.log("then-2")) // microtask 2
+  .then(() => console.log("then-3")); // microtask 3 — all run before "timeout"`,
     solutionExplanation:
       'Each .then() schedules a microtask. The Event Loop drains ALL microtasks before picking the next macrotask. So then-1, then-2, then-3 all execute before the setTimeout callback.',
     validate: (steps) => {
@@ -99,8 +116,22 @@ export const advancedChallenges: Challenge[] = [
     hint: 'Create a function that returns another function. The inner function increments a variable captured from the outer scope.',
     starterCode:
       '// Create a closure-based counter\n// Call it 5 times, logging each value\n',
-    solutionCode:
-      'function createCounter() {\n  let count = 0;\n  return function() {\n    count++;\n    return count;\n  };\n}\nconst counter = createCounter();\nconsole.log(counter());\nconsole.log(counter());\nconsole.log(counter());\nconsole.log(counter());\nconsole.log(counter());',
+    solutionCode: `function createCounter() {
+  let count = 0; // captured in [[Scope]] — persists across calls
+
+  return function() {
+    count++; // mutates the closed-over variable in the Heap
+    return count;
+  };
+}
+
+// Each call to counter() increments the SAME 'count' in the Heap
+const counter = createCounter();
+console.log(counter()); // 1
+console.log(counter()); // 2
+console.log(counter()); // 3
+console.log(counter()); // 4
+console.log(counter()); // 5`,
     solutionExplanation:
       'Each call to counter() increments the closed-over "count" variable. The [[Scope]] in the Heap shows count updating: 1, 2, 3, 4, 5.',
     validate: (steps) => {
@@ -137,8 +168,23 @@ export const advancedChallenges: Challenge[] = [
     hint: 'Use function* with yield. Track two variables (prev and curr) and swap them each iteration.',
     starterCode:
       '// Write a Fibonacci generator\n// Yield the first 5 numbers: 1, 1, 2, 3, 5\n',
-    solutionCode:
-      'function* fibonacci() {\n  let prev = 0, curr = 1;\n  for (let i = 0; i < 5; i++) {\n    yield curr;\n    const next = prev + curr;\n    prev = curr;\n    curr = next;\n  }\n}\nfor (const n of fibonacci()) {\n  console.log(n);\n}',
+    solutionCode: `function* fibonacci() {
+  let prev = 0, curr = 1; // local memory persists between yields
+
+  for (let i = 0; i < 5; i++) {
+    yield curr; // suspends here, hands value to the caller
+
+    // resumes from this line on the next .next() call
+    const next = prev + curr;
+    prev = curr;
+    curr = next;
+  }
+}
+
+// for...of calls .next() each iteration, resuming the generator
+for (const n of fibonacci()) {
+  console.log(n); // 1, 1, 2, 3, 5
+}`,
     solutionExplanation:
       'The generator yields each Fibonacci number and suspends. for...of calls .next() repeatedly, resuming the generator each time. Local memory persists across yields.',
     validate: (steps) => {
@@ -180,8 +226,19 @@ export const advancedChallenges: Challenge[] = [
     hint: 'Store a value globally, pass it into a setTimeout callback, and inside the callback store it locally and log it.',
     starterCode:
       '// Make a value travel through ALL components\n// Global Memory → Web APIs → Task Queue → Call Stack → Local Memory → Console\n',
-    solutionCode:
-      'const message = "traveling";\nsetTimeout(function deliver() {\n  const received = message;\n  console.log(received);\n}, 100);',
+    solutionCode: `// Stop 1: Global Memory — 'message' is stored here
+const message = "traveling";
+
+// Stop 2: Web APIs — setTimeout registers the callback and starts the timer
+setTimeout(function deliver() {
+  // Stop 4: Call Stack — deliver() is pushed as a new frame
+  // Stop 5: Local Memory — 'received' lives in deliver's local scope
+  const received = message; // reads from Global Memory via scope chain
+
+  // Stop 6: Console — the value is printed
+  console.log(received);
+}, 100);
+// Stop 3: Task Queue — when the timer fires, deliver() waits here`,
     solutionExplanation:
       '"message" starts in Global Memory. setTimeout registers in Web APIs. When timer completes, callback goes to Task Queue. Event Loop moves it to Call Stack. Inside the callback, "received" is in Local Memory. Finally, console.log outputs it.',
     validate: (steps) => {

@@ -10,8 +10,22 @@ export const expertChallenges: Challenge[] = [
     concepts: ['microtask-queue', 'promises', 'event-loop', 'task-queue'],
     hint: 'Microtasks created INSIDE microtasks also drain before the Event Loop checks the Task Queue. The queue must be completely empty first.',
     starterCode: '// 3 nested microtasks, all before setTimeout\n',
-    solutionCode:
-      'setTimeout(() => console.log("timeout"), 0);\nPromise.resolve().then(() => {\n  console.log("micro-1");\n  Promise.resolve().then(() => {\n    console.log("micro-2");\n    Promise.resolve().then(() => {\n      console.log("micro-3");\n    });\n  });\n});',
+    solutionCode: `// Macrotask: sits in Task Queue until the Microtask Queue is fully empty
+setTimeout(() => console.log("timeout"), 0);
+
+Promise.resolve().then(() => {
+  console.log("micro-1");
+
+  // A microtask created INSIDE a microtask also drains before any macrotask
+  Promise.resolve().then(() => {
+    console.log("micro-2");
+
+    // Same rule applies at every nesting level
+    Promise.resolve().then(() => {
+      console.log("micro-3");
+    });
+  });
+});`,
     solutionExplanation:
       'Each nested .then() creates a new microtask. The Event Loop keeps draining the Microtask Queue until it is completely empty — even microtasks created by other microtasks — before picking any macrotask.',
     validate: (steps) => {
@@ -57,8 +71,20 @@ export const expertChallenges: Challenge[] = [
     hint: 'The Promise executor runs SYNCHRONOUSLY — that is the trap most people miss. new Promise(fn) calls fn immediately.',
     starterCode:
       '// Output: A, B, C, D\n// A = inside Promise constructor\n// B = sync after Promise\n// C = .then() callback\n// D = setTimeout callback\n',
-    solutionCode:
-      'setTimeout(() => console.log("D"), 0);\nconst p = new Promise((resolve) => {\n  console.log("A");\n  resolve();\n});\np.then(() => console.log("C"));\nconsole.log("B");',
+    solutionCode: `// Macrotask: will run last
+setTimeout(() => console.log("D"), 0);
+
+// The executor function runs SYNCHRONOUSLY — "A" logs immediately (trap!)
+const p = new Promise((resolve) => {
+  console.log("A"); // sync, 1st
+  resolve();        // marks the promise as settled
+});
+
+// Microtask: scheduled after sync block completes
+p.then(() => console.log("C")); // 3rd
+
+// Sync: runs immediately after the Promise constructor (2nd)
+console.log("B");`,
     solutionExplanation:
       'The Promise executor runs synchronously, so "A" logs immediately. "B" is the next sync statement. "C" is a microtask (.then). "D" is a macrotask (setTimeout). Order: sync (A, B) → micro (C) → macro (D).',
     validate: (steps) => {
@@ -94,8 +120,25 @@ export const expertChallenges: Challenge[] = [
     hint: 'Call both async functions WITHOUT await between them. Each await suspends only its own function. The microtask queue interleaves their continuations.',
     starterCode:
       '// Two async functions running concurrently\n// Output: A1, B1, A2, B2, A3, B3\n',
-    solutionCode:
-      'async function taskA() {\n  console.log("A1");\n  await Promise.resolve();\n  console.log("A2");\n  await Promise.resolve();\n  console.log("A3");\n}\nasync function taskB() {\n  console.log("B1");\n  await Promise.resolve();\n  console.log("B2");\n  await Promise.resolve();\n  console.log("B3");\n}\ntaskA();\ntaskB();',
+    solutionCode: `async function taskA() {
+  console.log("A1"); // sync on first call
+  await Promise.resolve(); // suspends taskA, yields control
+  console.log("A2"); // resumes as a microtask
+  await Promise.resolve(); // suspends again
+  console.log("A3");
+}
+
+async function taskB() {
+  console.log("B1"); // sync, runs right after A1
+  await Promise.resolve(); // suspends taskB
+  console.log("B2"); // resumes after A2 (microtasks interleave)
+  await Promise.resolve();
+  console.log("B3");
+}
+
+// Call both WITHOUT awaiting — they start concurrently
+taskA();
+taskB();`,
     solutionExplanation:
       'Both functions start synchronously: A1, B1. Each await suspends its function. Their continuations interleave in the microtask queue: A2, B2, A3, B3.',
     validate: (steps) => {
@@ -128,8 +171,22 @@ export const expertChallenges: Challenge[] = [
     hint: 'Each call to the factory creates a NEW scope. The returned functions capture their own independent copy of the variable.',
     starterCode:
       '// Create a closure factory\n// Call it 3 times with different args\n// Prove each closure is independent\n',
-    solutionCode:
-      'function makeGreeter(greeting) {\n  return function(name) {\n    return greeting + " " + name;\n  };\n}\nconst hi = makeGreeter("Hi");\nconst hello = makeGreeter("Hello");\nconst hey = makeGreeter("Hey");\nconsole.log(hi("World"));\nconsole.log(hello("World"));\nconsole.log(hey("World"));',
+    solutionCode: `function makeGreeter(greeting) {
+  // Each call creates a NEW scope with its own 'greeting'
+  return function(name) {
+    // Captures the 'greeting' from its own parent scope — not shared
+    return greeting + " " + name;
+  };
+}
+
+// Three separate calls → three independent [[Scope]] objects in the Heap
+const hi    = makeGreeter("Hi");
+const hello = makeGreeter("Hello");
+const hey   = makeGreeter("Hey");
+
+console.log(hi("World"));    // "Hi World"
+console.log(hello("World")); // "Hello World"
+console.log(hey("World"));   // "Hey World"`,
     solutionExplanation:
       'Each call to makeGreeter creates a new scope with its own "greeting" variable. The three closures are independent — changing one does not affect the others.',
     validate: (steps) => {
@@ -173,8 +230,26 @@ export const expertChallenges: Challenge[] = [
     hint: '"micro-3" runs BETWEEN "macro-1" and "macro-2". This means the first setTimeout callback must create a new microtask that drains before the second setTimeout fires.',
     starterCode:
       '// The boss fight.\n// Output: sync-1, sync-2, micro-1, micro-2, macro-1, micro-3, macro-2\n',
-    solutionCode:
-      'console.log("sync-1");\nsetTimeout(() => {\n  console.log("macro-1");\n  Promise.resolve().then(() => console.log("micro-3"));\n}, 0);\nsetTimeout(() => console.log("macro-2"), 0);\nPromise.resolve().then(() => console.log("micro-1")).then(() => console.log("micro-2"));\nconsole.log("sync-2");',
+    solutionCode: `// Sync — runs 1st
+console.log("sync-1");
+
+// Macrotask 1: when it fires, it creates a new microtask (micro-3)
+setTimeout(() => {
+  console.log("macro-1"); // 5th
+  // micro-3 is created INSIDE a macrotask — drains before macro-2 runs
+  Promise.resolve().then(() => console.log("micro-3")); // 6th
+}, 0);
+
+// Macrotask 2: runs last, AFTER micro-3 drains
+setTimeout(() => console.log("macro-2"), 0); // 7th
+
+// Microtasks: drain before any macrotask
+Promise.resolve()
+  .then(() => console.log("micro-1")) // 3rd
+  .then(() => console.log("micro-2")); // 4th
+
+// Sync — runs 2nd
+console.log("sync-2");`,
     solutionExplanation:
       'sync-1, sync-2 run first. Then microtasks: micro-1, micro-2. Then first macrotask: macro-1 — which creates micro-3. Micro-3 drains before macro-2 fires. This is the full Event Loop cycle.',
     validate: (steps) => {

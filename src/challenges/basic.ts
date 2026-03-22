@@ -11,8 +11,17 @@ export const basicChallenges: Challenge[] = [
     hint: 'Think nested function calls — A calls B, B calls C. All three need to be on the stack simultaneously.',
     starterCode:
       '// Write functions that call each other\n// Goal: 3 frames on the Call Stack at once\n',
-    solutionCode:
-      'function c() { return 1; }\nfunction b() { return c(); }\nfunction a() { return b(); }\na();',
+    solutionCode: `// Step 3: c() is the deepest — it just returns a value
+function c() { return 1; }
+
+// Step 2: b() calls c(), putting both on the stack
+function b() { return c(); }
+
+// Step 1: a() calls b(), which calls c() — 3 frames deep!
+function a() { return b(); }
+
+// Trigger the chain
+a();`,
     solutionExplanation:
       'When a() calls b() which calls c(), all three frames are on the Call Stack simultaneously before any of them return.',
     validate: (steps) => {
@@ -40,8 +49,14 @@ export const basicChallenges: Challenge[] = [
     concepts: ['global-memory', 'heap'],
     hint: 'Use const to declare each variable. Objects and arrays go to the Heap — primitives stay in Memory.',
     starterCode: '// Declare a number, a string, and an object\n',
-    solutionCode:
-      'const age = 25;\nconst name = "Joe";\nconst person = { name: "Joe", age: 25 };',
+    solutionCode: `// Primitive: stored directly in Global Memory
+const age = 25;
+
+// Primitive: strings are also stored inline in Memory
+const name = "Joe";
+
+// Object: stored in the Heap, Memory holds a [Pointer] to it
+const person = { name: "Joe", age: 25 };`,
     solutionExplanation:
       'Numbers and strings are primitives stored inline in Global Memory. Objects are stored in the Heap with a [Pointer] reference in Memory.',
     validate: (steps) => {
@@ -88,7 +103,11 @@ export const basicChallenges: Challenge[] = [
     concepts: ['console'],
     hint: 'Use a for loop that runs 3 iterations, each calling console.log("Hello").',
     starterCode: '// Use a loop to print "Hello" 3 times\n',
-    solutionCode: 'for (let i = 0; i < 3; i++) {\n  console.log("Hello");\n}',
+    solutionCode: `// i starts at 0, increments each loop, stops before 3 → runs exactly 3 times
+for (let i = 0; i < 3; i++) {
+  // Each iteration logs "Hello" to the console output panel
+  console.log("Hello");
+}`,
     solutionExplanation:
       'A simple for loop with 3 iterations. Each iteration logs "Hello" to the console.',
     validate: (steps) => {
@@ -127,7 +146,11 @@ export const basicChallenges: Challenge[] = [
     concepts: ['global-memory', 'heap'],
     hint: 'Any function declaration or function expression creates a ⓕ entry in memory and a HeapObject with the source code.',
     starterCode: '// Declare a function — look for ⓕ in Memory\n',
-    solutionCode: 'function greet(name) {\n  return "Hello " + name;\n}',
+    solutionCode: `// Declaring a function creates a ⓕ entry in Global Memory...
+function greet(name) {
+  // ...and stores the full source code as a HeapObject in the Heap
+  return "Hello " + name;
+}`,
     solutionExplanation:
       'Function declarations create a ⓕ symbol in Global Memory pointing to a HeapObject that contains the function source code.',
     validate: (steps) => {
@@ -163,7 +186,11 @@ export const basicChallenges: Challenge[] = [
     concepts: ['global-memory', 'heap'],
     hint: 'When you do const b = a, both variables point to the same HeapObject. Same heapReferenceId = same color.',
     starterCode: '// Create an object and assign it to two variables\n',
-    solutionCode: 'const a = { x: 1 };\nconst b = a;',
+    solutionCode: `// Creates an object in the Heap; 'a' holds a [Pointer] to it
+const a = { x: 1 };
+
+// Copies the pointer — not the object. 'b' points to the same HeapObject as 'a'
+const b = a;`,
     solutionExplanation:
       'When you assign b = a, JavaScript copies the reference — not the object. Both variables point to the exact same HeapObject, so they share the same pointer color.',
     validate: (steps) => {

@@ -11,8 +11,11 @@ export const intermediateChallenges: Challenge[] = [
     hint: 'console.log("World") runs synchronously. setTimeout delays "Hello" — even with 0ms delay, it goes through the async pipeline.',
     starterCode:
       '// Output: "World" then "Hello"\n// You must use setTimeout\n',
-    solutionCode:
-      'setTimeout(() => console.log("Hello"), 100);\nconsole.log("World");',
+    solutionCode: `// setTimeout sends the callback to Web APIs — it won't run yet
+setTimeout(() => console.log("Hello"), 100);
+
+// This runs synchronously right now, before the timer fires
+console.log("World");`,
     solutionExplanation:
       'setTimeout registers the callback in Web APIs. Synchronous code (console.log "World") runs first. After the timer completes, the callback moves to the Task Queue and executes.',
     validate: (steps) => {
@@ -54,8 +57,12 @@ export const intermediateChallenges: Challenge[] = [
     concepts: ['task-queue', 'web-apis', 'event-loop'],
     hint: 'Use two setTimeouts with the same delay. Both callbacks will enter the Task Queue around the same time.',
     starterCode: '// Get 2 callbacks in the Task Queue simultaneously\n',
-    solutionCode:
-      'setTimeout(() => console.log("A"), 100);\nsetTimeout(() => console.log("B"), 100);\nconsole.log("sync");',
+    solutionCode: `// Both timers have the same delay — they expire together
+setTimeout(() => console.log("A"), 100);
+setTimeout(() => console.log("B"), 100);
+
+// Sync code runs first; both callbacks wait in Web APIs
+console.log("sync");`,
     solutionExplanation:
       'Both timers have the same delay, so both callbacks land in the Task Queue at the same time after synchronous code finishes.',
     validate: (steps) => {
@@ -81,8 +88,14 @@ export const intermediateChallenges: Challenge[] = [
     concepts: ['microtask-queue', 'task-queue', 'promises', 'event-loop'],
     hint: 'Microtasks (Promise.then) always drain before macrotasks (setTimeout). Both with 0 delay — Promise still wins.',
     starterCode: '// Prove: Promise callback runs before setTimeout callback\n',
-    solutionCode:
-      'setTimeout(() => console.log("timeout"), 0);\nPromise.resolve().then(() => console.log("promise"));\nconsole.log("sync");',
+    solutionCode: `// Macrotask: goes to Web APIs → Task Queue (lowest priority)
+setTimeout(() => console.log("timeout"), 0);
+
+// Microtask: goes to Microtask Queue (higher priority than Task Queue)
+Promise.resolve().then(() => console.log("promise"));
+
+// Runs first — synchronous code always goes before any queue
+console.log("sync");`,
     solutionExplanation:
       'The Event Loop drains the entire Microtask Queue before picking the next task from the Task Queue. Promise.then is a microtask, setTimeout is a macrotask.',
     validate: (steps) => {
@@ -126,8 +139,18 @@ export const intermediateChallenges: Challenge[] = [
     hint: 'Return a function from inside another function. The inner function captures variables from the outer scope via [[Scope]].',
     starterCode:
       '// Create a closure that survives its parent scope\n// Call it and log the captured value\n',
-    solutionCode:
-      'function outer() {\n  const secret = "hidden";\n  return function() { return secret; };\n}\nconst fn = outer();\nconsole.log(fn());',
+    solutionCode: `function outer() {
+  const secret = "hidden"; // lives in outer's local memory
+
+  // This inner function captures 'secret' via [[Scope]]
+  return function() { return secret; };
+}
+
+// outer() finishes and its frame is popped — but 'secret' survives in the closure
+const fn = outer();
+
+// fn() still has access to 'secret' through [[Scope]] in the Heap
+console.log(fn());`,
     solutionExplanation:
       'When outer() returns, its local memory is destroyed. But the returned function captures "secret" in its [[Scope]], so the value survives.',
     validate: (steps) => {
@@ -165,8 +188,17 @@ export const intermediateChallenges: Challenge[] = [
     hint: 'Use "await Promise.resolve()" inside an async function. The function suspends at the await, then resumes when the Promise settles.',
     starterCode:
       '// Create an async function that suspends and resumes\n// Log before and after the await\n',
-    solutionCode:
-      'async function fn() {\n  console.log("before");\n  await Promise.resolve();\n  console.log("after");\n}\nfn();',
+    solutionCode: `async function fn() {
+  console.log("before"); // runs synchronously when fn() is called
+
+  // 'await' suspends the function — the frame stays on the Call Stack as "suspended"
+  await Promise.resolve();
+
+  // resumes here after the Promise resolves (via the Microtask Queue)
+  console.log("after");
+}
+
+fn();`,
     solutionExplanation:
       'When the async function hits "await", it suspends — the frame stays in the Call Stack with "suspended" status. After the Promise resolves, it resumes and continues execution.',
     validate: (steps) => {
