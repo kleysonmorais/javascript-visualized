@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
-import { Navbar } from '@/components/layout/Navbar';
 import { ConceptBadge } from '@/components/ui/ConceptBadge';
 import { THEME } from '@/constants/theme';
 import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
@@ -134,7 +133,6 @@ export default function ChallengesListPage() {
       className="h-full overflow-y-auto flex flex-col"
       style={{ backgroundColor: THEME.colors.bg.primary }}
     >
-      <Navbar />
       <main className="flex-1 px-4 py-8 max-w-4xl mx-auto w-full">
         {/* Header */}
         <div className="flex items-start justify-between mb-8">

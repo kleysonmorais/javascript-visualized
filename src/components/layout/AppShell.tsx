@@ -13,7 +13,6 @@ import { MicrotaskQueue } from "@/components/visualizer/MicrotaskQueue";
 import { ConsoleOutput } from "@/components/visualizer/ConsoleOutput";
 import { Panel } from "@/components/ui/Panel";
 import { TransportControls } from "@/components/controls/TransportControls";
-import { Navbar } from "@/components/layout/Navbar";
 import { MobileTabBar, type MobileTab } from "@/components/layout/MobileTabBar";
 import { useVisualizerStore } from "@/store/useVisualizerStore";
 import { useAutoPlay } from "@/hooks/useAutoPlay";
@@ -64,9 +63,6 @@ export function AppShell() {
         fontFamily: THEME.fonts.ui,
       }}
     >
-      {/* Navbar */}
-      <Navbar />
-
       {/* Mobile tab bar */}
       <MobileTabBar activeTab={activeTab} onTabChange={setActiveTab} />
 

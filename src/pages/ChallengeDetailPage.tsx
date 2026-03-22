@@ -15,7 +15,6 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { Navbar } from "@/components/layout/Navbar";
 import { ConceptBadge } from "@/components/ui/ConceptBadge";
 import { THEME } from "@/constants/theme";
 import { getChallengeById, ALL_CHALLENGES } from "@/challenges";
@@ -244,7 +243,6 @@ export default function ChallengeDetailPage() {
         className="min-h-screen flex flex-col"
         style={{ background: THEME.colors.bg.primary }}
       >
-        <Navbar />
         <main className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p
