@@ -208,20 +208,6 @@ export default function ChallengeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  // Undo the global overflow-hidden so this page scrolls naturally
-  useEffect(() => {
-    const root = document.getElementById("root");
-    const prev = root?.style.overflow ?? "";
-    if (root) root.style.overflow = "auto";
-    document.documentElement.style.overflow = "auto";
-    document.body.style.overflow = "auto";
-    return () => {
-      if (root) root.style.overflow = prev;
-      document.documentElement.style.overflow = "";
-      document.body.style.overflow = "";
-    };
-  }, []);
-
   const challenge = getChallengeById(id!);
 
   const challengeIndex = ALL_CHALLENGES.findIndex((c) => c.id === id);
@@ -240,7 +226,7 @@ export default function ChallengeDetailPage() {
   if (!challenge) {
     return (
       <div
-        className="min-h-screen flex flex-col"
+        className="h-full overflow-y-auto flex flex-col"
         style={{ background: THEME.colors.bg.primary }}
       >
         <main className="flex-1 flex items-center justify-center">
@@ -325,10 +311,9 @@ export default function ChallengeDetailPage() {
 
   return (
     <div
-      className="min-h-screen flex flex-col"
+      className="h-full overflow-y-auto flex flex-col"
       style={{ background: THEME.colors.bg.primary }}
     >
-      <Navbar />
       <main
         className="flex-1 px-4 py-8 w-full mx-auto"
         style={{ maxWidth: "768px" }}
