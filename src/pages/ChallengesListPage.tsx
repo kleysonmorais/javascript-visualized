@@ -1,19 +1,28 @@
-import { Link } from 'react-router-dom';
-import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
-import { ConceptBadge } from '@/components/ui/ConceptBadge';
-import { THEME } from '@/constants/theme';
-import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
-import { isCompleted, getCompletedCount } from '@/lib/progress';
-import type { Challenge, ChallengeLevel } from '@/challenges/types';
+import { Link } from "react-router-dom";
+import { CheckCircle, Circle, ChevronRight } from "lucide-react";
+import { ConceptBadge } from "@/components/ui/ConceptBadge";
+import { THEME } from "@/constants/theme";
+import { ALL_CHALLENGES, getChallengesByLevel } from "@/challenges/index";
+import { isCompleted, getCompletedCount } from "@/lib/progress";
+import type { Challenge, ChallengeLevel } from "@/challenges/types";
+import { FaTrophy } from "react-icons/fa";
 
-const LEVEL_CONFIG: Record<ChallengeLevel, { label: string; color: string; emoji: string }> = {
-  basic:        { label: 'Basic',        color: '#22c55e', emoji: '🟢' },
-  intermediate: { label: 'Intermediate', color: '#f59e0b', emoji: '🟡' },
-  advanced:     { label: 'Advanced',     color: '#ef4444', emoji: '🔴' },
-  expert:       { label: 'Expert',       color: '#a855f7', emoji: '🟣' },
+const LEVEL_CONFIG: Record<
+  ChallengeLevel,
+  { label: string; color: string; emoji: string }
+> = {
+  basic: { label: "Basic", color: "#22c55e", emoji: "🟢" },
+  intermediate: { label: "Intermediate", color: "#f59e0b", emoji: "🟡" },
+  advanced: { label: "Advanced", color: "#ef4444", emoji: "🔴" },
+  expert: { label: "Expert", color: "#a855f7", emoji: "🟣" },
 };
 
-const LEVELS: ChallengeLevel[] = ['basic', 'intermediate', 'advanced', 'expert'];
+const LEVELS: ChallengeLevel[] = [
+  "basic",
+  "intermediate",
+  "advanced",
+  "expert",
+];
 
 interface ChallengeCardProps {
   challenge: Challenge;
@@ -26,21 +35,31 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
     <Link to={`/challenges/${challenge.id}`} className="block">
       <div
         className="flex items-start gap-3 p-4 rounded-lg transition-colors duration-150 cursor-pointer group"
-        style={{ '--hover-bg': THEME.colors.bg.tertiary } as React.CSSProperties}
-        onMouseEnter={e => (e.currentTarget.style.backgroundColor = THEME.colors.bg.tertiary)}
-        onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+        style={
+          { "--hover-bg": THEME.colors.bg.tertiary } as React.CSSProperties
+        }
+        onMouseEnter={(e) =>
+          (e.currentTarget.style.backgroundColor = THEME.colors.bg.tertiary)
+        }
+        onMouseLeave={(e) =>
+          (e.currentTarget.style.backgroundColor = "transparent")
+        }
       >
         <div className="shrink-0 mt-0.5">
-          {completed
-            ? <CheckCircle size={22} style={{ color: '#22c55e' }} />
-            : <Circle size={22} style={{ color: THEME.colors.text.muted }} />
-          }
+          {completed ? (
+            <CheckCircle size={22} style={{ color: "#22c55e" }} />
+          ) : (
+            <Circle size={22} style={{ color: THEME.colors.text.muted }} />
+          )}
         </div>
 
         <div className="flex-1 min-w-0">
           <h3
             className="font-semibold transition-colors duration-150"
-            style={{ color: THEME.colors.text.primary, fontFamily: THEME.fonts.ui }}
+            style={{
+              color: THEME.colors.text.primary,
+              fontFamily: THEME.fonts.ui,
+            }}
           >
             {challenge.title}
           </h3>
@@ -51,7 +70,7 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
             {challenge.description}
           </p>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            {challenge.concepts.map(concept => (
+            {challenge.concepts.map((concept) => (
               <ConceptBadge key={concept} concept={concept} />
             ))}
           </div>
@@ -76,7 +95,7 @@ function LevelSection({ level, challenges }: LevelSectionProps) {
   if (challenges.length === 0) return null;
 
   const config = LEVEL_CONFIG[level];
-  const completedCount = challenges.filter(c => isCompleted(c.id)).length;
+  const completedCount = challenges.filter((c) => isCompleted(c.id)).length;
 
   return (
     <div className="mb-6">
@@ -138,10 +157,14 @@ export default function ChallengesListPage() {
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1
-              className="text-3xl font-bold"
-              style={{ color: THEME.colors.text.primary, fontFamily: THEME.fonts.ui }}
+              className="text-3xl font-bold flex items-center gap-3"
+              style={{
+                color: THEME.colors.text.primary,
+                fontFamily: THEME.fonts.ui,
+              }}
             >
-              Practice
+              <FaTrophy size={28} />
+              Challenges
             </h1>
             <p
               className="mt-1 text-sm"
@@ -154,8 +177,12 @@ export default function ChallengesListPage() {
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium shrink-0"
             style={{ backgroundColor: THEME.colors.bg.tertiary }}
           >
-            <span style={{ color: THEME.colors.text.accent }}>{completedCount}</span>
-            <span style={{ color: THEME.colors.text.muted }}>/{totalCount} completed</span>
+            <span style={{ color: THEME.colors.text.accent }}>
+              {completedCount}
+            </span>
+            <span style={{ color: THEME.colors.text.muted }}>
+              /{totalCount} completed
+            </span>
           </div>
         </div>
 
@@ -165,7 +192,7 @@ export default function ChallengesListPage() {
             No challenges available
           </p>
         ) : (
-          LEVELS.map(level => (
+          LEVELS.map((level) => (
             <LevelSection
               key={level}
               level={level}

@@ -1,14 +1,16 @@
-import { Link, useLocation } from 'react-router-dom';
-import GitHubButton from 'react-github-btn';
-import { Dumbbell } from 'lucide-react';
-import { FaJsSquare } from 'react-icons/fa';
-import { THEME } from '@/constants/theme';
+import { useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import GitHubButton from "react-github-btn";
+import { FaJsSquare, FaTrophy } from "react-icons/fa";
+import { THEME } from "@/constants/theme";
+import { MdFiberNew } from "react-icons/md";
 
 export function Navbar() {
   const location = useLocation();
+  const [hovered, setHovered] = useState(false);
   const isChallenges =
-    location.pathname === '/challenges' ||
-    location.pathname.startsWith('/challenges/');
+    location.pathname === "/challenges" ||
+    location.pathname.startsWith("/challenges/");
 
   return (
     <nav
@@ -30,32 +32,39 @@ export function Navbar() {
         <span>JS Visualized</span>
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3">
         <Link
           to="/challenges"
-          className="flex items-center gap-1.5 text-sm font-medium no-underline transition-colors duration-150 pb-0.5"
+          className={`flex items-center gap-1.5 text-sm rounded-xs font-medium 
+            no-underline transition-colors duration-150 px-2 py-1.25`}
           style={{
-            color: isChallenges ? THEME.colors.text.accent : THEME.colors.text.secondary,
-            borderBottom: isChallenges
-              ? `2px solid ${THEME.colors.text.accent}`
-              : '2px solid transparent',
+            color:
+              isChallenges || hovered
+                ? THEME.colors.text.accent
+                : THEME.colors.text.secondary,
             fontFamily: THEME.fonts.ui,
           }}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
         >
-          <Dumbbell size={16} />
+          <FaTrophy size={16} />
           <span>Challenges</span>
+
+          <MdFiberNew color={THEME.colors.text.accent} size={16} />
         </Link>
 
-        <GitHubButton
-          href="https://github.com/kleysonmorais/javascript-visualized"
-          data-color-scheme="no-preference: light; light: light; dark: dark;"
-          data-icon="octicon-star"
-          data-size="large"
-          data-show-count="true"
-          aria-label="Star kleysonmorais/javascript-visualized on GitHub"
-        >
-          Star on GitHub
-        </GitHubButton>
+        <div className="pt-1.25">
+          <GitHubButton
+            href="https://github.com/kleysonmorais/javascript-visualized"
+            data-color-scheme="no-preference: light; light: light; dark: dark;"
+            data-icon="octicon-star"
+            data-size="large"
+            data-show-count="true"
+            aria-label="Star kleysonmorais/javascript-visualized on GitHub"
+          >
+            Star on GitHub
+          </GitHubButton>
+        </div>
       </div>
     </nav>
   );
