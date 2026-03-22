@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
-import { ConceptBadge } from '@/components/ui/ConceptBadge';
 import { THEME } from '@/constants/theme';
 import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
 import { isCompleted, getCompletedCount } from '@/lib/progress';
@@ -54,11 +53,6 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
           >
             {challenge.description}
           </p>
-          <div className='flex flex-wrap gap-1.5 mt-2'>
-            {challenge.concepts.map((concept) => (
-              <ConceptBadge key={concept} concept={concept} />
-            ))}
-          </div>
         </div>
 
         <ChevronRight
