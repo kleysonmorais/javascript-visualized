@@ -17,6 +17,16 @@ function greet(name) {
 }
 const message = greet(myName);
 console.log(message);`,
+    codePtBr: `// Variáveis e Memória
+const meuNome = "Joe";
+const idade = 23;
+const pessoa = { name: "Joe", age: 23 };
+const pessoa2 = pessoa;
+function cumprimentar(nome) {
+  return "Olá " + nome;
+}
+const mensagem = cumprimentar(meuNome);
+console.log(mensagem);`,
   },
   {
     id: 'reference-vs-value',
@@ -31,6 +41,13 @@ copy.x = 99;
 console.log("original.x:", original.x);
 console.log("copy.x:", copy.x);
 console.log("Same object?", original === copy);`,
+    codePtBr: `// Referência vs Valor
+const original = { x: 1, y: 2 };
+const copia = original;
+copia.x = 99;
+console.log("original.x:", original.x);
+console.log("copia.x:", copia.x);
+console.log("Mesmo objeto?", original === copia);`,
   },
   {
     id: 'function-scope',
@@ -50,6 +67,19 @@ function square(n) {
 const x = 5;
 const answer = square(x);
 console.log(answer);`,
+    codePtBr: `// Chamadas de Função e Escopo
+function multiplicar(a, b) {
+  const resultado = a * b;
+  return resultado;
+}
+
+function quadrado(n) {
+  return multiplicar(n, n);
+}
+
+const x = 5;
+const resposta = quadrado(x);
+console.log(resposta);`,
   },
   {
     id: 'deep-call-stack',
@@ -78,5 +108,27 @@ function second() { third() }
 function first() { second() }
 
 first();`,
+    codePtBr: `// Pilha de Chamadas Profunda
+function decima() { }
+
+function nona() { decima() }
+
+function oitava() { nona() }
+
+function setima() { oitava() }
+
+function sexta() { setima() }
+
+function quinta() { sexta() }
+
+function quarta() { quinta() }
+
+function terceira() { quarta() }
+
+function segunda() { terceira() }
+
+function primeira() { segunda() }
+
+primeira();`,
   },
 ];

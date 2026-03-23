@@ -22,7 +22,7 @@ import { useIsMobile } from '@/hooks/useMediaQuery';
 import { MdOutlineModeEditOutline } from 'react-icons/md';
 
 export function AppShell() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { exampleId } = useParams<{ exampleId: string }>();
   const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
   const reset = useVisualizerStore((s) => s.reset);
@@ -33,12 +33,16 @@ export function AppShell() {
 
     const example = CODE_EXAMPLES.find((e) => e.id === exampleId);
     if (example) {
-      setSourceCode(example.code);
+      const code =
+        i18n.language === 'pt-BR' && example.codePtBr
+          ? example.codePtBr
+          : example.code;
+      setSourceCode(code);
       reset();
     } else {
       navigate('/');
     }
-  }, [exampleId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [exampleId, i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);

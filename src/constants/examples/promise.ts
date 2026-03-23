@@ -17,6 +17,16 @@ p.then((value) => {
 });
 
 console.log("sync done");`,
+    codePtBr: `// Fundamentos de Promise
+const p = new Promise((resolve) => {
+  resolve(42);
+});
+
+p.then((valor) => {
+  console.log("resolvido:", valor);
+});
+
+console.log("síncrono concluído");`,
   },
   {
     id: 'promise-chain',
@@ -32,6 +42,15 @@ Promise.resolve(1)
   });
 
 console.log("chain started");`,
+    codePtBr: `// Encadeamento de Promises
+Promise.resolve(1)
+  .then((v) => v + 1)
+  .then((v) => v * 3)
+  .then((v) => {
+    console.log("resultado:", v);
+  });
+
+console.log("cadeia iniciada");`,
   },
   {
     id: 'promise-reject-catch',
@@ -49,6 +68,17 @@ Promise.reject("something went wrong")
   });
 
 console.log("sync");`,
+    codePtBr: `// Rejeição e Captura de Promise
+Promise.reject("algo deu errado")
+  .catch((motivo) => {
+    console.log("capturado:", motivo);
+    return "recuperado";
+  })
+  .then((valor) => {
+    console.log("após o catch:", valor);
+  });
+
+console.log("síncrono");`,
   },
   {
     id: 'promise-all',
@@ -65,5 +95,15 @@ Promise.all([p1, p2, p3]).then((values) => {
 });
 
 console.log("waiting for all");`,
+    codePtBr: `// Promise.all
+const p1 = Promise.resolve(10);
+const p2 = Promise.resolve(20);
+const p3 = Promise.resolve(30);
+
+Promise.all([p1, p2, p3]).then((valores) => {
+  console.log("soma:", valores[0] + valores[1] + valores[2]);
+});
+
+console.log("aguardando todas");`,
   },
 ];

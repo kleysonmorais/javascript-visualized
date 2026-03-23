@@ -24,6 +24,24 @@ function computePrimes(onPrime, startAt = 1) {
 computePrimes(prime => {
   console.log(prime);
 });`,
+    codePtBr: `// Computação Bloqueante
+function ehPrimo(n) {
+  for (let i = 2; i < n; i++) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+function calcularPrimos(aoPrimo, iniciarEm = 1) {
+  let numAtual;
+  for (numAtual = iniciarEm; true; numAtual++) {
+    if (ehPrimo(numAtual)) aoPrimo(numAtual);
+  }
+}
+
+calcularPrimos(primo => {
+  console.log(primo);
+});`,
   },
   {
     id: 'chunked-setTimeout',
@@ -51,6 +69,27 @@ function computePrimes(onPrime, startAt = 1) {
 computePrimes(prime => {
   console.log(prime);
 });`,
+    codePtBr: `// Dividido com setTimeout
+function ehPrimo(n) {
+  for (let i = 2; i < n; i++) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+function calcularPrimos(aoPrimo, iniciarEm = 1) {
+  let numAtual;
+  for (numAtual = iniciarEm; numAtual % 5 !== 0; numAtual++) {
+    if (ehPrimo(numAtual)) aoPrimo(numAtual);
+  }
+  setTimeout(() => {
+    calcularPrimos(aoPrimo, numAtual + 1);
+  }, 0);
+}
+
+calcularPrimos(primo => {
+  console.log(primo);
+});`,
   },
   {
     id: 'chunked-promise',
@@ -77,6 +116,27 @@ function computePrimes(onPrime, startAt = 1) {
 
 computePrimes(prime => {
   console.log(prime);
+});`,
+    codePtBr: `// Dividido com Promise
+function ehPrimo(n) {
+  for (let i = 2; i < n; i++) {
+    if (n % i === 0) return false;
+  }
+  return true;
+}
+
+function calcularPrimos(aoPrimo, iniciarEm = 1) {
+  let numAtual;
+  for (numAtual = iniciarEm; numAtual % 5 !== 0; numAtual++) {
+    if (ehPrimo(numAtual)) aoPrimo(numAtual);
+  }
+  Promise.resolve().then(() => {
+    calcularPrimos(aoPrimo, numAtual + 1);
+  });
+}
+
+calcularPrimos(primo => {
+  console.log(primo);
 });`,
   },
 ];
