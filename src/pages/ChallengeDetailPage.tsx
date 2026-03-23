@@ -254,7 +254,10 @@ export default function ChallengeDetailPage() {
         return;
       }
 
-      const validationResult = challenge!.validate(engineResult.steps, i18n.language as 'en' | 'pt-BR');
+      const validationResult = challenge!.validate(
+        engineResult.steps,
+        i18n.language as 'en' | 'pt-BR'
+      );
 
       markAttempt(challenge!.id);
       setSubmitCount((c) => c + 1);

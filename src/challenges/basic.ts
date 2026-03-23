@@ -116,7 +116,9 @@ const pessoa = { nome: "Joe", idade: 25 };`,
       if (!globalBlock)
         return {
           passed: false,
-          feedback: pt ? 'Memória Global não encontrada.' : 'No Global Memory found.',
+          feedback: pt
+            ? 'Memória Global não encontrada.'
+            : 'No Global Memory found.',
         };
 
       const hasNumber = globalBlock.entries.some(
@@ -340,7 +342,9 @@ const b = a;`,
       if (!globalBlock)
         return {
           passed: false,
-          feedback: pt ? 'Memória Global não encontrada.' : 'No Global Memory found.',
+          feedback: pt
+            ? 'Memória Global não encontrada.'
+            : 'No Global Memory found.',
         };
 
       const objectEntries = globalBlock.entries.filter(

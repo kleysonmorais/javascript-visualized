@@ -66,7 +66,9 @@ console.log("2");`,
       if (!hasTimeout)
         return {
           passed: false,
-          feedback: pt ? 'Você deve usar setTimeout.' : 'You must use setTimeout.',
+          feedback: pt
+            ? 'Você deve usar setTimeout.'
+            : 'You must use setTimeout.',
         };
       if (!hasMicrotask)
         return {
@@ -84,7 +86,9 @@ console.log("2");`,
       ) {
         return {
           passed: true,
-          feedback: pt ? '1, 2, 3, 4 — ordem perfeita!' : '1, 2, 3, 4 — perfect order!',
+          feedback: pt
+            ? '1, 2, 3, 4 — ordem perfeita!'
+            : '1, 2, 3, 4 — perfect order!',
         };
       }
       return {
