@@ -48,19 +48,33 @@ console.log("2");`,
       '"1" and "2" are sync. "3" is a microtask that runs next. Inside "3", we schedule "4" as a macrotask that runs last.',
     solutionExplanationPtBr:
       '"1" e "2" são síncronos. "3" é uma microtarefa que executa em seguida. Dentro de "3", agendamos "4" como macrotarefa que executa por último.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const hasTimeout = steps.some((s) =>
         s.webAPIs.some((a) => a.type === 'setTimeout')
       );
       const hasMicrotask = steps.some((s) => s.microtaskQueue.length > 0);
       if (!hasTimeout)
-        return { passed: false, feedback: 'You must use setTimeout.' };
+        return {
+          passed: false,
+          feedback: pt ? 'Você deve usar setTimeout.' : 'You must use setTimeout.',
+        };
       if (!hasMicrotask)
-        return { passed: false, feedback: 'You must use Promise.resolve.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Você deve usar Promise.resolve.'
+            : 'You must use Promise.resolve.',
+        };
       if (
         outputs.length >= 4 &&
         outputs[0].includes('1') &&
@@ -68,11 +82,16 @@ console.log("2");`,
         outputs[2].includes('3') &&
         outputs[3].includes('4')
       ) {
-        return { passed: true, feedback: '1, 2, 3, 4 — perfect order!' };
+        return {
+          passed: true,
+          feedback: pt ? '1, 2, 3, 4 — ordem perfeita!' : '1, 2, 3, 4 — perfect order!',
+        };
       }
       return {
         passed: false,
-        feedback: `Got: ${outputs.join(', ')}. Expected: 1, 2, 3, 4.`,
+        feedback: pt
+          ? `Obtido: ${outputs.join(', ')}. Esperado: 1, 2, 3, 4.`
+          : `Got: ${outputs.join(', ')}. Expected: 1, 2, 3, 4.`,
       };
     },
   },
@@ -113,22 +132,32 @@ Promise.resolve()
       'Each .then() schedules a microtask. The Event Loop drains ALL microtasks before picking the next macrotask. So then-1, then-2, then-3 all execute before the setTimeout callback.',
     solutionExplanationPtBr:
       'Cada .then() agenda uma microtarefa. O Event Loop drena TODAS as microtarefas antes de pegar a próxima macrotarefa. Então then-1, then-2, then-3 executam antes do callback de setTimeout.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const thenOutputs = outputs.filter((o) => o.includes('then'));
       const timeoutIdx = outputs.findIndex((o) => o.includes('timeout'));
       if (thenOutputs.length < 3)
         return {
           passed: false,
-          feedback: `Only ${thenOutputs.length} .then() outputs. Need 3.`,
+          feedback: pt
+            ? `Apenas ${thenOutputs.length} saídas de .then(). Precisa de 3.`
+            : `Only ${thenOutputs.length} .then() outputs. Need 3.`,
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: 'No setTimeout callback output found.',
+          feedback: pt
+            ? 'Nenhuma saída do callback de setTimeout encontrada.'
+            : 'No setTimeout callback output found.',
         };
       const lastThenIdx = outputs.lastIndexOf(
         thenOutputs[thenOutputs.length - 1]
@@ -136,12 +165,16 @@ Promise.resolve()
       if (lastThenIdx < timeoutIdx) {
         return {
           passed: true,
-          feedback: 'All 3 microtasks ran before the macrotask!',
+          feedback: pt
+            ? 'Todas as 3 microtarefas executaram antes da macrotarefa!'
+            : 'All 3 microtasks ran before the macrotask!',
         };
       }
       return {
         passed: false,
-        feedback: 'Some .then() callbacks ran after setTimeout.',
+        feedback: pt
+          ? 'Alguns callbacks .then() executaram após o setTimeout.'
+          : 'Some .then() callbacks ran after setTimeout.',
       };
     },
   },
@@ -198,10 +231,16 @@ console.log(contador()); // 5`,
       'Each call to counter() increments the closed-over "count" variable. The [[Scope]] in the Heap shows count updating: 1, 2, 3, 4, 5.',
     solutionExplanationPtBr:
       'Cada chamada a contador() incrementa a variável "contagem" capturada. O [[Scope]] no Heap mostra a contagem atualizando: 1, 2, 3, 4, 5.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       if (
         outputs.length >= 5 &&
@@ -213,12 +252,16 @@ console.log(contador()); // 5`,
       ) {
         return {
           passed: true,
-          feedback: '1, 2, 3, 4, 5 — counter works with closures!',
+          feedback: pt
+            ? '1, 2, 3, 4, 5 — contador funciona com closures!'
+            : '1, 2, 3, 4, 5 — counter works with closures!',
         };
       }
       return {
         passed: false,
-        feedback: `Expected: 1, 2, 3, 4, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
+        feedback: pt
+          ? `Esperado: 1, 2, 3, 4, 5. Obtido: ${outputs.slice(0, 5).join(', ')}`
+          : `Expected: 1, 2, 3, 4, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
       };
     },
   },
@@ -277,10 +320,16 @@ for (const n of fibonacci()) {
       'The generator yields each Fibonacci number and suspends. for...of calls .next() repeatedly, resuming the generator each time. Local memory persists across yields.',
     solutionExplanationPtBr:
       'O generator produz cada número de Fibonacci e suspende. for...of chama .next() repetidamente, retomando o generator a cada vez. A memória local persiste entre os yields.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = ['1', '1', '2', '3', '5'];
       const match = expected.every(
@@ -289,12 +338,16 @@ for (const n of fibonacci()) {
       if (match) {
         return {
           passed: true,
-          feedback: '1, 1, 2, 3, 5 — Fibonacci with generators!',
+          feedback: pt
+            ? '1, 1, 2, 3, 5 — Fibonacci com generators!'
+            : '1, 1, 2, 3, 5 — Fibonacci with generators!',
         };
       }
       return {
         passed: false,
-        feedback: `Expected: 1, 1, 2, 3, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
+        feedback: pt
+          ? `Esperado: 1, 1, 2, 3, 5. Obtido: ${outputs.slice(0, 5).join(', ')}`
+          : `Expected: 1, 1, 2, 3, 5. Got: ${outputs.slice(0, 5).join(', ')}`,
       };
     },
   },
@@ -353,7 +406,8 @@ setTimeout(function entregar() {
       '"message" starts in Global Memory. setTimeout registers in Web APIs. When timer completes, callback goes to Task Queue. Event Loop moves it to Call Stack. Inside the callback, "received" is in Local Memory. Finally, console.log outputs it.',
     solutionExplanationPtBr:
       '"mensagem" começa na Memória Global. setTimeout registra nas Web APIs. Quando o timer completa, o callback vai para a Fila de Tarefas. O Event Loop move para a Pilha de Chamadas. Dentro do callback, "recebido" está na Memória Local. Por fim, console.log o exibe.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const hadGlobalVar = steps.some((s) =>
         s.memoryBlocks.some((b) => b.type === 'global' && b.entries.length > 0)
       );
@@ -374,19 +428,31 @@ setTimeout(function entregar() {
       if (allPassed) {
         return {
           passed: true,
-          feedback:
-            'Full journey complete! The value traveled through every component.',
+          feedback: pt
+            ? 'Jornada completa! O valor percorreu todos os componentes.'
+            : 'Full journey complete! The value traveled through every component.',
         };
       }
-      const missing = [];
-      if (!hadGlobalVar) missing.push('Global Memory');
-      if (!hadWebAPI) missing.push('Web APIs');
-      if (!hadTaskQueue) missing.push('Task Queue');
-      if (!hadLocalMemory) missing.push('Local Memory');
-      if (!hadConsole) missing.push('Console');
+      const missing = pt
+        ? [
+            !hadGlobalVar && 'Memória Global',
+            !hadWebAPI && 'Web APIs',
+            !hadTaskQueue && 'Fila de Tarefas',
+            !hadLocalMemory && 'Memória Local',
+            !hadConsole && 'Console',
+          ].filter(Boolean)
+        : [
+            !hadGlobalVar && 'Global Memory',
+            !hadWebAPI && 'Web APIs',
+            !hadTaskQueue && 'Task Queue',
+            !hadLocalMemory && 'Local Memory',
+            !hadConsole && 'Console',
+          ].filter(Boolean);
       return {
         passed: false,
-        feedback: `Missing stops: ${missing.join(', ')}.`,
+        feedback: pt
+          ? `Paradas faltando: ${missing.join(', ')}.`
+          : `Missing stops: ${missing.join(', ')}.`,
       };
     },
   },

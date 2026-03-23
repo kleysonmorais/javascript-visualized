@@ -52,22 +52,32 @@ Promise.resolve().then(() => {
       'Each nested .then() creates a new microtask. The Event Loop keeps draining the Microtask Queue until it is completely empty — even microtasks created by other microtasks — before picking any macrotask.',
     solutionExplanationPtBr:
       'Cada .then() aninhado cria uma nova microtarefa. O Event Loop continua drenando a Fila de Microtarefas até estar completamente vazia — inclusive microtarefas criadas por outras microtarefas — antes de pegar qualquer macrotarefa.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const microOutputs = outputs.filter((o) => o.includes('micro'));
       const timeoutIdx = outputs.findIndex((o) => o.includes('timeout'));
       if (microOutputs.length < 3)
         return {
           passed: false,
-          feedback: `Only ${microOutputs.length} micro outputs. Need 3 nested levels.`,
+          feedback: pt
+            ? `Apenas ${microOutputs.length} saídas micro. Precisa de 3 níveis aninhados.`
+            : `Only ${microOutputs.length} micro outputs. Need 3 nested levels.`,
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: 'Need a setTimeout callback in the output.',
+          feedback: pt
+            ? 'Precisa de um callback de setTimeout na saída.'
+            : 'Need a setTimeout callback in the output.',
         };
       const lastMicroIdx = Math.max(
         ...microOutputs.map((m) => outputs.indexOf(m))
@@ -75,13 +85,16 @@ Promise.resolve().then(() => {
       if (lastMicroIdx < timeoutIdx) {
         return {
           passed: true,
-          feedback:
-            'All 3 nested microtasks drained before the macrotask! Event Loop mastery.',
+          feedback: pt
+            ? 'Todas as 3 microtarefas aninhadas drenaram antes da macrotarefa! Domínio do Event Loop.'
+            : 'All 3 nested microtasks drained before the macrotask! Event Loop mastery.',
         };
       }
       return {
         passed: false,
-        feedback: 'Some microtasks ran after the setTimeout callback.',
+        feedback: pt
+          ? 'Algumas microtarefas executaram após o callback do setTimeout.'
+          : 'Some microtasks ran after the setTimeout callback.',
       };
     },
   },
@@ -134,10 +147,16 @@ console.log("B");`,
       'The Promise executor runs synchronously, so "A" logs immediately. "B" is the next sync statement. "C" is a microtask (.then). "D" is a macrotask (setTimeout). Order: sync (A, B) → micro (C) → macro (D).',
     solutionExplanationPtBr:
       'O executor da Promise executa sincronamente, então "A" registra imediatamente. "B" é a próxima instrução síncrona. "C" é uma microtarefa (.then). "D" é uma macrotarefa (setTimeout). Ordem: síncrono (A, B) → micro (C) → macro (D).',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       if (
         outputs.length >= 4 &&
@@ -148,12 +167,16 @@ console.log("B");`,
       ) {
         return {
           passed: true,
-          feedback: 'A, B, C, D — you understand the Promise constructor trap!',
+          feedback: pt
+            ? 'A, B, C, D — você entendeu a armadilha do construtor de Promise!'
+            : 'A, B, C, D — you understand the Promise constructor trap!',
         };
       }
       return {
         passed: false,
-        feedback: `Expected: A, B, C, D. Got: ${outputs.slice(0, 4).join(', ')}`,
+        feedback: pt
+          ? `Esperado: A, B, C, D. Obtido: ${outputs.slice(0, 4).join(', ')}`
+          : `Expected: A, B, C, D. Got: ${outputs.slice(0, 4).join(', ')}`,
       };
     },
   },
@@ -216,23 +239,32 @@ tarefaB();`,
       'Both functions start synchronously: A1, B1. Each await suspends its function. Their continuations interleave in the microtask queue: A2, B2, A3, B3.',
     solutionExplanationPtBr:
       'Ambas as funções começam sincronamente: A1, B1. Cada await suspende sua função. Suas continuações se intercalam na fila de microtarefas: A2, B2, A3, B3.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = ['A1', 'B1', 'A2', 'B2', 'A3', 'B3'];
       const match = expected.every((v, i) => outputs[i] === v);
       if (match) {
         return {
           passed: true,
-          feedback:
-            'Perfect interleaving! You understand concurrent async execution.',
+          feedback: pt
+            ? 'Intercalação perfeita! Você entende execução async concorrente.'
+            : 'Perfect interleaving! You understand concurrent async execution.',
         };
       }
       return {
         passed: false,
-        feedback: `Expected: ${expected.join(', ')}. Got: ${outputs.slice(0, 6).join(', ')}`,
+        feedback: pt
+          ? `Esperado: ${expected.join(', ')}. Obtido: ${outputs.slice(0, 6).join(', ')}`
+          : `Expected: ${expected.join(', ')}. Got: ${outputs.slice(0, 6).join(', ')}`,
       };
     },
   },
@@ -289,28 +321,38 @@ console.log(eai("Mundo"));  // "E aí Mundo"`,
       'Each call to makeGreeter creates a new scope with its own "greeting" variable. The three closures are independent — changing one does not affect the others.',
     solutionExplanationPtBr:
       'Cada chamada a criarCumprimentador cria um novo escopo com sua própria variável "saudacao". As três closures são independentes — mudar uma não afeta as outras.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' '));
       const unique = new Set(outputs);
       if (outputs.length >= 3 && unique.size >= 3) {
         return {
           passed: true,
-          feedback:
-            'Three independent closures — each with its own captured scope!',
+          feedback: pt
+            ? 'Três closures independentes — cada uma com seu próprio escopo capturado!'
+            : 'Three independent closures — each with its own captured scope!',
         };
       }
       if (outputs.length < 3)
         return {
           passed: false,
-          feedback: `Need 3 outputs. Got ${outputs.length}.`,
+          feedback: pt
+            ? `Precisa de 3 saídas. Obtido ${outputs.length}.`
+            : `Need 3 outputs. Got ${outputs.length}.`,
         };
       return {
         passed: false,
-        feedback:
-          'The outputs are not all different. Each closure should produce a unique result.',
+        feedback: pt
+          ? 'As saídas não são todas diferentes. Cada closure deve produzir um resultado único.'
+          : 'The outputs are not all different. Each closure should produce a unique result.',
       };
     },
   },
@@ -381,10 +423,16 @@ console.log("sync-2");`,
       'sync-1, sync-2 run first. Then microtasks: micro-1, micro-2. Then first macrotask: macro-1 — which creates micro-3. Micro-3 drains before macro-2 fires. This is the full Event Loop cycle.',
     solutionExplanationPtBr:
       'sync-1, sync-2 executam primeiro. Depois microtarefas: micro-1, micro-2. Depois a primeira macrotarefa: macro-1 — que cria micro-3. Micro-3 drena antes de macro-2 disparar. Este é o ciclo completo do Event Loop.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
       const outputs = last.console.map((e) => e.args.join(' ').trim());
       const expected = [
         'sync-1',
@@ -399,12 +447,16 @@ console.log("sync-2");`,
       if (match) {
         return {
           passed: true,
-          feedback: 'FLAWLESS. You have mastered the Event Loop. 🎻🎺🥁',
+          feedback: pt
+            ? 'PERFEITO. Você dominou o Event Loop. 🎻🎺🥁'
+            : 'FLAWLESS. You have mastered the Event Loop. 🎻🎺🥁',
         };
       }
       return {
         passed: false,
-        feedback: `Expected:\n${expected.join(', ')}\nGot:\n${outputs.slice(0, 7).join(', ')}`,
+        feedback: pt
+          ? `Esperado:\n${expected.join(', ')}\nObtido:\n${outputs.slice(0, 7).join(', ')}`
+          : `Expected:\n${expected.join(', ')}\nGot:\n${outputs.slice(0, 7).join(', ')}`,
       };
     },
   },

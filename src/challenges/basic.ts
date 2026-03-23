@@ -44,19 +44,25 @@ a();`,
       'When a() calls b() which calls c(), all three frames are on the Call Stack simultaneously before any of them return.',
     solutionExplanationPtBr:
       'Quando a() chama b() que chama c(), os três frames estão na Pilha de Chamadas simultaneamente antes de qualquer um deles retornar.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const maxDepth = Math.max(...steps.map((s) => s.callStack.length));
       if (maxDepth >= 4) {
         return {
           passed: true,
-          feedback: `Nice! You reached ${maxDepth - 1} frames deep.`,
+          feedback: pt
+            ? `Ótimo! Você atingiu ${maxDepth - 1} frames de profundidade.`
+            : `Nice! You reached ${maxDepth - 1} frames deep.`,
         };
       }
       return {
         passed: false,
-        feedback: `Max stack depth was ${maxDepth - 1} frame(s). You need at least 3.`,
-        details:
-          'Try calling a function from inside another function, and that function from inside yet another.',
+        feedback: pt
+          ? `Profundidade máxima foi ${maxDepth - 1} frame(s). Você precisa de pelo menos 3.`
+          : `Max stack depth was ${maxDepth - 1} frame(s). You need at least 3.`,
+        details: pt
+          ? 'Tente chamar uma função de dentro de outra função, e essa de dentro de outra ainda.'
+          : 'Try calling a function from inside another function, and that function from inside yet another.',
       };
     },
   },
@@ -95,14 +101,23 @@ const pessoa = { nome: "Joe", idade: 25 };`,
       'Numbers and strings are primitives stored inline in Global Memory. Objects are stored in the Heap with a [Pointer] reference in Memory.',
     solutionExplanationPtBr:
       'Números e strings são primitivos armazenados inline na Memória Global. Objetos são armazenados no Heap com uma referência [Ponteiro] na Memória.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const globalBlock = last.memoryBlocks.find((b) => b.type === 'global');
       if (!globalBlock)
-        return { passed: false, feedback: 'No Global Memory found.' };
+        return {
+          passed: false,
+          feedback: pt ? 'Memória Global não encontrada.' : 'No Global Memory found.',
+        };
 
       const hasNumber = globalBlock.entries.some(
         (e) => e.valueType === 'primitive' && /^\d+/.test(e.displayValue)
@@ -118,16 +133,31 @@ const pessoa = { nome: "Joe", idade: 25 };`,
       if (hasNumber && hasString && hasObject && hasHeap) {
         return {
           passed: true,
-          feedback: 'Perfect! Number and string in Memory, object in the Heap.',
+          feedback: pt
+            ? 'Perfeito! Número e string na Memória, objeto no Heap.'
+            : 'Perfect! Number and string in Memory, object in the Heap.',
         };
       }
 
-      const missing = [];
-      if (!hasNumber) missing.push('number');
-      if (!hasString) missing.push('string');
-      if (!hasObject) missing.push('object with [Pointer]');
-      if (!hasHeap) missing.push('HeapObject');
-      return { passed: false, feedback: `Missing: ${missing.join(', ')}.` };
+      const missing = pt
+        ? [
+            !hasNumber && 'número',
+            !hasString && 'string',
+            !hasObject && 'objeto com [Ponteiro]',
+            !hasHeap && 'HeapObject',
+          ].filter(Boolean)
+        : [
+            !hasNumber && 'number',
+            !hasString && 'string',
+            !hasObject && 'object with [Pointer]',
+            !hasHeap && 'HeapObject',
+          ].filter(Boolean);
+      return {
+        passed: false,
+        feedback: pt
+          ? `Faltando: ${missing.join(', ')}.`
+          : `Missing: ${missing.join(', ')}.`,
+      };
     },
   },
   {
@@ -159,10 +189,16 @@ for (let i = 0; i < 3; i++) {
       'A simple for loop with 3 iterations. Each iteration logs "Hello" to the console.',
     solutionExplanationPtBr:
       'Um simples laço for com 3 iterações. Cada iteração registra "Olá" no console.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const helloCount = last.console.filter((e) =>
         e.args.some((a) => a.includes('Hello') || a.includes('Olá'))
@@ -171,18 +207,24 @@ for (let i = 0; i < 3; i++) {
       if (helloCount === 3) {
         return {
           passed: true,
-          feedback: 'Hello, Hello, Hello! Exactly 3 times.',
+          feedback: pt
+            ? 'Olá, Olá, Olá! Exatamente 3 vezes.'
+            : 'Hello, Hello, Hello! Exactly 3 times.',
         };
       }
       if (helloCount > 3) {
         return {
           passed: false,
-          feedback: `Too many! You logged "Hello" ${helloCount} times. Need exactly 3.`,
+          feedback: pt
+            ? `Demais! Você registrou "Olá" ${helloCount} vezes. Precisa de exatamente 3.`
+            : `Too many! You logged "Hello" ${helloCount} times. Need exactly 3.`,
         };
       }
       return {
         passed: false,
-        feedback: `Only ${helloCount} "Hello"(s). Need exactly 3. Try using a loop.`,
+        feedback: pt
+          ? `Apenas ${helloCount} "Olá"(s). Precisa de exatamente 3. Tente usar um laço.`
+          : `Only ${helloCount} "Hello"(s). Need exactly 3. Try using a loop.`,
       };
     },
   },
@@ -215,10 +257,16 @@ function cumprimentar(nome) {
       'Function declarations create a ⓕ symbol in Global Memory pointing to a HeapObject that contains the function source code.',
     solutionExplanationPtBr:
       'Declarações de função criam um símbolo ⓕ na Memória Global apontando para um HeapObject que contém o código-fonte da função.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const hasFnEntry = last.memoryBlocks.some((b) =>
         b.entries.some((e) => e.valueType === 'function')
@@ -228,15 +276,24 @@ function cumprimentar(nome) {
       if (hasFnEntry && hasFnHeap) {
         return {
           passed: true,
-          feedback: 'ⓕ found in Memory and function source in the Heap!',
+          feedback: pt
+            ? 'ⓕ encontrado na Memória e código-fonte da função no Heap!'
+            : 'ⓕ found in Memory and function source in the Heap!',
         };
       }
       if (!hasFnEntry)
         return {
           passed: false,
-          feedback: 'No ⓕ found in Memory. Declare a function.',
+          feedback: pt
+            ? 'Nenhum ⓕ encontrado na Memória. Declare uma função.'
+            : 'No ⓕ found in Memory. Declare a function.',
         };
-      return { passed: false, feedback: 'Function not found in the Heap.' };
+      return {
+        passed: false,
+        feedback: pt
+          ? 'Função não encontrada no Heap.'
+          : 'Function not found in the Heap.',
+      };
     },
   },
   {
@@ -268,14 +325,23 @@ const b = a;`,
       'When you assign b = a, JavaScript copies the reference — not the object. Both variables point to the exact same HeapObject, so they share the same pointer color.',
     solutionExplanationPtBr:
       'Quando você atribui b = a, o JavaScript copia a referência — não o objeto. Ambas as variáveis apontam para o mesmo HeapObject, por isso compartilham a mesma cor de ponteiro.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const globalBlock = last.memoryBlocks.find((b) => b.type === 'global');
       if (!globalBlock)
-        return { passed: false, feedback: 'No Global Memory found.' };
+        return {
+          passed: false,
+          feedback: pt ? 'Memória Global não encontrada.' : 'No Global Memory found.',
+        };
 
       const objectEntries = globalBlock.entries.filter(
         (e) => e.valueType === 'object' && e.heapReferenceId
@@ -284,7 +350,9 @@ const b = a;`,
       if (objectEntries.length < 2) {
         return {
           passed: false,
-          feedback: `Need 2 variables pointing to an object. Found ${objectEntries.length}.`,
+          feedback: pt
+            ? `Precisa de 2 variáveis apontando para um objeto. Encontrado ${objectEntries.length}.`
+            : `Need 2 variables pointing to an object. Found ${objectEntries.length}.`,
         };
       }
 
@@ -297,14 +365,16 @@ const b = a;`,
       if (sharedRef) {
         return {
           passed: true,
-          feedback:
-            'Both variables share the same pointer color — same object!',
+          feedback: pt
+            ? 'Ambas as variáveis compartilham a mesma cor de ponteiro — mesmo objeto!'
+            : 'Both variables share the same pointer color — same object!',
         };
       }
       return {
         passed: false,
-        feedback:
-          'The variables point to different objects. Assign one to the other: const b = a.',
+        feedback: pt
+          ? 'As variáveis apontam para objetos diferentes. Atribua uma à outra: const b = a.'
+          : 'The variables point to different objects. Assign one to the other: const b = a.',
       };
     },
   },

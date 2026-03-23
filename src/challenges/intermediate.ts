@@ -32,10 +32,16 @@ console.log("Mundo");`,
       'setTimeout registers the callback in Web APIs. Synchronous code (console.log "World") runs first. After the timer completes, the callback moves to the Task Queue and executes.',
     solutionExplanationPtBr:
       'setTimeout registra o callback nas Web APIs. O código síncrono (console.log "Mundo") executa primeiro. Após o timer completar, o callback vai para a Fila de Tarefas e executa.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const outputs = last.console.map((e) => e.args.join(' '));
       const worldIdx = outputs.findIndex((o) => o.includes('World') || o.includes('Mundo'));
@@ -43,22 +49,32 @@ console.log("Mundo");`,
       const usedTimer = steps.some((s) => s.webAPIs.length > 0);
 
       if (!usedTimer)
-        return { passed: false, feedback: 'You must use setTimeout.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Você deve usar setTimeout.'
+            : 'You must use setTimeout.',
+        };
       if (worldIdx === -1 || helloIdx === -1)
         return {
           passed: false,
-          feedback: 'Console must contain both "World" and "Hello".',
+          feedback: pt
+            ? 'O console deve conter tanto "Mundo" quanto "Olá".'
+            : 'Console must contain both "World" and "Hello".',
         };
       if (worldIdx < helloIdx) {
         return {
           passed: true,
-          feedback: '"World" first, "Hello" second — setTimeout worked!',
+          feedback: pt
+            ? '"Mundo" primeiro, "Olá" depois — setTimeout funcionou!'
+            : '"World" first, "Hello" second — setTimeout worked!',
         };
       }
       return {
         passed: false,
-        feedback:
-          '"Hello" appeared before "World". The sync code should run first.',
+        feedback: pt
+          ? '"Olá" apareceu antes de "Mundo". O código síncrono deve executar primeiro.'
+          : '"Hello" appeared before "World". The sync code should run first.',
       };
     },
   },
@@ -94,17 +110,22 @@ console.log("síncrono");`,
       'Both timers have the same delay, so both callbacks land in the Task Queue at the same time after synchronous code finishes.',
     solutionExplanationPtBr:
       'Ambos os timers têm o mesmo atraso, então ambos os callbacks chegam à Fila de Tarefas ao mesmo tempo após o código síncrono terminar.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const maxQueue = Math.max(...steps.map((s) => s.taskQueue.length));
       if (maxQueue >= 2) {
         return {
           passed: true,
-          feedback: `${maxQueue} callbacks in the Task Queue at once!`,
+          feedback: pt
+            ? `${maxQueue} callbacks na Fila de Tarefas ao mesmo tempo!`
+            : `${maxQueue} callbacks in the Task Queue at once!`,
         };
       }
       return {
         passed: false,
-        feedback: `Max Task Queue size was ${maxQueue}. Need at least 2 simultaneous.`,
+        feedback: pt
+          ? `Tamanho máximo da Fila de Tarefas foi ${maxQueue}. Precisa de pelo menos 2 simultâneos.`
+          : `Max Task Queue size was ${maxQueue}. Need at least 2 simultaneous.`,
       };
     },
   },
@@ -144,10 +165,16 @@ console.log("síncrono");`,
       'The Event Loop drains the entire Microtask Queue before picking the next task from the Task Queue. Promise.then is a microtask, setTimeout is a macrotask.',
     solutionExplanationPtBr:
       'O Event Loop drena toda a Fila de Microtarefas antes de pegar a próxima tarefa da Fila de Tarefas. Promise.then é uma microtarefa, setTimeout é uma macrotarefa.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const last = steps[steps.length - 1];
       if (!last)
-        return { passed: false, feedback: 'No execution steps generated.' };
+        return {
+          passed: false,
+          feedback: pt
+            ? 'Nenhum passo de execução gerado.'
+            : 'No execution steps generated.',
+        };
 
       const outputs = last.console.map((e) => e.args.join(' ').toLowerCase());
       const promiseIdx = outputs.findIndex((o) => o.includes('promise'));
@@ -156,22 +183,30 @@ console.log("síncrono");`,
       if (promiseIdx === -1)
         return {
           passed: false,
-          feedback: 'No "promise" in console output.',
+          feedback: pt
+            ? 'Nenhum "promise" na saída do console.'
+            : 'No "promise" in console output.',
         };
       if (timeoutIdx === -1)
         return {
           passed: false,
-          feedback: 'No "timeout" in console output.',
+          feedback: pt
+            ? 'Nenhum "timeout" na saída do console.'
+            : 'No "timeout" in console output.',
         };
       if (promiseIdx < timeoutIdx) {
         return {
           passed: true,
-          feedback: 'Microtask before macrotask — Promise wins!',
+          feedback: pt
+            ? 'Microtarefa antes da macrotarefa — Promise venceu!'
+            : 'Microtask before macrotask — Promise wins!',
         };
       }
       return {
         passed: false,
-        feedback: 'setTimeout ran before Promise. Check your code.',
+        feedback: pt
+          ? 'setTimeout executou antes da Promise. Verifique seu código.'
+          : 'setTimeout ran before Promise. Check your code.',
       };
     },
   },
@@ -220,7 +255,8 @@ console.log(fn());`,
       'When outer() returns, its local memory is destroyed. But the returned function captures "secret" in its [[Scope]], so the value survives.',
     solutionExplanationPtBr:
       'Quando externa() retorna, sua memória local é destruída. Mas a função retornada captura "segredo" em seu [[Scope]], então o valor sobrevive.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const hasClosureScope = steps.some((s) =>
         s.heap.some((h) => h.closureScope && h.closureScope.length > 0)
       );
@@ -230,18 +266,23 @@ console.log(fn());`,
       if (hasClosureScope && hasOutput) {
         return {
           passed: true,
-          feedback: 'Closure created! The variable survived beyond its scope.',
+          feedback: pt
+            ? 'Closure criada! A variável sobreviveu além do seu escopo.'
+            : 'Closure created! The variable survived beyond its scope.',
         };
       }
       if (!hasClosureScope)
         return {
           passed: false,
-          feedback:
-            'No [[Scope]] detected. Return a function from inside another function.',
+          feedback: pt
+            ? 'Nenhum [[Scope]] detectado. Retorne uma função de dentro de outra função.'
+            : 'No [[Scope]] detected. Return a function from inside another function.',
         };
       return {
         passed: false,
-        feedback: 'Call the closure function and log the result.',
+        feedback: pt
+          ? 'Chame a função closure e registre o resultado.'
+          : 'Call the closure function and log the result.',
       };
     },
   },
@@ -288,7 +329,8 @@ fn();`,
       'When the async function hits "await", it suspends — the frame stays in the Call Stack with "suspended" status. After the Promise resolves, it resumes and continues execution.',
     solutionExplanationPtBr:
       'Quando a função async chega no "await", ela suspende — o frame permanece na Pilha de Chamadas com status "suspenso". Após a Promise ser resolvida, ela retoma e continua a execução.',
-    validate: (steps) => {
+    validate: (steps, lang) => {
+      const pt = lang === 'pt-BR';
       const hadSuspended = steps.some((s) =>
         s.callStack.some((f) => f.status === 'suspended')
       );
@@ -298,18 +340,23 @@ fn();`,
       if (hadSuspended && hasOutput) {
         return {
           passed: true,
-          feedback: 'Async function suspended and resumed!',
+          feedback: pt
+            ? 'Função async suspendeu e retomou!'
+            : 'Async function suspended and resumed!',
         };
       }
       if (!hadSuspended)
         return {
           passed: false,
-          feedback:
-            'No suspended frame detected. Use await inside an async function.',
+          feedback: pt
+            ? 'Nenhum frame suspenso detectado. Use await dentro de uma função async.'
+            : 'No suspended frame detected. Use await inside an async function.',
         };
       return {
         passed: false,
-        feedback: 'Log something before and after the await.',
+        feedback: pt
+          ? 'Registre algo antes e depois do await.'
+          : 'Log something before and after the await.',
       };
     },
   },

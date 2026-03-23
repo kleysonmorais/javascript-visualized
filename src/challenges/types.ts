@@ -39,5 +39,5 @@ export interface Challenge {
   solutionCodePtBr?: string;
   solutionExplanation: string;
   solutionExplanationPtBr?: string;
-  validate: (steps: ExecutionStep[]) => ChallengeResult;
+  validate: (steps: ExecutionStep[], lang: 'en' | 'pt-BR') => ChallengeResult;
 }
