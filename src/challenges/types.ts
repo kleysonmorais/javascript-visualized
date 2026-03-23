@@ -26,12 +26,18 @@ export interface ChallengeResult {
 export interface Challenge {
   id: string;
   title: string;
+  titlePtBr?: string;
   description: string;
+  descriptionPtBr?: string;
   level: ChallengeLevel;
   concepts: RuntimeConcept[];
   hint: string;
+  hintPtBr?: string;
   starterCode: string;
+  starterCodePtBr?: string;
   solutionCode: string;
+  solutionCodePtBr?: string;
   solutionExplanation: string;
+  solutionExplanationPtBr?: string;
   validate: (steps: ExecutionStep[]) => ChallengeResult;
 }

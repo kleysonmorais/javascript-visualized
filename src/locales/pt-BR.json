@@ -114,6 +114,26 @@
       }
     }
   },
+  "challenges": {
+    "pageTitle": "Desafios",
+    "pageSubtitle": "Domine os conceitos internos do runtime JavaScript resolvendo desafios",
+    "completed": "concluídos",
+    "backToChallenges": "← Voltar aos Desafios",
+    "challenge": "Desafio",
+    "of": "de",
+    "hint": "Dica",
+    "solution": "Solução",
+    "unlockHint": "Envie pelo menos uma vez para desbloquear a solução",
+    "checking": "Verificando...",
+    "submit": "Enviar",
+    "passed": "PASSOU",
+    "notQuite": "QUASE LÁ",
+    "visualizeSolution": "Visualizar sua solução",
+    "nextChallenge": "Próximo desafio",
+    "tryAgain": "Tentar novamente",
+    "notFound": "Desafio não encontrado.",
+    "backLink": "Voltar aos Desafios"
+  },
   "transport": {
     "goToStart": "Ir ao início (Home)",
     "stepBack": "Voltar passo (←)",

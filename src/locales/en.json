@@ -114,6 +114,26 @@
       }
     }
   },
+  "challenges": {
+    "pageTitle": "Challenges",
+    "pageSubtitle": "Master JavaScript runtime internals by solving challenges",
+    "completed": "completed",
+    "backToChallenges": "← Back to Challenges",
+    "challenge": "Challenge",
+    "of": "of",
+    "hint": "Hint",
+    "solution": "Solution",
+    "unlockHint": "Submit at least once to unlock the solution",
+    "checking": "Checking...",
+    "submit": "Submit",
+    "passed": "PASSED",
+    "notQuite": "NOT QUITE",
+    "visualizeSolution": "Visualize your solution",
+    "nextChallenge": "Next challenge",
+    "tryAgain": "Try again",
+    "notFound": "Challenge not found.",
+    "backLink": "Back to Challenges"
+  },
   "transport": {
     "goToStart": "Go to start (Home)",
     "stepBack": "Step back (←)",

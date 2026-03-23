@@ -4,13 +4,19 @@ export const basicChallenges: Challenge[] = [
   {
     id: 'stack-3-deep',
     title: 'Stack 3 Deep',
+    titlePtBr: 'Pilha 3 Níveis',
     description:
       'Write code that has 3 function frames on the Call Stack at the same time (not counting <global>).',
+    descriptionPtBr:
+      'Escreva código que tenha 3 frames de função na Pilha de Chamadas ao mesmo tempo (sem contar o <global>).',
     level: 'easy',
     concepts: ['call-stack', 'local-memory'],
     hint: 'Think nested function calls — A calls B, B calls C. All three need to be on the stack simultaneously.',
+    hintPtBr: 'Pense em chamadas de função aninhadas — A chama B, B chama C. Os três precisam estar na pilha ao mesmo tempo.',
     starterCode:
       '// Write functions that call each other\n// Goal: 3 frames on the Call Stack at once\n',
+    starterCodePtBr:
+      '// Escreva funções que chamam umas às outras\n// Objetivo: 3 frames na Pilha de Chamadas ao mesmo tempo\n',
     solutionCode: `// Step 3: c() is the deepest — it just returns a value
 function c() { return 1; }
 
@@ -22,8 +28,21 @@ function a() { return b(); }
 
 // Trigger the chain
 a();`,
+    solutionCodePtBr: `// Passo 3: c() é o mais fundo — apenas retorna um valor
+function c() { return 1; }
+
+// Passo 2: b() chama c(), colocando ambos na pilha
+function b() { return c(); }
+
+// Passo 1: a() chama b(), que chama c() — 3 níveis de profundidade!
+function a() { return b(); }
+
+// Inicia a cadeia
+a();`,
     solutionExplanation:
       'When a() calls b() which calls c(), all three frames are on the Call Stack simultaneously before any of them return.',
+    solutionExplanationPtBr:
+      'Quando a() chama b() que chama c(), os três frames estão na Pilha de Chamadas simultaneamente antes de qualquer um deles retornar.',
     validate: (steps) => {
       const maxDepth = Math.max(...steps.map((s) => s.callStack.length));
       if (maxDepth >= 4) {
@@ -43,12 +62,17 @@ a();`,
   {
     id: 'fill-the-memory',
     title: 'Fill the Memory',
+    titlePtBr: 'Preencha a Memória',
     description:
       'Declare 3 variables: a number, a string, and an object. The object should appear in the Heap.',
+    descriptionPtBr:
+      'Declare 3 variáveis: um número, uma string e um objeto. O objeto deve aparecer no Heap.',
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'Use const to declare each variable. Objects and arrays go to the Heap — primitives stay in Memory.',
+    hintPtBr: 'Use const para declarar cada variável. Objetos e arrays vão para o Heap — primitivos ficam na Memória.',
     starterCode: '// Declare a number, a string, and an object\n',
+    starterCodePtBr: '// Declare um número, uma string e um objeto\n',
     solutionCode: `// Primitive: stored directly in Global Memory
 const age = 25;
 
@@ -57,8 +81,18 @@ const name = "Joe";
 
 // Object: stored in the Heap, Memory holds a [Pointer] to it
 const person = { name: "Joe", age: 25 };`,
+    solutionCodePtBr: `// Primitivo: armazenado diretamente na Memória Global
+const idade = 25;
+
+// Primitivo: strings também são armazenadas inline na Memória
+const nome = "Joe";
+
+// Objeto: armazenado no Heap, Memória guarda um [Ponteiro] para ele
+const pessoa = { nome: "Joe", idade: 25 };`,
     solutionExplanation:
       'Numbers and strings are primitives stored inline in Global Memory. Objects are stored in the Heap with a [Pointer] reference in Memory.',
+    solutionExplanationPtBr:
+      'Números e strings são primitivos armazenados inline na Memória Global. Objetos são armazenados no Heap com uma referência [Ponteiro] na Memória.',
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
@@ -97,19 +131,31 @@ const person = { name: "Joe", age: 25 };`,
   {
     id: 'say-hello-three-times',
     title: 'Say Hello Three Times',
+    titlePtBr: 'Diga Olá Três Vezes',
     description:
       'Make the console output "Hello" exactly 3 times using a loop.',
+    descriptionPtBr:
+      'Faça o console exibir "Olá" exatamente 3 vezes usando um laço.',
     level: 'easy',
     concepts: ['console'],
     hint: 'Use a for loop that runs 3 iterations, each calling console.log("Hello").',
+    hintPtBr: 'Use um laço for com 3 iterações, cada uma chamando console.log("Olá").',
     starterCode: '// Use a loop to print "Hello" 3 times\n',
+    starterCodePtBr: '// Use um laço para imprimir "Olá" 3 vezes\n',
     solutionCode: `// i starts at 0, increments each loop, stops before 3 → runs exactly 3 times
 for (let i = 0; i < 3; i++) {
   // Each iteration logs "Hello" to the console output panel
   console.log("Hello");
 }`,
+    solutionCodePtBr: `// i começa em 0, incrementa a cada laço, para antes de 3 → executa exatamente 3 vezes
+for (let i = 0; i < 3; i++) {
+  // Cada iteração registra "Olá" no painel de console
+  console.log("Olá");
+}`,
     solutionExplanation:
       'A simple for loop with 3 iterations. Each iteration logs "Hello" to the console.',
+    solutionExplanationPtBr:
+      'Um simples laço for com 3 iterações. Cada iteração registra "Olá" no console.',
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
@@ -140,19 +186,31 @@ for (let i = 0; i < 3; i++) {
   {
     id: 'the-f-symbol',
     title: 'The ⓕ Symbol',
+    titlePtBr: 'O Símbolo ⓕ',
     description:
       'Declare a function and store it in a variable. You should see ⓕ in Global Memory and the function source in the Heap.',
+    descriptionPtBr:
+      'Declare uma função e armazene-a em uma variável. Você deve ver ⓕ na Memória Global e o código-fonte da função no Heap.',
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'Any function declaration or function expression creates a ⓕ entry in memory and a HeapObject with the source code.',
+    hintPtBr: 'Qualquer declaração de função ou expressão de função cria uma entrada ⓕ na memória e um HeapObject com o código-fonte.',
     starterCode: '// Declare a function — look for ⓕ in Memory\n',
+    starterCodePtBr: '// Declare uma função — procure por ⓕ na Memória\n',
     solutionCode: `// Declaring a function creates a ⓕ entry in Global Memory...
 function greet(name) {
   // ...and stores the full source code as a HeapObject in the Heap
   return "Hello " + name;
 }`,
+    solutionCodePtBr: `// Declarar uma função cria uma entrada ⓕ na Memória Global...
+function cumprimentar(nome) {
+  // ...e armazena o código-fonte completo como HeapObject no Heap
+  return "Olá " + nome;
+}`,
     solutionExplanation:
       'Function declarations create a ⓕ symbol in Global Memory pointing to a HeapObject that contains the function source code.',
+    solutionExplanationPtBr:
+      'Declarações de função criam um símbolo ⓕ na Memória Global apontando para um HeapObject que contém o código-fonte da função.',
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)
@@ -180,19 +238,31 @@ function greet(name) {
   {
     id: 'same-color-same-object',
     title: 'Same Color, Same Object',
+    titlePtBr: 'Mesma Cor, Mesmo Objeto',
     description:
       'Create an object and assign it to two different variables. Both should have the same pointer color — proving they reference the same object.',
+    descriptionPtBr:
+      'Crie um objeto e atribua-o a duas variáveis diferentes. Ambas devem ter a mesma cor de ponteiro — provando que referenciam o mesmo objeto.',
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'When you do const b = a, both variables point to the same HeapObject. Same heapReferenceId = same color.',
+    hintPtBr: 'Quando você faz const b = a, ambas as variáveis apontam para o mesmo HeapObject. Mesmo heapReferenceId = mesma cor.',
     starterCode: '// Create an object and assign it to two variables\n',
+    starterCodePtBr: '// Crie um objeto e atribua-o a duas variáveis\n',
     solutionCode: `// Creates an object in the Heap; 'a' holds a [Pointer] to it
 const a = { x: 1 };
 
 // Copies the pointer — not the object. 'b' points to the same HeapObject as 'a'
 const b = a;`,
+    solutionCodePtBr: `// Cria um objeto no Heap; 'a' guarda um [Ponteiro] para ele
+const a = { x: 1 };
+
+// Copia o ponteiro — não o objeto. 'b' aponta para o mesmo HeapObject que 'a'
+const b = a;`,
     solutionExplanation:
       'When you assign b = a, JavaScript copies the reference — not the object. Both variables point to the exact same HeapObject, so they share the same pointer color.',
+    solutionExplanationPtBr:
+      'Quando você atribui b = a, o JavaScript copia a referência — não o objeto. Ambas as variáveis apontam para o mesmo HeapObject, por isso compartilham a mesma cor de ponteiro.',
     validate: (steps) => {
       const last = steps[steps.length - 1];
       if (!last)

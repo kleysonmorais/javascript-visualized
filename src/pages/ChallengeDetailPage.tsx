@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import MonacoEditor, { type OnMount } from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
 import { RiFireLine } from 'react-icons/ri';
@@ -86,6 +87,7 @@ function defineEditorTheme(monaco: typeof Monaco) {
 // ─── HintButton ───────────────────────────────────────────────────────────────
 
 function HintButton({ hint }: { hint: string }) {
+  const { t } = useTranslation();
   const [showHint, setShowHint] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -121,7 +123,7 @@ function HintButton({ hint }: { hint: string }) {
         }}
       >
         <Lightbulb size={16} />
-        Hint
+        {t('challenges.hint')}
       </button>
 
       {showHint && (
@@ -146,6 +148,7 @@ function HintButton({ hint }: { hint: string }) {
 // ─── SolutionButton ───────────────────────────────────────────────────────────
 
 function SolutionButton({ challengeId }: { challengeId: string }) {
+  const { t } = useTranslation();
   const [attempts, setAttempts] = useState(() => getAttempts(challengeId));
   const isEnabled = attempts >= 1;
 
@@ -158,13 +161,13 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
     return (
       <button
         disabled
-        title='Submit at least once to unlock the solution'
+        title={t('challenges.unlockHint')}
         className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
           border border-white/5 cursor-not-allowed opacity-50'
         style={{ color: THEME.colors.text.muted }}
       >
         <BookOpen size={16} />
-        Solution
+        {t('challenges.solution')}
         <Lock size={12} />
       </button>
     );
@@ -189,7 +192,7 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
       }}
     >
       <BookOpen size={16} />
-      Solution
+      {t('challenges.solution')}
     </button>
   );
 }
@@ -199,6 +202,8 @@ function SolutionButton({ challengeId }: { challengeId: string }) {
 export default function ChallengeDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
+  const isPtBr = i18n.language === 'pt-BR';
 
   const challenge = getChallengeById(id!);
 
@@ -209,7 +214,11 @@ export default function ChallengeDetailPage() {
       ? ALL_CHALLENGES[challengeIndex + 1]
       : null;
 
-  const [code, setCode] = useState(challenge?.starterCode ?? '');
+  const starterCode = isPtBr && challenge?.starterCodePtBr
+    ? challenge.starterCodePtBr
+    : challenge?.starterCode ?? '';
+
+  const [code, setCode] = useState(starterCode);
   const [result, setResult] = useState<ChallengeResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Used to force SolutionButton to re-read attempts after a submit
@@ -227,14 +236,14 @@ export default function ChallengeDetailPage() {
               className='text-lg mb-4'
               style={{ color: THEME.colors.text.secondary }}
             >
-              Challenge not found.
+              {t('challenges.notFound')}
             </p>
             <Link
               to='/challenges'
               className='text-sm no-underline'
               style={{ color: THEME.colors.text.accent }}
             >
-              ← Back to Challenges
+              {t('challenges.backToChallenges')}
             </Link>
           </div>
         </main>
@@ -323,7 +332,7 @@ export default function ChallengeDetailPage() {
           }
         >
           <ArrowLeft size={16} />
-          Back to Challenges
+          {t('challenges.backLink')}
         </Link>
 
         {/* Level badge + position */}
@@ -339,7 +348,7 @@ export default function ChallengeDetailPage() {
             {levelConfig.label}
           </span>
           <span className='text-xs' style={{ color: THEME.colors.text.muted }}>
-            Challenge {challengeIndex + 1} of {totalChallenges}
+            {t('challenges.challenge')} {challengeIndex + 1} {t('challenges.of')} {totalChallenges}
           </span>
         </div>
 
@@ -351,7 +360,7 @@ export default function ChallengeDetailPage() {
             fontFamily: THEME.fonts.ui,
           }}
         >
-          {challenge.title}
+          {isPtBr && challenge.titlePtBr ? challenge.titlePtBr : challenge.title}
         </h1>
 
         {/* Description */}
@@ -359,7 +368,7 @@ export default function ChallengeDetailPage() {
           className='leading-relaxed mb-4'
           style={{ color: THEME.colors.text.secondary }}
         >
-          {challenge.description}
+          {isPtBr && challenge.descriptionPtBr ? challenge.descriptionPtBr : challenge.description}
         </p>
 
         {/* Concept badges */}
@@ -412,7 +421,7 @@ export default function ChallengeDetailPage() {
 
         {/* Action buttons */}
         <div className='flex items-center gap-3 mb-6'>
-          <HintButton hint={challenge.hint} />
+          <HintButton hint={isPtBr && challenge.hintPtBr ? challenge.hintPtBr : challenge.hint} />
           <SolutionButton key={submitCount} challengeId={challenge.id} />
 
           <div className='flex-1' />
@@ -445,12 +454,12 @@ export default function ChallengeDetailPage() {
             {isSubmitting ? (
               <>
                 <Loader2 size={16} className='animate-spin' />
-                Checking...
+                {t('challenges.checking')}
               </>
             ) : (
               <>
                 <Play size={16} />
-                Submit
+                {t('challenges.submit')}
               </>
             )}
           </button>
@@ -494,7 +503,7 @@ export default function ChallengeDetailPage() {
               ) : (
                 <XCircle size={22} />
               )}
-              {result.passed ? 'PASSED' : 'NOT QUITE'}
+              {result.passed ? t('challenges.passed') : t('challenges.notQuite')}
             </div>
 
             {/* Feedback */}
@@ -535,7 +544,7 @@ export default function ChallengeDetailPage() {
                     }}
                   >
                     <Play size={14} />
-                    Visualize your solution
+                    {t('challenges.visualizeSolution')}
                   </button>
 
                   {nextChallenge && (
@@ -559,7 +568,7 @@ export default function ChallengeDetailPage() {
                           THEME.colors.text.secondary;
                       }}
                     >
-                      Next challenge
+                      {t('challenges.nextChallenge')}
                       <ArrowRight size={14} />
                     </Link>
                   )}
@@ -568,7 +577,7 @@ export default function ChallengeDetailPage() {
                 <button
                   onClick={() => setResult(null)}
                   className='inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm
-                    border border-white/10 transition-all'
+                    border border-white/10 transition-all cursor-pointer'
                   style={{ color: THEME.colors.text.secondary }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLButtonElement).style.borderColor =
@@ -584,7 +593,7 @@ export default function ChallengeDetailPage() {
                   }}
                 >
                   <RotateCcw size={14} />
-                  Try again
+                  {t('challenges.tryAgain')}
                 </button>
               )}
             </div>

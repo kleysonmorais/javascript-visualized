@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { CheckCircle, Circle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { THEME } from '@/constants/theme';
 import { ALL_CHALLENGES, getChallengesByLevel } from '@/challenges/index';
 import { isCompleted, getCompletedCount } from '@/lib/progress';
@@ -14,6 +15,8 @@ interface ChallengeCardProps {
 
 function ChallengeCard({ challenge }: ChallengeCardProps) {
   const completed = isCompleted(challenge.id);
+  const { i18n } = useTranslation();
+  const isPtBr = i18n.language === 'pt-BR';
 
   return (
     <Link to={`/challenges/${challenge.id}`} className='block'>
@@ -45,13 +48,13 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            {challenge.title}
+            {isPtBr && challenge.titlePtBr ? challenge.titlePtBr : challenge.title}
           </h3>
           <p
             className='text-sm mt-1 line-clamp-1'
             style={{ color: THEME.colors.text.muted }}
           >
-            {challenge.description}
+            {isPtBr && challenge.descriptionPtBr ? challenge.descriptionPtBr : challenge.description}
           </p>
         </div>
 
@@ -123,6 +126,7 @@ function LevelSection({ level, challenges }: LevelSectionProps) {
 }
 
 export default function ChallengesListPage() {
+  const { t } = useTranslation();
   const completedCount = getCompletedCount();
   const totalCount = ALL_CHALLENGES.length;
 
@@ -143,13 +147,13 @@ export default function ChallengesListPage() {
               }}
             >
               <FaTrophy size={28} />
-              Challenges
+              {t('challenges.pageTitle')}
             </h1>
             <p
               className='mt-1 text-sm'
               style={{ color: THEME.colors.text.secondary }}
             >
-              Master JavaScript runtime internals by solving challenges
+              {t('challenges.pageSubtitle')}
             </p>
           </div>
           <div
@@ -160,7 +164,7 @@ export default function ChallengesListPage() {
               {completedCount}
             </span>
             <span style={{ color: THEME.colors.text.muted }}>
-              /{totalCount} completed
+              /{totalCount} {t('challenges.completed')}
             </span>
           </div>
         </div>

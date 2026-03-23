@@ -4,8 +4,10 @@ import GitHubButton from 'react-github-btn';
 import { FaJsSquare, FaTrophy } from 'react-icons/fa';
 import { THEME } from '@/constants/theme';
 import { MdFiberNew } from 'react-icons/md';
+import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
+  const { t } = useTranslation();
   const location = useLocation();
   const [hovered, setHovered] = useState(false);
   const isChallenges =
@@ -48,7 +50,7 @@ export function Navbar() {
           onMouseLeave={() => setHovered(false)}
         >
           <FaTrophy size={16} />
-          <span>Challenges</span>
+          <span>{t('challenges.pageTitle')}</span>
 
           <MdFiberNew color={THEME.colors.text.accent} size={16} />
         </Link>
