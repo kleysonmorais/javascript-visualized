@@ -165,7 +165,7 @@ for (let i = 0; i < 3; i++) {
         return { passed: false, feedback: 'No execution steps generated.' };
 
       const helloCount = last.console.filter((e) =>
-        e.args.some((a) => a.includes('Hello'))
+        e.args.some((a) => a.includes('Hello') || a.includes('Olá'))
       ).length;
 
       if (helloCount === 3) {

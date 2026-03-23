@@ -38,8 +38,8 @@ console.log("Mundo");`,
         return { passed: false, feedback: 'No execution steps generated.' };
 
       const outputs = last.console.map((e) => e.args.join(' '));
-      const worldIdx = outputs.findIndex((o) => o.includes('World'));
-      const helloIdx = outputs.findIndex((o) => o.includes('Hello'));
+      const worldIdx = outputs.findIndex((o) => o.includes('World') || o.includes('Mundo'));
+      const helloIdx = outputs.findIndex((o) => o.includes('Hello') || o.includes('Olá'));
       const usedTimer = steps.some((s) => s.webAPIs.length > 0);
 
       if (!usedTimer)
