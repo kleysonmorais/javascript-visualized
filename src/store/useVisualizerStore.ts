@@ -29,7 +29,9 @@ Promise.resolve().then(logC);
 logD();`;
 
 function getDefaultSourceCode() {
-  return i18n.language === 'pt-BR' ? DEFAULT_SOURCE_CODE_PT_BR : DEFAULT_SOURCE_CODE;
+  return i18n.language === 'pt-BR'
+    ? DEFAULT_SOURCE_CODE_PT_BR
+    : DEFAULT_SOURCE_CODE;
 }
 
 interface VisualizerStore {

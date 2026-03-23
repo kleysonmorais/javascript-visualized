@@ -12,7 +12,8 @@ export const intermediateChallenges: Challenge[] = [
     level: 'medium',
     concepts: ['web-apis', 'task-queue', 'event-loop', 'console'],
     hint: 'console.log("World") runs synchronously. setTimeout delays "Hello" — even with 0ms delay, it goes through the async pipeline.',
-    hintPtBr: 'console.log("Mundo") executa sincronamente. setTimeout atrasa "Olá" — mesmo com 0ms de atraso, passa pelo pipeline assíncrono.',
+    hintPtBr:
+      'console.log("Mundo") executa sincronamente. setTimeout atrasa "Olá" — mesmo com 0ms de atraso, passa pelo pipeline assíncrono.',
     starterCode:
       '// Output: "World" then "Hello"\n// You must use setTimeout\n',
     starterCodePtBr:
@@ -72,9 +73,11 @@ console.log("Mundo");`,
     level: 'medium',
     concepts: ['task-queue', 'web-apis', 'event-loop'],
     hint: 'Use two setTimeouts with the same delay. Both callbacks will enter the Task Queue around the same time.',
-    hintPtBr: 'Use dois setTimeouts com o mesmo atraso. Ambos os callbacks entrarão na Fila de Tarefas ao mesmo tempo.',
+    hintPtBr:
+      'Use dois setTimeouts com o mesmo atraso. Ambos os callbacks entrarão na Fila de Tarefas ao mesmo tempo.',
     starterCode: '// Get 2 callbacks in the Task Queue simultaneously\n',
-    starterCodePtBr: '// Coloque 2 callbacks na Fila de Tarefas simultaneamente\n',
+    starterCodePtBr:
+      '// Coloque 2 callbacks na Fila de Tarefas simultaneamente\n',
     solutionCode: `// Both timers have the same delay — they expire together
 setTimeout(() => console.log("A"), 100);
 setTimeout(() => console.log("B"), 100);
@@ -116,9 +119,11 @@ console.log("síncrono");`,
     level: 'medium',
     concepts: ['microtask-queue', 'task-queue', 'promises', 'event-loop'],
     hint: 'Microtasks (Promise.then) always drain before macrotasks (setTimeout). Both with 0 delay — Promise still wins.',
-    hintPtBr: 'Microtarefas (Promise.then) sempre drenam antes das macrotarefas (setTimeout). Ambas com 0ms de atraso — a Promise ainda vence.',
+    hintPtBr:
+      'Microtarefas (Promise.then) sempre drenam antes das macrotarefas (setTimeout). Ambas com 0ms de atraso — a Promise ainda vence.',
     starterCode: '// Prove: Promise callback runs before setTimeout callback\n',
-    starterCodePtBr: '// Prove: callback de Promise executa antes do callback de setTimeout\n',
+    starterCodePtBr:
+      '// Prove: callback de Promise executa antes do callback de setTimeout\n',
     solutionCode: `// Macrotask: goes to Web APIs → Task Queue (lowest priority)
 setTimeout(() => console.log("timeout"), 0);
 
@@ -181,7 +186,8 @@ console.log("síncrono");`,
     level: 'medium',
     concepts: ['closures', 'local-memory', 'heap'],
     hint: 'Return a function from inside another function. The inner function captures variables from the outer scope via [[Scope]].',
-    hintPtBr: 'Retorne uma função de dentro de outra função. A função interna captura variáveis do escopo externo via [[Scope]].',
+    hintPtBr:
+      'Retorne uma função de dentro de outra função. A função interna captura variáveis do escopo externo via [[Scope]].',
     starterCode:
       '// Create a closure that survives its parent scope\n// Call it and log the captured value\n',
     starterCodePtBr:
@@ -250,7 +256,8 @@ console.log(fn());`,
     level: 'medium',
     concepts: ['async-await', 'call-stack', 'promises'],
     hint: 'Use "await Promise.resolve()" inside an async function. The function suspends at the await, then resumes when the Promise settles.',
-    hintPtBr: 'Use "await Promise.resolve()" dentro de uma função async. A função suspende no await e retoma quando a Promise é liquidada.',
+    hintPtBr:
+      'Use "await Promise.resolve()" dentro de uma função async. A função suspende no await e retoma quando a Promise é liquidada.',
     starterCode:
       '// Create an async function that suspends and resumes\n// Log before and after the await\n',
     starterCodePtBr:

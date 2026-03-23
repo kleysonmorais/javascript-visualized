@@ -214,9 +214,10 @@ export default function ChallengeDetailPage() {
       ? ALL_CHALLENGES[challengeIndex + 1]
       : null;
 
-  const starterCode = isPtBr && challenge?.starterCodePtBr
-    ? challenge.starterCodePtBr
-    : challenge?.starterCode ?? '';
+  const starterCode =
+    isPtBr && challenge?.starterCodePtBr
+      ? challenge.starterCodePtBr
+      : (challenge?.starterCode ?? '');
 
   const [code, setCode] = useState(starterCode);
   const [result, setResult] = useState<ChallengeResult | null>(null);
@@ -348,7 +349,8 @@ export default function ChallengeDetailPage() {
             {levelConfig.label}
           </span>
           <span className='text-xs' style={{ color: THEME.colors.text.muted }}>
-            {t('challenges.challenge')} {challengeIndex + 1} {t('challenges.of')} {totalChallenges}
+            {t('challenges.challenge')} {challengeIndex + 1}{' '}
+            {t('challenges.of')} {totalChallenges}
           </span>
         </div>
 
@@ -360,7 +362,9 @@ export default function ChallengeDetailPage() {
             fontFamily: THEME.fonts.ui,
           }}
         >
-          {isPtBr && challenge.titlePtBr ? challenge.titlePtBr : challenge.title}
+          {isPtBr && challenge.titlePtBr
+            ? challenge.titlePtBr
+            : challenge.title}
         </h1>
 
         {/* Description */}
@@ -368,7 +372,9 @@ export default function ChallengeDetailPage() {
           className='leading-relaxed mb-4'
           style={{ color: THEME.colors.text.secondary }}
         >
-          {isPtBr && challenge.descriptionPtBr ? challenge.descriptionPtBr : challenge.description}
+          {isPtBr && challenge.descriptionPtBr
+            ? challenge.descriptionPtBr
+            : challenge.description}
         </p>
 
         {/* Concept badges */}
@@ -421,7 +427,11 @@ export default function ChallengeDetailPage() {
 
         {/* Action buttons */}
         <div className='flex items-center gap-3 mb-6'>
-          <HintButton hint={isPtBr && challenge.hintPtBr ? challenge.hintPtBr : challenge.hint} />
+          <HintButton
+            hint={
+              isPtBr && challenge.hintPtBr ? challenge.hintPtBr : challenge.hint
+            }
+          />
           <SolutionButton key={submitCount} challengeId={challenge.id} />
 
           <div className='flex-1' />
@@ -503,7 +513,9 @@ export default function ChallengeDetailPage() {
               ) : (
                 <XCircle size={22} />
               )}
-              {result.passed ? t('challenges.passed') : t('challenges.notQuite')}
+              {result.passed
+                ? t('challenges.passed')
+                : t('challenges.notQuite')}
             </div>
 
             {/* Feedback */}

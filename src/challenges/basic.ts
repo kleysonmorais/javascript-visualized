@@ -12,7 +12,8 @@ export const basicChallenges: Challenge[] = [
     level: 'easy',
     concepts: ['call-stack', 'local-memory'],
     hint: 'Think nested function calls — A calls B, B calls C. All three need to be on the stack simultaneously.',
-    hintPtBr: 'Pense em chamadas de função aninhadas — A chama B, B chama C. Os três precisam estar na pilha ao mesmo tempo.',
+    hintPtBr:
+      'Pense em chamadas de função aninhadas — A chama B, B chama C. Os três precisam estar na pilha ao mesmo tempo.',
     starterCode:
       '// Write functions that call each other\n// Goal: 3 frames on the Call Stack at once\n',
     starterCodePtBr:
@@ -70,7 +71,8 @@ a();`,
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'Use const to declare each variable. Objects and arrays go to the Heap — primitives stay in Memory.',
-    hintPtBr: 'Use const para declarar cada variável. Objetos e arrays vão para o Heap — primitivos ficam na Memória.',
+    hintPtBr:
+      'Use const para declarar cada variável. Objetos e arrays vão para o Heap — primitivos ficam na Memória.',
     starterCode: '// Declare a number, a string, and an object\n',
     starterCodePtBr: '// Declare um número, uma string e um objeto\n',
     solutionCode: `// Primitive: stored directly in Global Memory
@@ -139,7 +141,8 @@ const pessoa = { nome: "Joe", idade: 25 };`,
     level: 'easy',
     concepts: ['console'],
     hint: 'Use a for loop that runs 3 iterations, each calling console.log("Hello").',
-    hintPtBr: 'Use um laço for com 3 iterações, cada uma chamando console.log("Olá").',
+    hintPtBr:
+      'Use um laço for com 3 iterações, cada uma chamando console.log("Olá").',
     starterCode: '// Use a loop to print "Hello" 3 times\n',
     starterCodePtBr: '// Use um laço para imprimir "Olá" 3 vezes\n',
     solutionCode: `// i starts at 0, increments each loop, stops before 3 → runs exactly 3 times
@@ -194,7 +197,8 @@ for (let i = 0; i < 3; i++) {
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'Any function declaration or function expression creates a ⓕ entry in memory and a HeapObject with the source code.',
-    hintPtBr: 'Qualquer declaração de função ou expressão de função cria uma entrada ⓕ na memória e um HeapObject com o código-fonte.',
+    hintPtBr:
+      'Qualquer declaração de função ou expressão de função cria uma entrada ⓕ na memória e um HeapObject com o código-fonte.',
     starterCode: '// Declare a function — look for ⓕ in Memory\n',
     starterCodePtBr: '// Declare uma função — procure por ⓕ na Memória\n',
     solutionCode: `// Declaring a function creates a ⓕ entry in Global Memory...
@@ -246,7 +250,8 @@ function cumprimentar(nome) {
     level: 'easy',
     concepts: ['global-memory', 'heap'],
     hint: 'When you do const b = a, both variables point to the same HeapObject. Same heapReferenceId = same color.',
-    hintPtBr: 'Quando você faz const b = a, ambas as variáveis apontam para o mesmo HeapObject. Mesmo heapReferenceId = mesma cor.',
+    hintPtBr:
+      'Quando você faz const b = a, ambas as variáveis apontam para o mesmo HeapObject. Mesmo heapReferenceId = mesma cor.',
     starterCode: '// Create an object and assign it to two variables\n',
     starterCodePtBr: '// Crie um objeto e atribua-o a duas variáveis\n',
     solutionCode: `// Creates an object in the Heap; 'a' holds a [Pointer] to it

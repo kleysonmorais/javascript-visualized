@@ -48,13 +48,17 @@ function ChallengeCard({ challenge }: ChallengeCardProps) {
               fontFamily: THEME.fonts.ui,
             }}
           >
-            {isPtBr && challenge.titlePtBr ? challenge.titlePtBr : challenge.title}
+            {isPtBr && challenge.titlePtBr
+              ? challenge.titlePtBr
+              : challenge.title}
           </h3>
           <p
             className='text-sm mt-1 line-clamp-1'
             style={{ color: THEME.colors.text.muted }}
           >
-            {isPtBr && challenge.descriptionPtBr ? challenge.descriptionPtBr : challenge.description}
+            {isPtBr && challenge.descriptionPtBr
+              ? challenge.descriptionPtBr
+              : challenge.description}
           </p>
         </div>
 

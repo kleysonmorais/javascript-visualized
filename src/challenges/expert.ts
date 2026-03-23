@@ -12,7 +12,8 @@ export const expertChallenges: Challenge[] = [
     level: 'expert',
     concepts: ['microtask-queue', 'promises', 'event-loop', 'task-queue'],
     hint: 'Microtasks created INSIDE microtasks also drain before the Event Loop checks the Task Queue. The queue must be completely empty first.',
-    hintPtBr: 'Microtarefas criadas DENTRO de microtarefas também drenam antes do Event Loop verificar a Fila de Tarefas. A fila deve estar completamente vazia primeiro.',
+    hintPtBr:
+      'Microtarefas criadas DENTRO de microtarefas também drenam antes do Event Loop verificar a Fila de Tarefas. A fila deve estar completamente vazia primeiro.',
     starterCode: '// 3 nested microtasks, all before setTimeout\n',
     starterCodePtBr: '// 3 microtarefas aninhadas, todas antes do setTimeout\n',
     solutionCode: `// Macrotask: sits in Task Queue until the Microtask Queue is fully empty
@@ -95,7 +96,8 @@ Promise.resolve().then(() => {
     level: 'expert',
     concepts: ['promises', 'event-loop', 'microtask-queue', 'task-queue'],
     hint: 'The Promise executor runs SYNCHRONOUSLY — that is the trap most people miss. new Promise(fn) calls fn immediately.',
-    hintPtBr: 'O executor da Promise executa SINCRONAMENTE — essa é a armadilha que a maioria das pessoas perde. new Promise(fn) chama fn imediatamente.',
+    hintPtBr:
+      'O executor da Promise executa SINCRONAMENTE — essa é a armadilha que a maioria das pessoas perde. new Promise(fn) chama fn imediatamente.',
     starterCode:
       '// Output: A, B, C, D\n// A = inside Promise constructor\n// B = sync after Promise\n// C = .then() callback\n// D = setTimeout callback\n',
     starterCodePtBr:
@@ -166,7 +168,8 @@ console.log("B");`,
     level: 'expert',
     concepts: ['async-await', 'promises', 'microtask-queue', 'event-loop'],
     hint: 'Call both async functions WITHOUT await between them. Each await suspends only its own function. The microtask queue interleaves their continuations.',
-    hintPtBr: 'Chame ambas as funções async SEM await entre elas. Cada await suspende apenas sua própria função. A fila de microtarefas intercala suas continuações.',
+    hintPtBr:
+      'Chame ambas as funções async SEM await entre elas. Cada await suspende apenas sua própria função. A fila de microtarefas intercala suas continuações.',
     starterCode:
       '// Two async functions running concurrently\n// Output: A1, B1, A2, B2, A3, B3\n',
     starterCodePtBr:
@@ -244,7 +247,8 @@ tarefaB();`,
     level: 'expert',
     concepts: ['closures', 'heap', 'local-memory'],
     hint: 'Each call to the factory creates a NEW scope. The returned functions capture their own independent copy of the variable.',
-    hintPtBr: 'Cada chamada à fábrica cria um NOVO escopo. As funções retornadas capturam sua própria cópia independente da variável.',
+    hintPtBr:
+      'Cada chamada à fábrica cria um NOVO escopo. As funções retornadas capturam sua própria cópia independente da variável.',
     starterCode:
       '// Create a closure factory\n// Call it 3 times with different args\n// Prove each closure is independent\n',
     starterCodePtBr:
@@ -327,7 +331,8 @@ console.log(eai("Mundo"));  // "E aí Mundo"`,
       'async-await',
     ],
     hint: '"micro-3" runs BETWEEN "macro-1" and "macro-2". This means the first setTimeout callback must create a new microtask that drains before the second setTimeout fires.',
-    hintPtBr: '"micro-3" executa ENTRE "macro-1" e "macro-2". Isso significa que o primeiro callback de setTimeout deve criar uma nova microtarefa que drena antes do segundo setTimeout disparar.',
+    hintPtBr:
+      '"micro-3" executa ENTRE "macro-1" e "macro-2". Isso significa que o primeiro callback de setTimeout deve criar uma nova microtarefa que drena antes do segundo setTimeout disparar.',
     starterCode:
       '// The boss fight.\n// Output: sync-1, sync-2, micro-1, micro-2, macro-1, micro-3, macro-2\n',
     starterCodePtBr:

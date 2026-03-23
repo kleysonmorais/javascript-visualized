@@ -12,7 +12,8 @@ export const advancedChallenges: Challenge[] = [
     level: 'hard',
     concepts: ['event-loop', 'microtask-queue', 'task-queue', 'promises'],
     hint: 'Sync code runs first, then microtasks (Promise), then macrotasks (setTimeout). Plan which number goes where.',
-    hintPtBr: 'Código síncrono executa primeiro, depois microtarefas (Promise), depois macrotarefas (setTimeout). Planeje qual número vai onde.',
+    hintPtBr:
+      'Código síncrono executa primeiro, depois microtarefas (Promise), depois macrotarefas (setTimeout). Planeje qual número vai onde.',
     starterCode:
       '// Output: 1, 2, 3, 4 (in order)\n// Must use setTimeout AND Promise.resolve\n',
     starterCodePtBr:
@@ -86,7 +87,8 @@ console.log("2");`,
     level: 'hard',
     concepts: ['microtask-queue', 'promises', 'event-loop', 'task-queue'],
     hint: 'Chain Promise.resolve().then().then().then(). All chained microtasks drain before the Event Loop picks a macrotask.',
-    hintPtBr: 'Encadeie Promise.resolve().then().then().then(). Todas as microtarefas encadeadas drenam antes do Event Loop pegar uma macrotarefa.',
+    hintPtBr:
+      'Encadeie Promise.resolve().then().then().then(). Todas as microtarefas encadeadas drenam antes do Event Loop pegar uma macrotarefa.',
     starterCode:
       '// Chain 3 .then() callbacks\n// All must run before setTimeout\n',
     starterCodePtBr:
@@ -154,7 +156,8 @@ Promise.resolve()
     level: 'hard',
     concepts: ['closures', 'heap', 'local-memory'],
     hint: 'Create a function that returns another function. The inner function increments a variable captured from the outer scope.',
-    hintPtBr: 'Crie uma função que retorna outra função. A função interna incrementa uma variável capturada do escopo externo.',
+    hintPtBr:
+      'Crie uma função que retorna outra função. A função interna incrementa uma variável capturada do escopo externo.',
     starterCode:
       '// Create a closure-based counter\n// Call it 5 times, logging each value\n',
     starterCodePtBr:
@@ -230,7 +233,8 @@ console.log(contador()); // 5`,
     level: 'hard',
     concepts: ['generators', 'heap', 'local-memory'],
     hint: 'Use function* with yield. Track two variables (prev and curr) and swap them each iteration.',
-    hintPtBr: 'Use function* com yield. Rastreie duas variáveis (ant e atual) e troque-as a cada iteração.',
+    hintPtBr:
+      'Use function* com yield. Rastreie duas variáveis (ant e atual) e troque-as a cada iteração.',
     starterCode:
       '// Write a Fibonacci generator\n// Yield the first 5 numbers: 1, 1, 2, 3, 5\n',
     starterCodePtBr:
@@ -313,7 +317,8 @@ for (const n of fibonacci()) {
       'console',
     ],
     hint: 'Store a value globally, pass it into a setTimeout callback, and inside the callback store it locally and log it.',
-    hintPtBr: 'Armazene um valor globalmente, passe-o para um callback de setTimeout e, dentro do callback, armazene-o localmente e registre-o.',
+    hintPtBr:
+      'Armazene um valor globalmente, passe-o para um callback de setTimeout e, dentro do callback, armazene-o localmente e registre-o.',
     starterCode:
       '// Make a value travel through ALL components\n// Global Memory → Web APIs → Task Queue → Call Stack → Local Memory → Console\n',
     starterCodePtBr:
