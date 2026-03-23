@@ -11,7 +11,6 @@ import {
   Play,
   Lightbulb,
   BookOpen,
-  Lock,
   RotateCcw,
   Loader2,
   CheckCircle,
@@ -20,7 +19,7 @@ import {
 import { ConceptBadge } from '@/components/ui/ConceptBadge';
 import { THEME } from '@/constants/theme';
 import { getChallengeById, ALL_CHALLENGES } from '@/challenges';
-import { markAttempt, markCompleted, getAttempts } from '@/lib/progress';
+import { markAttempt, markCompleted } from '@/lib/progress';
 import { generateSteps } from '@/engine';
 import { useVisualizerStore } from '@/store/useVisualizerStore';
 import type { ChallengeResult } from '@/challenges/types';
@@ -149,32 +148,11 @@ function HintButton({ hint }: { hint: string }) {
 
 function SolutionButton({ challengeId }: { challengeId: string }) {
   const { t } = useTranslation();
-  const [attempts, setAttempts] = useState(() => getAttempts(challengeId));
-  const isEnabled = attempts >= 1;
-
-  // Keep attempts in sync when challengeId changes
-  useEffect(() => {
-    setAttempts(getAttempts(challengeId));
-  }, [challengeId]);
-
-  if (!isEnabled) {
-    return (
-      <button
-        disabled
-        title={t('challenges.unlockHint')}
-        className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
-          border border-white/5 cursor-not-allowed opacity-50'
-        style={{ color: THEME.colors.text.muted }}
-      >
-        <BookOpen size={16} />
-        {t('challenges.solution')}
-        <Lock size={12} />
-      </button>
-    );
-  }
+  const navigate = useNavigate();
 
   return (
     <button
+      onClick={() => navigate(`/challenges/solution/${challengeId}`)}
       className='inline-flex items-center gap-1.5 px-4 py-2.5 rounded-lg text-sm
         border border-white/10 transition-all cursor-pointer'
       style={{ color: THEME.colors.text.secondary }}

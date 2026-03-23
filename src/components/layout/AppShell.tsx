@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Play, Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { THEME } from '@/constants/theme';
 import { CODE_EXAMPLES } from '@/constants/examples';
 import { CodeEditor } from '@/components/editor/CodeEditor';
@@ -20,30 +20,15 @@ import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { ExamplesButton } from './ExamplesModal';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import { MdOutlineModeEditOutline } from 'react-icons/md';
+import { getChallengeById } from '@/challenges';
 
 export function AppShell() {
   const { t, i18n } = useTranslation();
-  const { exampleId } = useParams<{ exampleId: string }>();
+  const { exampleId, solutionId } = useParams<{
+    exampleId?: string;
+    solutionId?: string;
+  }>();
   const setSourceCode = useVisualizerStore((s) => s.setSourceCode);
-  const reset = useVisualizerStore((s) => s.reset);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (!exampleId) return;
-
-    const example = CODE_EXAMPLES.find((e) => e.id === exampleId);
-    if (example) {
-      const code =
-        i18n.language === 'pt-BR' && example.codePtBr
-          ? example.codePtBr
-          : example.code;
-      setSourceCode(code);
-      reset();
-    } else {
-      navigate('/');
-    }
-  }, [exampleId, i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const isRunning = useVisualizerStore((s) => s.isRunning);
   const runCode = useVisualizerStore((s) => s.runCode);
   const steps = useVisualizerStore((s) => s.steps);
@@ -54,10 +39,38 @@ export function AppShell() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<MobileTab>('code');
 
+  useEffect(() => {
+    if (solutionId) {
+      const challenge = getChallengeById(solutionId);
+      if (challenge) {
+        const code =
+          i18n.language === 'pt-BR' && challenge.solutionCodePtBr
+            ? challenge.solutionCodePtBr
+            : challenge.solutionCode;
+        setSourceCode(code);
+        runCode();
+      }
+      return;
+    }
+
+    const id = exampleId || 'microtask-vs-macrotask';
+    const example = CODE_EXAMPLES.find((e) => e.id === id);
+    if (example) {
+      const code =
+        i18n.language === 'pt-BR' && example.codePtBr
+          ? example.codePtBr
+          : example.code;
+      setSourceCode(code);
+      runCode();
+    }
+  }, [exampleId, solutionId, i18n.language]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const hasSteps = steps.length > 0;
 
   useAutoPlay();
   useKeyboardShortcuts();
+
+  const title = !solutionId && !isMobile ? t('appShell.code') : undefined;
 
   return (
     <div
@@ -78,80 +91,94 @@ export function AppShell() {
         >
           {/* Code Editor */}
           <Panel
-            title={!isMobile ? t('appShell.code') : undefined}
+            title={title}
             className='flex-1 min-h-0 lg:min-h-50'
             scrollable={false}
             headerLeft={
               <div className='flex items-center gap-2'>
-                <ExamplesButton />
+                {solutionId ? (
+                  <Link
+                    to={`/challenges/${solutionId}`}
+                    className='no-underline text-xs'
+                    style={{ color: THEME.colors.text.accent }}
+                  >
+                    {t('challenges.backToChallenge')}
+                  </Link>
+                ) : (
+                  <ExamplesButton />
+                )}
               </div>
             }
             headerRight={
-              <div className='flex items-center gap-2'>
-                {hasSteps && (
+              !solutionId ? (
+                <div className='flex items-center gap-2'>
+                  {hasSteps && (
+                    <button
+                      onClick={resetToEdit}
+                      className='flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors min-h-9 lg:min-h-0'
+                      style={{
+                        backgroundColor: THEME.colors.bg.elevated,
+                        border: `1px solid ${THEME.colors.border.editor}`,
+                        color: THEME.colors.text.secondary,
+                        fontFamily: THEME.fonts.ui,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => {
+                        (
+                          e.currentTarget as HTMLButtonElement
+                        ).style.borderColor = THEME.colors.text.accent;
+                        (e.currentTarget as HTMLButtonElement).style.color =
+                          THEME.colors.text.primary;
+                      }}
+                      onMouseLeave={(e) => {
+                        (
+                          e.currentTarget as HTMLButtonElement
+                        ).style.borderColor = THEME.colors.border.editor;
+                        (e.currentTarget as HTMLButtonElement).style.color =
+                          THEME.colors.text.secondary;
+                      }}
+                    >
+                      <MdOutlineModeEditOutline size={12} />
+                      <span>{t('appShell.edit')}</span>
+                    </button>
+                  )}
                   <button
-                    onClick={resetToEdit}
-                    className='flex items-center gap-1.5 px-3 py-1.5 rounded transition-colors min-h-9 lg:min-h-0'
+                    onClick={() => {
+                      clearError();
+                      runCode();
+                    }}
+                    disabled={isRunning}
+                    className='flex items-center gap-1.5 px-3 py-1.5 rounded transition-all min-h-9 lg:min-h-0'
                     style={{
-                      backgroundColor: THEME.colors.bg.elevated,
-                      border: `1px solid ${THEME.colors.border.editor}`,
-                      color: THEME.colors.text.secondary,
+                      backgroundColor: isRunning
+                        ? THEME.colors.bg.elevated
+                        : THEME.colors.text.accent,
+                      border: `1px solid ${THEME.colors.text.accent}`,
+                      color: isRunning
+                        ? THEME.colors.text.accent
+                        : THEME.colors.bg.primary,
                       fontFamily: THEME.fonts.ui,
                       fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor =
-                        THEME.colors.text.accent;
-                      (e.currentTarget as HTMLButtonElement).style.color =
-                        THEME.colors.text.primary;
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.currentTarget as HTMLButtonElement).style.borderColor =
-                        THEME.colors.border.editor;
-                      (e.currentTarget as HTMLButtonElement).style.color =
-                        THEME.colors.text.secondary;
+                      fontWeight: 600,
+                      cursor: isRunning ? 'not-allowed' : 'pointer',
+                      opacity: isRunning ? 0.7 : 1,
                     }}
                   >
-                    <MdOutlineModeEditOutline size={12} />
-                    <span>{t('appShell.edit')}</span>
+                    {isRunning ? (
+                      <>
+                        <Loader2 size={12} className='animate-spin' />
+                        <span>{t('appShell.parsing')}</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play size={12} fill='currentColor' />
+                        <span>{t('appShell.run')}</span>
+                      </>
+                    )}
                   </button>
-                )}
-                <button
-                  onClick={() => {
-                    clearError();
-                    runCode();
-                  }}
-                  disabled={isRunning}
-                  className='flex items-center gap-1.5 px-3 py-1.5 rounded transition-all min-h-9 lg:min-h-0'
-                  style={{
-                    backgroundColor: isRunning
-                      ? THEME.colors.bg.elevated
-                      : THEME.colors.text.accent,
-                    border: `1px solid ${THEME.colors.text.accent}`,
-                    color: isRunning
-                      ? THEME.colors.text.accent
-                      : THEME.colors.bg.primary,
-                    fontFamily: THEME.fonts.ui,
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: isRunning ? 'not-allowed' : 'pointer',
-                    opacity: isRunning ? 0.7 : 1,
-                  }}
-                >
-                  {isRunning ? (
-                    <>
-                      <Loader2 size={12} className='animate-spin' />
-                      <span>{t('appShell.parsing')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play size={12} fill='currentColor' />
-                      <span>{t('appShell.run')}</span>
-                    </>
-                  )}
-                </button>
-              </div>
+                </div>
+              ) : undefined
             }
           >
             <div className='-m-3 h-full min-h-50 lg:min-h-0'>

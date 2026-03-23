@@ -119,6 +119,7 @@
     "pageSubtitle": "Master JavaScript runtime internals by solving challenges",
     "completed": "completed",
     "backToChallenges": "← Back to Challenges",
+    "backToChallenge": "← Back to Challenge",
     "challenge": "Challenge",
     "of": "of",
     "hint": "Hint",

@@ -21,6 +21,10 @@ export default function App() {
           <Routes>
             <Route path='/' element={<AppShell />} />
             <Route path='/:exampleId' element={<AppShell />} />
+            <Route
+              path='/challenges/solution/:solutionId'
+              element={<AppShell />}
+            />
             <Route path='/challenges' element={<ChallengesListPage />} />
             <Route
               path='/challenges/:id'
