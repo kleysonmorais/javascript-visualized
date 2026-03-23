@@ -39,8 +39,15 @@ export function AppShell() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState<MobileTab>('code');
 
+  const shouldAutoVisualize = () => window.location.hash === '#visualize';
+
   useEffect(() => {
     if (solutionId) {
+      if (shouldAutoVisualize()) {
+        runCode();
+        return;
+      }
+
       const challenge = getChallengeById(solutionId);
       if (challenge) {
         const code =

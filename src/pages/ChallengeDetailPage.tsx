@@ -284,7 +284,9 @@ export default function ChallengeDetailPage() {
   function handleVisualize() {
     useVisualizerStore.getState().setSourceCode(code);
     useVisualizerStore.getState().reset();
-    navigate('/');
+    if (challenge) {
+      navigate(`/challenges/solution/${challenge.id}#visualize`);
+    }
   }
 
   const handleMount: OnMount = (_editor, monaco) => {
