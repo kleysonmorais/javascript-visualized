@@ -451,9 +451,15 @@ interface ThrownError {
   reason: unknown;
 }
 
-// Flow control signals — used internally for break/continue, never caught by user try/catch
+// Flow control signals — used internally for break/continue/yield, never caught by user try/catch
 class BreakSignal {}
 class ContinueSignal {}
+class YieldSignal {
+  value: unknown;
+  constructor(value: unknown) {
+    this.value = value;
+  }
+}
 
 // Continuation for a suspended async function
 interface AsyncContinuation {
@@ -3233,12 +3239,13 @@ export class Interpreter {
         return awaitArgValue;
       }
       case 'YieldExpression': {
-        // YieldExpression is normally handled in executeGeneratorBody's findYieldInStatement
-        // This case handles nested yield or yield in expressions
+        // Throw YieldSignal so it propagates up through any loop bodies back to
+        // executeGeneratorBody, which catches it and suspends the generator.
         const yieldNode = node as YieldExpressionNode;
-        return yieldNode.argument
+        const yieldedValue = yieldNode.argument
           ? this.evaluateExpression(yieldNode.argument)
           : undefined;
+        throw new YieldSignal(yieldedValue);
       }
       case 'ThisExpression':
         return this.lookupVariable('this');
@@ -7157,8 +7164,21 @@ export class Interpreter {
         return { value: yieldedValue, done: false };
       }
 
-      // No yield — execute normally
-      this.visitStatement(stmt);
+      // For/while loops: expand one iteration at a time so yield inside the
+      // body surfaces as a top-level yield in a recursive executeGeneratorBody call.
+      if (stmt.type === 'ForStatement' || stmt.type === 'WhileStatement') {
+        const expanded = this.expandLoopForGenerator(
+          stmt as ForStatementNode | WhileStatementNode,
+          statements.slice(i + 1)
+        );
+        if (expanded !== null) {
+          // Recurse with the expanded flat statement list
+          return this.executeGeneratorBody(expanded, _funcName, continuation, wrapper);
+        }
+        // Loop condition was false on first check — nothing to do, continue
+      } else {
+        this.visitStatement(stmt);
+      }
 
       // Check for return
       if (this.hasReturned) {
@@ -7180,6 +7200,74 @@ export class Interpreter {
 
     // Reached end of generator body — complete with undefined
     return this.completeGenerator(wrapper, genHeap, continuation, undefined);
+  }
+
+  /**
+   * Expand a for/while loop one iteration for generator execution.
+   *
+   * Runs the for-init (once), checks the condition. If false returns null
+   * (loop never executes). If true returns a flat statement list:
+   *   [...body statements, optional update expression, loop node again, ...tail]
+   *
+   * By re-appending the loop node, the next executeGeneratorBody iteration
+   * re-checks the condition — giving us one iteration per recursive call.
+   * This means yield inside the body naturally surfaces at the top level.
+   */
+  private expandLoopForGenerator(
+    node: ForStatementNode | WhileStatementNode,
+    tail: StatementNode[]
+  ): StatementNode[] | null {
+    const forNode = node.type === 'ForStatement' ? (node as ForStatementNode) : null;
+    const whileNode = node.type === 'WhileStatement' ? (node as WhileStatementNode) : null;
+
+    // Run for-loop init exactly once
+    if (forNode?.init) {
+      if (forNode.init.type === 'VariableDeclaration') {
+        this.visitVariableDeclaration(forNode.init as VariableDeclarationNode);
+      } else {
+        this.evaluateExpression(forNode.init as ExpressionNode);
+      }
+    }
+
+    // Check condition
+    const testNode = forNode ? forNode.test : whileNode!.test;
+    if (testNode) {
+      const ok = this.evaluateExpression(testNode);
+      if (!ok) return null;
+    }
+
+    // Collect body statements
+    const bodyStmt = forNode ? (forNode.body as StatementNode) : (whileNode!.body as StatementNode);
+    const bodyStatements: StatementNode[] =
+      bodyStmt.type === 'BlockStatement'
+        ? (bodyStmt as BlockStatementNode).body as StatementNode[]
+        : [bodyStmt];
+
+    // Build an update-then-loop synthetic node sequence.
+    // We wrap the update expression in an ExpressionStatement so it fits StatementNode[].
+    const updateStmts: StatementNode[] = [];
+    if (forNode?.update) {
+      updateStmts.push({
+        type: 'ExpressionStatement',
+        expression: forNode.update,
+        start: forNode.update.start,
+        end: forNode.update.end,
+        loc: forNode.update.loc,
+      } as ExpressionStatementNode);
+    }
+
+    // Build a "loopWithoutInit" node so the next iteration skips the init
+    let loopContinuation: StatementNode;
+    if (forNode) {
+      loopContinuation = {
+        ...forNode,
+        init: null,
+      } as ForStatementNode;
+    } else {
+      loopContinuation = node;
+    }
+
+    return [...bodyStatements, ...updateStmts, loopContinuation, ...tail];
   }
 
   /**
