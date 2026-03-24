@@ -756,22 +756,56 @@ export class Interpreter {
 
       if (activeTimers.length === 0) break;
 
-      const timer = activeTimers[0];
-      if (timer.cancelled || this.stepIndex >= MAX_STEPS) {
+      // Batch-enqueue all timers that share the same (minimum) delay so they
+      // appear in the Task Queue simultaneously — matching real browser behaviour.
+      const minDelay = activeTimers[0].delay;
+      const batch = activeTimers.filter((t) => t.delay === minDelay);
+
+      if (batch[0].cancelled || this.stepIndex >= MAX_STEPS) {
         iteration++;
         continue;
       }
-      timer.processed = true;
-      this.runTimerCallback(timer);
 
-      // STEP 3: After callback execution, drain microtasks before picking next task
-      if (this.pendingMicrotasks.length > 0) {
-        this.eventLoop = {
-          phase: 'checking-microtasks',
-          description: 'Checking Microtask Queue...',
+      // Step 1: Complete all Web API entries for the batch and push queue items.
+      for (const t of batch) {
+        t.processed = true;
+        const webAPI = this.webAPIs.find((w) => w.id === t.id);
+        if (webAPI) {
+          webAPI.elapsed = t.delay;
+          webAPI.status = 'completed';
+        }
+        const taskItem: QueueItem = {
+          id: `task-${t.id}`,
+          callbackLabel:
+            t.callbackSource.length > 30
+              ? t.callbackSource.slice(0, 30) + '...'
+              : t.callbackSource,
+          sourceType: t.type,
+          sourceId: t.id,
         };
-        this.snapshot(0, 0, description.callbackCheckingMicrotasks(), '');
-        this.drainMicrotaskQueue();
+        this.taskQueue.push(taskItem);
+      }
+
+      // Snapshot showing all batch callbacks in the Task Queue simultaneously.
+      this.eventLoop = {
+        phase: 'checking-tasks',
+        description: 'Timers completed — callbacks moved to Task Queue',
+      };
+      this.snapshot(0, 0, description.callbackMovedToTaskQueue(), '');
+
+      // Step 2: Execute each queued callback in FIFO order.
+      for (const t of batch) {
+        this.runTimerCallback(t);
+
+        // Drain microtasks between callbacks
+        if (this.pendingMicrotasks.length > 0) {
+          this.eventLoop = {
+            phase: 'checking-microtasks',
+            description: 'Checking Microtask Queue...',
+          };
+          this.snapshot(0, 0, description.callbackCheckingMicrotasks(), '');
+          this.drainMicrotaskQueue();
+        }
       }
 
       iteration++;
@@ -833,30 +867,17 @@ export class Interpreter {
   }
 
   private runTimerCallback(timer: PendingTimer): void {
-    // Step 1: Timer completes in Web APIs
-    const webAPI = this.webAPIs.find((w) => w.id === timer.id);
-    if (webAPI) {
-      webAPI.elapsed = timer.delay;
-      webAPI.status = 'completed';
-    }
+    // Steps 1 & 2 (Web API completion + Task Queue enqueue) are now performed
+    // as a batch in processAsyncCallbacks before this method is called, so that
+    // all same-delay callbacks appear in the queue simultaneously.
+    const taskItemId = `task-${timer.id}`;
+
+    // Snapshot: event loop is about to pick this specific timer's callback.
     this.eventLoop = {
       phase: 'checking-tasks',
       description: 'Timer completed — checking Task Queue',
     };
     this.snapshot(0, 0, description.timerFired({ delay: timer.delay }), '');
-
-    // Step 2: Move callback to Task Queue
-    const taskItem: QueueItem = {
-      id: `task-${timer.id}`,
-      callbackLabel:
-        timer.callbackSource.length > 30
-          ? timer.callbackSource.slice(0, 30) + '...'
-          : timer.callbackSource,
-      sourceType: timer.type,
-      sourceId: timer.id,
-    };
-    this.taskQueue.push(taskItem);
-    this.snapshot(0, 0, description.callbackMovedToTaskQueue(), '');
 
     // Step 3: Event Loop picks task — snapshot while item is still in queue so
     // the UI shows what is being picked, then remove it before execution.
@@ -866,7 +887,7 @@ export class Interpreter {
       description: 'Moving callback from Task Queue to Call Stack',
     };
     this.snapshot(0, 0, description.eventLoopPickingTask(), '');
-    this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItem.id);
+    this.taskQueue = this.taskQueue.filter((q) => q.id !== taskItemId);
 
     // Step 4: Execute the callback body
     const resolvedFn = timer.resolvedFnValue;
