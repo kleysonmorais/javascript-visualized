@@ -19,7 +19,14 @@ import {
 import { ConceptBadge } from '@/components/ui/ConceptBadge';
 import { THEME } from '@/constants/theme';
 import { getChallengeById, ALL_CHALLENGES } from '@/challenges';
-import { markAttempt, markCompleted } from '@/lib/progress';
+import {
+  markAttempt,
+  markCompleted,
+  saveCode,
+  getSavedCode,
+  saveResult,
+  getResult,
+} from '@/lib/progress';
 import { generateSteps } from '@/engine';
 import { useVisualizerStore } from '@/store/useVisualizerStore';
 import type { ChallengeResult } from '@/challenges/types';
@@ -197,8 +204,10 @@ export default function ChallengeDetailPage() {
       ? challenge.starterCodePtBr
       : (challenge?.starterCode ?? '');
 
-  const [code, setCode] = useState(starterCode);
-  const [result, setResult] = useState<ChallengeResult | null>(null);
+  const [code, setCode] = useState(() => getSavedCode(id!) ?? starterCode);
+  const [result, setResult] = useState<ChallengeResult | null>(
+    () => getResult(id!) ?? null
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Used to force SolutionButton to re-read attempts after a submit
   const [submitCount, setSubmitCount] = useState(0);
@@ -234,7 +243,7 @@ export default function ChallengeDetailPage() {
 
   async function handleSubmit() {
     setIsSubmitting(true);
-    setResult(null);
+    saveCode(challenge!.id, code);
 
     try {
       const engineResult = generateSteps(code);
@@ -258,6 +267,8 @@ export default function ChallengeDetailPage() {
         engineResult.steps,
         i18n.language as 'en' | 'pt-BR'
       );
+
+      saveResult(challenge!.id, validationResult);
 
       markAttempt(challenge!.id);
       setSubmitCount((c) => c + 1);
