@@ -13,21 +13,27 @@ describe('stack-3-deep validate', () => {
   const { validate } = getChallenge('stack-3-deep');
 
   it('passes with 3 nested function calls', () => {
-    const steps = run(`function c() { return 1; } function b() { return c(); } function a() { return b(); } a();`);
+    const steps = run(
+      `function c() { return 1; } function b() { return c(); } function a() { return b(); } a();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('3');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`function c() { return 1; } function b() { return c(); } function a() { return b(); } a();`);
+    const steps = run(
+      `function c() { return 1; } function b() { return c(); } function a() { return b(); } a();`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('3');
   });
 
   it('passes when 4+ frames deep (still >= 3)', () => {
-    const steps = run(`function d() { return 1; } function c() { return d(); } function b() { return c(); } function a() { return b(); } a();`);
+    const steps = run(
+      `function d() { return 1; } function c() { return d(); } function b() { return c(); } function a() { return b(); } a();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('4');
@@ -41,7 +47,9 @@ describe('stack-3-deep validate', () => {
   });
 
   it('fails with 2 levels of nesting', () => {
-    const steps = run(`function b() { return 1; } function a() { return b(); } a();`);
+    const steps = run(
+      `function b() { return 1; } function a() { return b(); } a();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('2 frame(s)');
@@ -75,14 +83,18 @@ describe('fill-the-memory validate', () => {
   const { validate } = getChallenge('fill-the-memory');
 
   it('passes with a number, string, and object', () => {
-    const steps = run(`const age = 25; const name = "Joe"; const person = { name: "Joe", age: 25 };`);
+    const steps = run(
+      `const age = 25; const name = "Joe"; const person = { name: "Joe", age: 25 };`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Heap');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`const idade = 25; const nome = "Joe"; const pessoa = { nome: "Joe", idade: 25 };`);
+    const steps = run(
+      `const idade = 25; const nome = "Joe"; const pessoa = { nome: "Joe", idade: 25 };`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Heap');
@@ -198,7 +210,9 @@ describe('the-f-symbol validate', () => {
   });
 
   it('passes with a function expression assigned to a variable', () => {
-    const steps = run(`const greet = function(name) { return "Hello " + name; };`);
+    const steps = run(
+      `const greet = function(name) { return "Hello " + name; };`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
   });

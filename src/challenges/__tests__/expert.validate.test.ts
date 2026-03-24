@@ -262,7 +262,9 @@ describe('closure-factory validate', () => {
   });
 
   it('pt-BR: outputs not all different feedback is in Portuguese', () => {
-    const steps = run(`console.log("same"); console.log("same"); console.log("same");`);
+    const steps = run(
+      `console.log("same"); console.log("same"); console.log("same");`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('não são todas diferentes');

@@ -866,7 +866,6 @@ export class Interpreter {
 
       drainCount++;
     }
-
   }
 
   private runTimerCallback(timer: PendingTimer): void {
@@ -7187,7 +7186,12 @@ export class Interpreter {
         );
         if (expanded !== null) {
           // Recurse with the expanded flat statement list
-          return this.executeGeneratorBody(expanded, _funcName, continuation, wrapper);
+          return this.executeGeneratorBody(
+            expanded,
+            _funcName,
+            continuation,
+            wrapper
+          );
         }
         // Loop condition was false on first check — nothing to do, continue
       } else {
@@ -7231,8 +7235,10 @@ export class Interpreter {
     node: ForStatementNode | WhileStatementNode,
     tail: StatementNode[]
   ): StatementNode[] | null {
-    const forNode = node.type === 'ForStatement' ? (node as ForStatementNode) : null;
-    const whileNode = node.type === 'WhileStatement' ? (node as WhileStatementNode) : null;
+    const forNode =
+      node.type === 'ForStatement' ? (node as ForStatementNode) : null;
+    const whileNode =
+      node.type === 'WhileStatement' ? (node as WhileStatementNode) : null;
 
     // Run for-loop init exactly once
     if (forNode?.init) {
@@ -7251,10 +7257,12 @@ export class Interpreter {
     }
 
     // Collect body statements
-    const bodyStmt = forNode ? (forNode.body as StatementNode) : (whileNode!.body as StatementNode);
+    const bodyStmt = forNode
+      ? (forNode.body as StatementNode)
+      : (whileNode!.body as StatementNode);
     const bodyStatements: StatementNode[] =
       bodyStmt.type === 'BlockStatement'
-        ? (bodyStmt as BlockStatementNode).body as StatementNode[]
+        ? ((bodyStmt as BlockStatementNode).body as StatementNode[])
         : [bodyStmt];
 
     // Build an update-then-loop synthetic node sequence.

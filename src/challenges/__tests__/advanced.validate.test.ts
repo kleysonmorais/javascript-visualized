@@ -172,9 +172,7 @@ describe('the-counter validate', () => {
   });
 
   it('fails when values are not incrementing (all same)', () => {
-    const steps = run(
-      `for (let i = 0; i < 5; i++) { console.log(1); }`
-    );
+    const steps = run(`for (let i = 0; i < 5; i++) { console.log(1); }`);
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
   });
@@ -195,7 +193,9 @@ describe('the-counter validate', () => {
   });
 
   it('pt-BR: wrong output feedback is in Portuguese', () => {
-    const steps = run(`console.log(1); console.log(1); console.log(1); console.log(1); console.log(1);`);
+    const steps = run(
+      `console.log(1); console.log(1); console.log(1); console.log(1); console.log(1);`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Obtido:');
@@ -249,7 +249,9 @@ describe('generator-fibonacci validate', () => {
   });
 
   it('pt-BR: wrong sequence feedback is in Portuguese', () => {
-    const steps = run(`console.log(1); console.log(2); console.log(3); console.log(4); console.log(5);`);
+    const steps = run(
+      `console.log(1); console.log(2); console.log(3); console.log(4); console.log(5);`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Obtido:');
@@ -280,7 +282,9 @@ describe('the-full-journey validate', () => {
   });
 
   it('fails when Web APIs (setTimeout) is not used', () => {
-    const steps = run(`const x = 1; function fn() { const y = x; console.log(y); } fn();`);
+    const steps = run(
+      `const x = 1; function fn() { const y = x; console.log(y); } fn();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Web APIs');
@@ -288,14 +292,18 @@ describe('the-full-journey validate', () => {
 
   it('fails when Task Queue is never populated', () => {
     // Promise uses microtask queue, not task queue
-    const steps = run(`const x = "hi"; Promise.resolve().then(function fn() { const y = x; console.log(y); });`);
+    const steps = run(
+      `const x = "hi"; Promise.resolve().then(function fn() { const y = x; console.log(y); });`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Task Queue');
   });
 
   it('fails when console has no output', () => {
-    const steps = run(`const message = "hi"; setTimeout(function deliver() { const received = message; }, 100);`);
+    const steps = run(
+      `const message = "hi"; setTimeout(function deliver() { const received = message; }, 100);`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Console');
@@ -303,7 +311,9 @@ describe('the-full-journey validate', () => {
 
   it('passes with an arrow function callback (engine creates local memory for it)', () => {
     // Arrow functions executed via setTimeout do produce a local memory block
-    const steps = run(`const message = "hi"; setTimeout(() => console.log(message), 100);`);
+    const steps = run(
+      `const message = "hi"; setTimeout(() => console.log(message), 100);`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
   });

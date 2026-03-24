@@ -13,14 +13,18 @@ describe('delayed-greeting validate', () => {
   const { validate } = getChallenge('delayed-greeting');
 
   it('passes with correct solution (World before Hello)', () => {
-    const steps = run(`setTimeout(() => console.log("Hello"), 100); console.log("World");`);
+    const steps = run(
+      `setTimeout(() => console.log("Hello"), 100); console.log("World");`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('World');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`setTimeout(() => console.log("Olá"), 100); console.log("Mundo");`);
+    const steps = run(
+      `setTimeout(() => console.log("Olá"), 100); console.log("Mundo");`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Mundo');
@@ -34,7 +38,9 @@ describe('delayed-greeting validate', () => {
   });
 
   it('fails when Hello appears before World', () => {
-    const steps = run(`console.log("Hello"); setTimeout(() => console.log("World"), 100);`);
+    const steps = run(
+      `console.log("Hello"); setTimeout(() => console.log("World"), 100);`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('Hello');
@@ -67,21 +73,27 @@ describe('queue-it-up validate', () => {
   const { validate } = getChallenge('queue-it-up');
 
   it('passes when 2 callbacks reach the Task Queue simultaneously', () => {
-    const steps = run(`setTimeout(() => console.log("A"), 100); setTimeout(() => console.log("B"), 100); console.log("sync");`);
+    const steps = run(
+      `setTimeout(() => console.log("A"), 100); setTimeout(() => console.log("B"), 100); console.log("sync");`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Task Queue');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`setTimeout(() => console.log("A"), 100); setTimeout(() => console.log("B"), 100);`);
+    const steps = run(
+      `setTimeout(() => console.log("A"), 100); setTimeout(() => console.log("B"), 100);`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Fila de Tarefas');
   });
 
   it('passes when 3+ callbacks queue up (maxQueue >= 2)', () => {
-    const steps = run(`setTimeout(() => {}, 0); setTimeout(() => {}, 0); setTimeout(() => {}, 0);`);
+    const steps = run(
+      `setTimeout(() => {}, 0); setTimeout(() => {}, 0); setTimeout(() => {}, 0);`
+    );
     const maxQueue = Math.max(...steps.map((s) => s.taskQueue.length));
     expect(maxQueue).toBeGreaterThanOrEqual(2);
     const result = validate(steps, 'en');
@@ -123,14 +135,18 @@ describe('micro-before-macro validate', () => {
   const { validate } = getChallenge('micro-before-macro');
 
   it('passes when promise output appears before timeout output', () => {
-    const steps = run(`setTimeout(() => console.log("timeout"), 0); Promise.resolve().then(() => console.log("promise")); console.log("sync");`);
+    const steps = run(
+      `setTimeout(() => console.log("timeout"), 0); Promise.resolve().then(() => console.log("promise")); console.log("sync");`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Promise');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`setTimeout(() => console.log("timeout"), 0); Promise.resolve().then(() => console.log("promise"));`);
+    const steps = run(
+      `setTimeout(() => console.log("timeout"), 0); Promise.resolve().then(() => console.log("promise"));`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Promise');
@@ -170,14 +186,18 @@ describe('scope-survivor validate', () => {
   const { validate } = getChallenge('scope-survivor');
 
   it('passes when a closure with [[Scope]] is created and output logged', () => {
-    const steps = run(`function outer() { const secret = "hidden"; return function() { return secret; }; } const fn = outer(); console.log(fn());`);
+    const steps = run(
+      `function outer() { const secret = "hidden"; return function() { return secret; }; } const fn = outer(); console.log(fn());`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Closure');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`function externa() { const segredo = "oculto"; return function() { return segredo; }; } const fn = externa(); console.log(fn());`);
+    const steps = run(
+      `function externa() { const segredo = "oculto"; return function() { return segredo; }; } const fn = externa(); console.log(fn());`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('Closure');
@@ -191,7 +211,9 @@ describe('scope-survivor validate', () => {
   });
 
   it('fails when closure is created but not called (no console output)', () => {
-    const steps = run(`function outer() { const x = 1; return function() { return x; }; } const fn = outer();`);
+    const steps = run(
+      `function outer() { const x = 1; return function() { return x; }; } const fn = outer();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
   });
@@ -210,28 +232,36 @@ describe('the-suspense validate', () => {
   const { validate } = getChallenge('the-suspense');
 
   it('passes when async function suspends and logs before + after await', () => {
-    const steps = run(`async function fn() { console.log("before"); await Promise.resolve(); console.log("after"); } fn();`);
+    const steps = run(
+      `async function fn() { console.log("before"); await Promise.resolve(); console.log("after"); } fn();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('suspended');
   });
 
   it('passes with pt-BR locale', () => {
-    const steps = run(`async function fn() { console.log("antes"); await Promise.resolve(); console.log("depois"); } fn();`);
+    const steps = run(
+      `async function fn() { console.log("antes"); await Promise.resolve(); console.log("depois"); } fn();`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(true);
     expect(result.feedback).toContain('suspendeu');
   });
 
   it('fails when no suspended frame is detected', () => {
-    const steps = run(`async function fn() { console.log("a"); console.log("b"); } fn();`);
+    const steps = run(
+      `async function fn() { console.log("a"); console.log("b"); } fn();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('suspended frame');
   });
 
   it('fails when fewer than 2 console outputs', () => {
-    const steps = run(`async function fn() { await Promise.resolve(); console.log("after"); } fn();`);
+    const steps = run(
+      `async function fn() { await Promise.resolve(); console.log("after"); } fn();`
+    );
     const result = validate(steps, 'en');
     expect(result.passed).toBe(false);
   });
@@ -244,7 +274,9 @@ describe('the-suspense validate', () => {
   });
 
   it('pt-BR: fails feedback is in Portuguese for no suspended frame', () => {
-    const steps = run(`async function fn() { console.log("a"); console.log("b"); } fn();`);
+    const steps = run(
+      `async function fn() { console.log("a"); console.log("b"); } fn();`
+    );
     const result = validate(steps, 'pt-BR');
     expect(result.passed).toBe(false);
     expect(result.feedback).toContain('suspenso');
