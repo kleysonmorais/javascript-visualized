@@ -1,11 +1,11 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useTranslation } from "react-i18next";
-import { Panel } from "@/components/ui/Panel";
-import { THEME } from "@/constants/theme";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
-import { useAnimationConfig } from "@/hooks/useAnimationConfig";
-import { MemoryBlockCard } from "./MemoryBlockCard";
-import { HeapSection } from "./HeapSection";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useTranslation } from 'react-i18next';
+import { Panel } from '@/components/ui/Panel';
+import { THEME } from '@/constants/theme';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { useAnimationConfig } from '@/hooks/useAnimationConfig';
+import { MemoryBlockCard } from './MemoryBlockCard';
+import { HeapSection } from './HeapSection';
 
 export function MemoryPanel() {
   const { t } = useTranslation();
@@ -20,22 +20,22 @@ export function MemoryPanel() {
   const isEmpty = reversed.length === 0 && heap.length === 0;
 
   return (
-    <Panel title={t("memory.title")} className="flex-1 min-h-0">
+    <Panel title={t('memory.title')} className='flex-1 min-h-0'>
       {isEmpty ? (
-        <div className="flex items-center justify-center h-full">
+        <div className='flex items-center justify-center h-full'>
           <span
-            className="text-center text-xs"
+            className='text-center text-xs'
             style={{
               color: THEME.colors.text.muted,
               fontFamily: THEME.fonts.ui,
             }}
           >
-            {t("memory.empty")}
+            {t('memory.empty')}
           </span>
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
-          <AnimatePresence mode="popLayout">
+        <div className='flex flex-col gap-3'>
+          <AnimatePresence mode='popLayout'>
             {reversed.map((block) => (
               <motion.div
                 key={block.frameId}
@@ -50,7 +50,7 @@ export function MemoryPanel() {
                     ? undefined
                     : { opacity: 0, y: -20, scale: 0.95 }
                 }
-                transition={{ duration: duration.medium, ease: "easeOut" }}
+                transition={{ duration: duration.medium, ease: 'easeOut' }}
               >
                 <MemoryBlockCard block={block} />
               </motion.div>

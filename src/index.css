@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @theme {
   /* Backgrounds */
@@ -37,8 +37,8 @@
   --color-status-error: #ef4444;
 
   /* Fonts */
-  --font-code: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
-  --font-ui: "Geist", "Inter", system-ui, sans-serif;
+  --font-code: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-ui: 'Geist', 'Inter', system-ui, sans-serif;
 
   /* Border radius */
   --radius-sm: 6px;
@@ -56,7 +56,7 @@
 html,
 body,
 #root {
-  @apply h-full overflow-hidden m-0 p-0;
+  @apply m-0 p-0;
 }
 
 body {

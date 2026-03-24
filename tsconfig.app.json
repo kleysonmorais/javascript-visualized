@@ -41,6 +41,10 @@
       "@/constants/*": ["src/constants/*"],
       "@/utils": ["src/utils"],
       "@/utils/*": ["src/utils/*"],
+      "@/pages": ["src/pages"],
+      "@/pages/*": ["src/pages/*"],
+      "@/challenges": ["src/challenges"],
+      "@/challenges/*": ["src/challenges/*"],
       "@/i18n": ["src/i18n.ts"]
     }
   },

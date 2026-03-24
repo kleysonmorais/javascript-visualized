@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { useTranslation } from "react-i18next";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   ChevronRight,
   Check,
@@ -9,18 +9,18 @@ import {
   Pause,
   Play,
   Square,
-} from "lucide-react";
-import { THEME } from "@/constants/theme";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
-import { useAnimationConfig } from "@/hooks/useAnimationConfig";
-import type { ClosureVariable, HeapObject, HeapObjectProperty } from "@/types";
-import { SyntaxHighlightedSource } from "@/utils/syntaxHighlight";
+} from 'lucide-react';
+import { THEME } from '@/constants/theme';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
+import { useAnimationConfig } from '@/hooks/useAnimationConfig';
+import type { ClosureVariable, HeapObject, HeapObjectProperty } from '@/types';
+import { SyntaxHighlightedSource } from '@/utils/syntaxHighlight';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
 function primitiveColor(v: string): string {
-  if (v === "undefined" || v === "null") return THEME.colors.text.muted;
-  if (v === "true" || v === "false") return THEME.colors.syntax.keyword;
+  if (v === 'undefined' || v === 'null') return THEME.colors.text.muted;
+  if (v === 'true' || v === 'false') return THEME.colors.syntax.keyword;
   if (/^-?\d/.test(v)) return THEME.colors.syntax.number;
   if (v.startsWith('"') || v.startsWith("'")) return THEME.colors.syntax.string;
   return THEME.colors.text.primary;
@@ -28,33 +28,33 @@ function primitiveColor(v: string): string {
 
 function isPromiseObject(obj: HeapObject): boolean {
   return (
-    obj.label === "Promise" ||
-    (obj.properties?.some((p) => p.key.startsWith("[[")) ?? false)
+    obj.label === 'Promise' ||
+    (obj.properties?.some((p) => p.key.startsWith('[[')) ?? false)
   );
 }
 
 function isGeneratorObject(obj: HeapObject): boolean {
   return (
     obj.generatorState !== undefined ||
-    (obj.label?.startsWith("Generator (") ?? false)
+    (obj.label?.startsWith('Generator (') ?? false)
   );
 }
 
 function isInternalSlot(key: string): boolean {
-  return key.startsWith("[[") && key.endsWith("]]");
+  return key.startsWith('[[') && key.endsWith(']]');
 }
 
 function getGeneratorStateStyle(state: string): {
   color: string;
   icon: React.ReactNode;
 } {
-  const s = state.replace(/^"|"$/g, "");
+  const s = state.replace(/^"|"$/g, '');
   switch (s) {
-    case "suspended":
+    case 'suspended':
       return { color: THEME.colors.status.pending, icon: <Pause size={9} /> };
-    case "executing":
+    case 'executing':
       return { color: THEME.colors.status.running, icon: <Play size={9} /> };
-    case "closed":
+    case 'closed':
       return { color: THEME.colors.text.muted, icon: <Square size={9} /> };
     default:
       return { color: THEME.colors.text.secondary, icon: null };
@@ -65,13 +65,13 @@ function getPromiseStateStyle(state: string): {
   color: string;
   icon: React.ReactNode;
 } {
-  const s = state.replace(/^"|"$/g, "");
+  const s = state.replace(/^"|"$/g, '');
   switch (s) {
-    case "pending":
+    case 'pending':
       return { color: THEME.colors.status.pending, icon: <Clock size={9} /> };
-    case "fulfilled":
+    case 'fulfilled':
       return { color: THEME.colors.status.running, icon: <Check size={9} /> };
-    case "rejected":
+    case 'rejected':
       return { color: THEME.colors.status.error, icon: <X size={9} /> };
     default:
       return { color: THEME.colors.text.secondary, icon: null };
@@ -79,11 +79,11 @@ function getPromiseStateStyle(state: string): {
 }
 
 function formatReactions(value: string): string {
-  if (value === "[]" || value === "0" || value === "0 reactions") return "0";
-  if (value.startsWith("[") && value.endsWith("]")) {
+  if (value === '[]' || value === '0' || value === '0 reactions') return '0';
+  if (value.startsWith('[') && value.endsWith(']')) {
     const inner = value.slice(1, -1).trim();
-    if (!inner) return "0";
-    return String(inner.split(",").length);
+    if (!inner) return '0';
+    return String(inner.split(',').length);
   }
   return value;
 }
@@ -91,12 +91,12 @@ function formatReactions(value: string): string {
 // ─── shared prop-value renderer ───────────────────────────────────────────────
 
 function PropValue({ prop }: { prop: HeapObjectProperty }) {
-  if (prop.valueType === "function") {
+  if (prop.valueType === 'function') {
     const isGen =
-      prop.displayValue?.includes("*") || prop.displayValue === "ⓕ*";
+      prop.displayValue?.includes('*') || prop.displayValue === 'ⓕ*';
     return (
       <span
-        className="flex items-center gap-0.5"
+        className='flex items-center gap-0.5'
         style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}
       >
         <span style={{ color: THEME.colors.syntax.function }}>ƒ</span>
@@ -107,13 +107,13 @@ function PropValue({ prop }: { prop: HeapObjectProperty }) {
       </span>
     );
   }
-  if (prop.valueType === "object") {
+  if (prop.valueType === 'object') {
     return (
       <span
-        className="flex items-center gap-0.5"
+        className='flex items-center gap-0.5'
         style={{ fontFamily: THEME.fonts.code, fontSize: 10 }}
       >
-        <span style={{ color: THEME.colors.text.muted, fontStyle: "italic" }}>
+        <span style={{ color: THEME.colors.text.muted, fontStyle: 'italic' }}>
           ref
         </span>
         {prop.pointerColor && (
@@ -150,11 +150,11 @@ function PropRow({
 }) {
   return (
     <div
-      className="flex items-center justify-between gap-2"
+      className='flex items-center justify-between gap-2'
       style={{
-        padding: "2px 0",
+        padding: '2px 0',
         borderBottom: isLast
-          ? "none"
+          ? 'none'
           : `1px solid ${THEME.colors.text.muted}10`,
       }}
     >
@@ -165,18 +165,18 @@ function PropRow({
           color: isInternal
             ? THEME.colors.syntax.keyword
             : THEME.colors.text.secondary,
-          fontStyle: isInternal ? "italic" : "normal",
+          fontStyle: isInternal ? 'italic' : 'normal',
           opacity: isInternal ? 0.85 : 1,
           flexShrink: 0,
-          maxWidth: "55%",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
+          maxWidth: '55%',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}
       >
         {propKey}
       </span>
-      <span className="flex items-center">{value}</span>
+      <span className='flex items-center'>{value}</span>
     </div>
   );
 }
@@ -208,21 +208,21 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
   };
 
   const renderValue = () => {
-    if (variable.valueType === "function") {
+    if (variable.valueType === 'function') {
       return (
         <motion.span
-          className="flex items-center gap-0.5"
+          className='flex items-center gap-0.5'
           style={{
             fontFamily: THEME.fonts.code,
             fontSize: 11,
-            cursor: variable.heapReferenceId ? "pointer" : "default",
+            cursor: variable.heapReferenceId ? 'pointer' : 'default',
           }}
           animate={
             isHighlighted && variable.pointerColor
               ? {
                   textShadow: `0 0 8px ${variable.pointerColor}, 0 0 20px ${variable.pointerColor}`,
                   backgroundColor: `${variable.pointerColor}40`,
-                  padding: "0 3px",
+                  padding: '0 3px',
                   borderRadius: 2,
                 }
               : {}
@@ -238,21 +238,21 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
         </motion.span>
       );
     }
-    if (variable.valueType === "object") {
+    if (variable.valueType === 'object') {
       return (
         <motion.span
-          className="flex items-center gap-0.5"
+          className='flex items-center gap-0.5'
           style={{
             fontFamily: THEME.fonts.code,
             fontSize: 10,
-            cursor: variable.heapReferenceId ? "pointer" : "default",
+            cursor: variable.heapReferenceId ? 'pointer' : 'default',
           }}
           animate={
             isHighlighted && variable.pointerColor
               ? {
                   textShadow: `0 0 8px ${variable.pointerColor}, 0 0 20px ${variable.pointerColor}`,
                   backgroundColor: `${variable.pointerColor}40`,
-                  padding: "0 3px",
+                  padding: '0 3px',
                   borderRadius: 2,
                 }
               : {}
@@ -261,7 +261,7 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <span style={{ color: THEME.colors.text.muted, fontStyle: "italic" }}>
+          <span style={{ color: THEME.colors.text.muted, fontStyle: 'italic' }}>
             ref
           </span>
           {variable.pointerColor && (
@@ -285,8 +285,8 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
 
   return (
     <div
-      className="flex items-center justify-between gap-2"
-      style={{ padding: "2px 0" }}
+      className='flex items-center justify-between gap-2'
+      style={{ padding: '2px 0' }}
     >
       <span
         style={{
@@ -295,7 +295,7 @@ function ClosureVarRow({ variable }: { variable: ClosureVariable }) {
           color: variable.isMutable
             ? THEME.colors.syntax.variable
             : THEME.colors.text.muted,
-          fontStyle: variable.isMutable ? "normal" : "italic",
+          fontStyle: variable.isMutable ? 'normal' : 'italic',
         }}
       >
         {variable.name}
@@ -330,14 +330,14 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
     >
       {/* [[Scope]] toggle header */}
       <div
-        className="flex items-center gap-1"
-        style={{ padding: "3px 6px", cursor: "pointer", userSelect: "none" }}
+        className='flex items-center gap-1'
+        style={{ padding: '3px 6px', cursor: 'pointer', userSelect: 'none' }}
         onClick={() => setOpen((v) => !v)}
       >
         <motion.span
           animate={{ rotate: open ? 90 : 0 }}
           transition={{ duration: 0.13 }}
-          style={{ color: THEME.colors.text.muted, display: "flex" }}
+          style={{ color: THEME.colors.text.muted, display: 'flex' }}
         >
           <ChevronRight size={10} />
         </motion.span>
@@ -347,11 +347,11 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
             fontSize: 9,
             fontWeight: 600,
             color: THEME.colors.syntax.keyword,
-            fontStyle: "italic",
-            letterSpacing: "0.03em",
+            fontStyle: 'italic',
+            letterSpacing: '0.03em',
           }}
         >
-          {"[[Scope]]"}
+          {'[[Scope]]'}
         </span>
       </div>
 
@@ -359,16 +359,16 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
         {open && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.13 }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: 'hidden' }}
           >
-            <div style={{ padding: "0 8px 6px" }}>
+            <div style={{ padding: '0 8px 6px' }}>
               {obj.closureScope.map((scopeEntry) => (
                 <div key={scopeEntry.scopeName} style={{ marginBottom: 4 }}>
                   <div
-                    className="flex items-center gap-1"
+                    className='flex items-center gap-1'
                     style={{ marginBottom: 1 }}
                   >
                     <span style={{ color: scopeEntry.scopeColor, fontSize: 7 }}>
@@ -379,7 +379,7 @@ function ClosureScopeSection({ obj }: { obj: HeapObject }) {
                         fontFamily: THEME.fonts.code,
                         fontSize: 9,
                         color: THEME.colors.text.muted,
-                        fontStyle: "italic",
+                        fontStyle: 'italic',
                       }}
                     >
                       {scopeEntry.scopeName}
@@ -435,7 +435,7 @@ function HeapCardShell({
       animate={{
         boxShadow: isHighlighted
           ? `0 0 10px ${obj.color}44`
-          : "0 0 0px transparent",
+          : '0 0 0px transparent',
         borderColor: isHighlighted ? obj.color : `${obj.color}30`,
       }}
       transition={{ duration: shouldReduceMotion ? 0 : duration.normal }}
@@ -443,25 +443,25 @@ function HeapCardShell({
         backgroundColor: THEME.colors.bg.tertiary,
         borderRadius: THEME.radius.sm,
         border: `1px solid ${isHighlighted ? obj.color : `${obj.color}30`}`,
-        overflow: "hidden",
-        cursor: "pointer",
+        overflow: 'hidden',
+        cursor: 'pointer',
       }}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* Card header */}
       <div
-        className="flex items-center justify-between gap-2"
-        style={{ padding: "5px 8px", userSelect: "none" }}
+        className='flex items-center justify-between gap-2'
+        style={{ padding: '5px 8px', userSelect: 'none' }}
         onClick={() => setCollapsed((c) => !c)}
       >
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className='flex items-center gap-1.5 min-w-0'>
           <motion.span
             animate={{ rotate: collapsed ? 0 : 90 }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.13 }}
             style={{
               color: THEME.colors.text.muted,
-              display: "flex",
+              display: 'flex',
               flexShrink: 0,
             }}
           >
@@ -483,9 +483,9 @@ function HeapCardShell({
               fontSize: 11,
               fontWeight: 600,
               color: THEME.colors.text.primary,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
             }}
           >
             {label}
@@ -499,18 +499,18 @@ function HeapCardShell({
         {!collapsed && children && (
           <motion.div
             initial={shouldReduceMotion ? false : { height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
+            animate={{ height: 'auto', opacity: 1 }}
             exit={shouldReduceMotion ? undefined : { height: 0, opacity: 0 }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.13 }}
-            style={{ overflow: "hidden" }}
+            style={{ overflow: 'hidden' }}
           >
             <div
               style={{
                 borderTop: `1px solid ${obj.color}18`,
-                margin: "0 8px",
+                margin: '0 8px',
               }}
             />
-            <div style={{ padding: "4px 8px 6px" }}>{children}</div>
+            <div style={{ padding: '4px 8px 6px' }}>{children}</div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -528,9 +528,9 @@ function TypeChip({ label, color }: { label: string; color: string }) {
         fontSize: 9,
         color,
         backgroundColor: `${color}18`,
-        padding: "1px 5px",
+        padding: '1px 5px',
         borderRadius: 3,
-        letterSpacing: "0.02em",
+        letterSpacing: '0.02em',
       }}
     >
       {label}
@@ -552,19 +552,19 @@ function PromiseHeapCard({
   const regularProps =
     obj.properties?.filter((p) => !isInternalSlot(p.key)) ?? [];
 
-  const stateProp = internalSlots.find((p) => p.key === "[[PromiseState]]");
+  const stateProp = internalSlots.find((p) => p.key === '[[PromiseState]]');
   const stateStyle = stateProp
     ? getPromiseStateStyle(stateProp.displayValue)
     : null;
 
   const badge = stateStyle ? (
     <span
-      className="flex items-center gap-1"
+      className='flex items-center gap-1'
       style={{ color: stateStyle.color }}
     >
       {stateStyle.icon}
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 9 }}>
-        {stateProp?.displayValue.replace(/^"|"$/g, "")}
+        {stateProp?.displayValue.replace(/^"|"$/g, '')}
       </span>
     </span>
   ) : undefined;
@@ -575,17 +575,17 @@ function PromiseHeapCard({
     <HeapCardShell
       obj={obj}
       isHighlighted={isHighlighted}
-      label="Promise"
+      label='Promise'
       badge={badge}
     >
       {allProps.map((prop, i) => {
-        const isState = prop.key === "[[PromiseState]]";
-        const isReactions = prop.key.includes("Reactions");
+        const isState = prop.key === '[[PromiseState]]';
+        const isReactions = prop.key.includes('Reactions');
         const stateS = isState ? getPromiseStateStyle(prop.displayValue) : null;
 
         const value = (
           <span
-            className="flex items-center gap-1"
+            className='flex items-center gap-1'
             style={{
               fontFamily: THEME.fonts.code,
               fontSize: 11,
@@ -598,7 +598,7 @@ function PromiseHeapCard({
           >
             {isReactions
               ? formatReactions(prop.displayValue)
-              : prop.displayValue.replace(/^"|"$/g, "")}
+              : prop.displayValue.replace(/^"|"$/g, '')}
             {stateS?.icon}
             {prop.pointerColor && (
               <span style={{ color: prop.pointerColor, fontSize: 8 }}>●</span>
@@ -630,22 +630,22 @@ function GeneratorHeapCard({
   isHighlighted: boolean;
 }) {
   const { t } = useTranslation();
-  const stateProp = obj.properties?.find((p) => p.key === "[[GeneratorState]]");
-  const stateValue = stateProp?.displayValue ?? obj.generatorState ?? "unknown";
+  const stateProp = obj.properties?.find((p) => p.key === '[[GeneratorState]]');
+  const stateValue = stateProp?.displayValue ?? obj.generatorState ?? 'unknown';
   const stateStyle = getGeneratorStateStyle(stateValue);
   const funcProp = obj.properties?.find(
-    (p) => p.key === "[[GeneratorFunction]]",
+    (p) => p.key === '[[GeneratorFunction]]'
   );
-  const isSuspended = (obj.generatorState ?? stateValue).includes("suspended");
+  const isSuspended = (obj.generatorState ?? stateValue).includes('suspended');
 
   const badge = (
     <span
-      className="flex items-center gap-1"
+      className='flex items-center gap-1'
       style={{ color: stateStyle.color }}
     >
       {stateStyle.icon}
       <span style={{ fontFamily: THEME.fonts.code, fontSize: 9 }}>
-        {stateValue.replace(/^"|"$/g, "")}
+        {stateValue.replace(/^"|"$/g, '')}
       </span>
     </span>
   );
@@ -654,21 +654,21 @@ function GeneratorHeapCard({
     <HeapCardShell
       obj={{ ...obj, ...(isSuspended ? { color: obj.color } : {}) }}
       isHighlighted={isHighlighted}
-      label={obj.label ?? "Generator"}
+      label={obj.label ?? 'Generator'}
       badge={badge}
     >
       <PropRow
-        propKey="[[GeneratorState]]"
+        propKey='[[GeneratorState]]'
         value={
           <span
-            className="flex items-center gap-1"
+            className='flex items-center gap-1'
             style={{
               fontFamily: THEME.fonts.code,
               fontSize: 11,
               color: stateStyle.color,
             }}
           >
-            {stateValue.replace(/^"|"$/g, "")}
+            {stateValue.replace(/^"|"$/g, '')}
             {stateStyle.icon}
           </span>
         }
@@ -677,12 +677,12 @@ function GeneratorHeapCard({
       />
       {funcProp && (
         <PropRow
-          propKey="[[GeneratorFunction]]"
+          propKey='[[GeneratorFunction]]'
           value={
             <span style={{ fontFamily: THEME.fonts.code, fontSize: 11 }}>
               <span style={{ color: THEME.colors.syntax.function }}>ƒ</span>
               <span style={{ color: THEME.colors.syntax.keyword }}>*</span>
-              {funcProp.displayValue.replace(/^ⓕ\*?\s*/, " ")}
+              {funcProp.displayValue.replace(/^ⓕ\*?\s*/, ' ')}
               {funcProp.pointerColor && (
                 <span
                   style={{
@@ -702,7 +702,7 @@ function GeneratorHeapCard({
       )}
       {obj.lastYieldedValue && (
         <PropRow
-          propKey={t("heap.lastYield")}
+          propKey={t('heap.lastYield')}
           value={
             <span
               style={{
@@ -731,35 +731,44 @@ function HeapCard({
   isHighlighted: boolean;
 }) {
   const { t } = useTranslation();
-  const isFunc = obj.type === "function";
-  const src = obj.functionSource ?? obj.label ?? "";
+  const isFunc = obj.type === 'function';
+  const src = obj.functionSource ?? obj.label ?? '';
 
   const isAsync = /\basync\s/.test(src);
-  const isGenFunc = src.includes("function*");
+  const isGenFunc = src.includes('function*');
   const isInstance =
-    obj.label?.includes(" instance") || obj.label?.startsWith("class ");
+    obj.label?.includes(' instance') || obj.label?.startsWith('class ');
 
   const badge = isFunc ? (
-    <div className="flex items-center gap-1">
+    <div className='flex items-center gap-1'>
       {isAsync && (
-        <TypeChip label={t("heap.chips.async")} color={THEME.colors.syntax.keyword} />
+        <TypeChip
+          label={t('heap.chips.async')}
+          color={THEME.colors.syntax.keyword}
+        />
       )}
       {isGenFunc && (
-        <TypeChip label={t("heap.chips.gen")} color={THEME.colors.syntax.keyword} />
+        <TypeChip
+          label={t('heap.chips.gen')}
+          color={THEME.colors.syntax.keyword}
+        />
       )}
       {!isAsync && !isGenFunc && (
-        <TypeChip label={t("heap.chips.fn")} color={THEME.colors.syntax.function} />
+        <TypeChip
+          label={t('heap.chips.fn')}
+          color={THEME.colors.syntax.function}
+        />
       )}
     </div>
   ) : isInstance ? (
-    <TypeChip label={obj.label ?? "object"} color={THEME.colors.text.muted} />
+    <TypeChip label={obj.label ?? 'object'} color={THEME.colors.text.muted} />
   ) : undefined;
 
   const label = isFunc
     ? (src.match(
-        /(?:function\*?\s+|async\s+function\*?\s+|const\s+|let\s+|var\s+)?([\w$]+)/,
-      )?.[1] ?? "anonymous")
-    : (obj.label ?? "Object");
+        /(?:function\*?\s+|async\s+function\*?\s+|const\s+|let\s+|var\s+)?([\w$]+)/
+      )?.[1] ?? 'anonymous')
+    : (obj.label ?? 'Object');
 
   if (isFunc) {
     return (
@@ -810,7 +819,7 @@ function HeapCard({
 
 function GroupDivider({ label }: { label: string }) {
   return (
-    <div className="flex items-center gap-2" style={{ margin: "2px 0" }}>
+    <div className='flex items-center gap-2' style={{ margin: '2px 0' }}>
       <div
         style={{
           flex: 1,
@@ -823,8 +832,8 @@ function GroupDivider({ label }: { label: string }) {
           fontFamily: THEME.fonts.code,
           fontSize: 9,
           color: THEME.colors.text.muted,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
         }}
       >
         {label}
@@ -854,7 +863,7 @@ export function HeapSection({ heap }: HeapSectionProps) {
   const promiseObjects = heap.filter(isPromiseObject);
   const generatorObjects = heap.filter(isGeneratorObject);
   const otherObjects = heap.filter(
-    (obj) => !isPromiseObject(obj) && !isGeneratorObject(obj),
+    (obj) => !isPromiseObject(obj) && !isGeneratorObject(obj)
   );
 
   const hasMultipleGroups =
@@ -866,7 +875,7 @@ export function HeapSection({ heap }: HeapSectionProps) {
       style={{
         border: `1px dashed ${THEME.colors.text.muted}40`,
         borderRadius: THEME.radius.sm,
-        padding: "8px 10px",
+        padding: '8px 10px',
       }}
     >
       {/* Section title */}
@@ -877,11 +886,11 @@ export function HeapSection({ heap }: HeapSectionProps) {
           color: THEME.colors.text.muted,
           fontFamily: THEME.fonts.code,
           marginBottom: 8,
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
+          textTransform: 'uppercase',
+          letterSpacing: '0.07em',
         }}
       >
-        {t("heap.title")}
+        {t('heap.title')}
       </div>
 
       {heap.length === 0 ? (
@@ -892,15 +901,17 @@ export function HeapSection({ heap }: HeapSectionProps) {
             fontFamily: THEME.fonts.code,
           }}
         >
-          {t("heap.empty")}
+          {t('heap.empty')}
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
+        <div className='flex flex-col gap-2'>
           {/* Regular objects */}
           {otherObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label={t("heap.groups.objects")} />}
-              <AnimatePresence mode="popLayout">
+              {hasMultipleGroups && (
+                <GroupDivider label={t('heap.groups.objects')} />
+              )}
+              <AnimatePresence mode='popLayout'>
                 {otherObjects.map((obj) => (
                   <motion.div
                     key={obj.id}
@@ -928,8 +939,10 @@ export function HeapSection({ heap }: HeapSectionProps) {
           {/* Generator objects */}
           {generatorObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label={t("heap.groups.generators")} />}
-              <AnimatePresence mode="popLayout">
+              {hasMultipleGroups && (
+                <GroupDivider label={t('heap.groups.generators')} />
+              )}
+              <AnimatePresence mode='popLayout'>
                 {generatorObjects.map((obj) => (
                   <motion.div
                     key={obj.id}
@@ -957,8 +970,10 @@ export function HeapSection({ heap }: HeapSectionProps) {
           {/* Promise objects */}
           {promiseObjects.length > 0 && (
             <>
-              {hasMultipleGroups && <GroupDivider label={t("heap.groups.promises")} />}
-              <AnimatePresence mode="popLayout">
+              {hasMultipleGroups && (
+                <GroupDivider label={t('heap.groups.promises')} />
+              )}
+              <AnimatePresence mode='popLayout'>
                 {promiseObjects.map((obj) => (
                   <motion.div
                     key={obj.id}

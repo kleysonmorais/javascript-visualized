@@ -2,8 +2,8 @@ import type { ExecutionStep, MemoryBlock } from '@/types';
 import { getFrameColor, getPointerColor } from '@/constants/theme';
 
 const GLOBAL_COLOR = getFrameColor(0); // amber
-const FN_COLOR = getFrameColor(1);     // green
-const FN2_COLOR = getFrameColor(2);    // blue
+const FN_COLOR = getFrameColor(1); // green
+const FN2_COLOR = getFrameColor(2); // blue
 
 const globalScope = {
   name: 'Global',
@@ -94,7 +94,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 1,
     column: 1,
     highlightedLine: 1,
-    description: 'Calling setTimeout with 2000ms delay — pushed onto Call Stack',
+    description:
+      'Calling setTimeout with 2000ms delay — pushed onto Call Stack',
     code: 'setTimeout(() => { console.log("2000ms"); }, 2000)',
     callStack: [
       {
@@ -130,8 +131,20 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', heapReferenceId: 'heap-cb-2000', pointerColor: getPointerColor(0) },
-          { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '2000' },
+          {
+            name: 'callback',
+            kind: 'param',
+            valueType: 'function',
+            displayValue: 'ⓕ',
+            heapReferenceId: 'heap-cb-2000',
+            pointerColor: getPointerColor(0),
+          },
+          {
+            name: 'delay',
+            kind: 'param',
+            valueType: 'primitive',
+            displayValue: '2000',
+          },
         ],
       },
     ],
@@ -152,7 +165,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 5,
     column: 1,
     highlightedLine: 5,
-    description: 'setTimeout registered in Web APIs — 2000ms timer starts ticking',
+    description:
+      'setTimeout registered in Web APIs — 2000ms timer starts ticking',
     code: 'setTimeout(() => { console.log("100ms"); }, 100)',
     callStack: [
       {
@@ -237,8 +251,20 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'callback', kind: 'param', valueType: 'function', displayValue: 'ⓕ', heapReferenceId: 'heap-cb-100', pointerColor: getPointerColor(1) },
-          { name: 'delay', kind: 'param', valueType: 'primitive', displayValue: '100' },
+          {
+            name: 'callback',
+            kind: 'param',
+            valueType: 'function',
+            displayValue: 'ⓕ',
+            heapReferenceId: 'heap-cb-100',
+            pointerColor: getPointerColor(1),
+          },
+          {
+            name: 'delay',
+            kind: 'param',
+            valueType: 'primitive',
+            displayValue: '100',
+          },
         ],
       },
     ],
@@ -259,7 +285,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 9,
     column: 1,
     highlightedLine: 9,
-    description: 'setTimeout registered in Web APIs — 100ms timer starts ticking',
+    description:
+      'setTimeout registered in Web APIs — 100ms timer starts ticking',
     code: 'console.log("End of script")',
     callStack: [
       {
@@ -364,7 +391,12 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"End of script"' },
+          {
+            name: 'args',
+            kind: 'param',
+            valueType: 'primitive',
+            displayValue: '"End of script"',
+          },
         ],
       },
     ],
@@ -377,7 +409,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 9,
     column: 1,
     highlightedLine: 9,
-    description: 'Call stack empty — 100ms timer completed, callback moved to Task Queue',
+    description:
+      'Call stack empty — 100ms timer completed, callback moved to Task Queue',
     code: '',
     callStack: [],
     webAPIs: [
@@ -401,7 +434,12 @@ export const mockSteps: ExecutionStep[] = [
       },
     ],
     taskQueue: [
-      { id: 'task-1', callbackLabel: '() => console.log("100ms")', sourceType: 'setTimeout', sourceId: 'timer-100' },
+      {
+        id: 'task-1',
+        callbackLabel: '() => console.log("100ms")',
+        sourceType: 'setTimeout',
+        sourceId: 'timer-100',
+      },
     ],
     microtaskQueue: [],
     console: [
@@ -419,7 +457,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 9,
     column: 1,
     highlightedLine: 9,
-    description: 'Event Loop picks callback from Task Queue and pushes it onto the Call Stack',
+    description:
+      'Event Loop picks callback from Task Queue and pushes it onto the Call Stack',
     code: '() => console.log("100ms")',
     callStack: [
       {
@@ -448,7 +487,10 @@ export const mockSteps: ExecutionStep[] = [
     console: [
       { id: 'log-1', method: 'log', args: ['"End of script"'], timestamp: 5 },
     ],
-    eventLoop: { phase: 'picking-task', description: 'Executing task from queue' },
+    eventLoop: {
+      phase: 'picking-task',
+      description: 'Executing task from queue',
+    },
     scopes: [{ name: 'anonymous', type: 'function', variables: [] }],
     memoryBlocks: [
       {
@@ -523,7 +565,12 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"100ms"' },
+          {
+            name: 'args',
+            kind: 'param',
+            valueType: 'primitive',
+            displayValue: '"100ms"',
+          },
         ],
       },
     ],
@@ -536,7 +583,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 2,
     column: 3,
     highlightedLine: 2,
-    description: 'Heap demo — object and function references stored on the heap',
+    description:
+      'Heap demo — object and function references stored on the heap',
     code: 'greet(person)',
     callStack: [
       {
@@ -631,7 +679,8 @@ export const mockSteps: ExecutionStep[] = [
         type: 'function',
         color: getPointerColor(1),
         label: 'function greet(person) { ... }',
-        functionSource: 'function greet(person) {\n  console.log("Hello " + person.name);\n}',
+        functionSource:
+          'function greet(person) {\n  console.log("Hello " + person.name);\n}',
       },
     ],
   },
@@ -642,7 +691,8 @@ export const mockSteps: ExecutionStep[] = [
     line: 2,
     column: 3,
     highlightedLine: 2,
-    description: '2000ms timer fires — Event Loop executes callback, console.log("2000ms")',
+    description:
+      '2000ms timer fires — Event Loop executes callback, console.log("2000ms")',
     code: 'console.log("2000ms")',
     callStack: [
       {
@@ -698,7 +748,12 @@ export const mockSteps: ExecutionStep[] = [
         type: 'local',
         color: FN_COLOR,
         entries: [
-          { name: 'args', kind: 'param', valueType: 'primitive', displayValue: '"2000ms"' },
+          {
+            name: 'args',
+            kind: 'param',
+            valueType: 'primitive',
+            displayValue: '"2000ms"',
+          },
         ],
       },
     ],

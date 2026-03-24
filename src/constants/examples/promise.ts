@@ -1,12 +1,12 @@
-import type { CodeExample } from "@/types";
+import type { CodeExample } from '@/types';
 
 export const PROMISE_EXAMPLES: CodeExample[] = [
   {
-    id: "promise-basics",
-    title: "Promise Basics",
+    id: 'promise-basics',
+    title: 'Promise Basics',
     description:
-      "Create a Promise, resolve it, and handle the value with .then()",
-    category: "promise",
+      'Create a Promise, resolve it, and handle the value with .then()',
+    category: 'promise',
     code: `// Promise Basics
 const p = new Promise((resolve) => {
   resolve(42);
@@ -17,12 +17,22 @@ p.then((value) => {
 });
 
 console.log("sync done");`,
+    codePtBr: `// Fundamentos de Promise
+const p = new Promise((resolve) => {
+  resolve(42);
+});
+
+p.then((valor) => {
+  console.log("resolvido:", valor);
+});
+
+console.log("síncrono concluído");`,
   },
   {
-    id: "promise-chain",
-    title: "Promise Chaining",
-    description: "Transform values through a chain of .then() microtasks",
-    category: "promise",
+    id: 'promise-chain',
+    title: 'Promise Chaining',
+    description: 'Transform values through a chain of .then() microtasks',
+    category: 'promise',
     code: `// Promise Chaining
 Promise.resolve(1)
   .then((v) => v + 1)
@@ -32,12 +42,21 @@ Promise.resolve(1)
   });
 
 console.log("chain started");`,
+    codePtBr: `// Encadeamento de Promises
+Promise.resolve(1)
+  .then((v) => v + 1)
+  .then((v) => v * 3)
+  .then((v) => {
+    console.log("resultado:", v);
+  });
+
+console.log("cadeia iniciada");`,
   },
   {
-    id: "promise-reject-catch",
-    title: "Promise Reject & Catch",
-    description: "Reject a Promise and recover with .catch()",
-    category: "promise",
+    id: 'promise-reject-catch',
+    title: 'Promise Reject & Catch',
+    description: 'Reject a Promise and recover with .catch()',
+    category: 'promise',
     code: `// Promise Reject & Catch
 Promise.reject("something went wrong")
   .catch((reason) => {
@@ -49,13 +68,23 @@ Promise.reject("something went wrong")
   });
 
 console.log("sync");`,
+    codePtBr: `// Rejeição e Captura de Promise
+Promise.reject("algo deu errado")
+  .catch((motivo) => {
+    console.log("capturado:", motivo);
+    return "recuperado";
+  })
+  .then((valor) => {
+    console.log("após o catch:", valor);
+  });
+
+console.log("síncrono");`,
   },
   {
-    id: "promise-all",
-    title: "Promise.all",
-    description:
-      "Run multiple Promises concurrently and collect all results",
-    category: "promise",
+    id: 'promise-all',
+    title: 'Promise.all',
+    description: 'Run multiple Promises concurrently and collect all results',
+    category: 'promise',
     code: `// Promise.all
 const p1 = Promise.resolve(10);
 const p2 = Promise.resolve(20);
@@ -66,5 +95,15 @@ Promise.all([p1, p2, p3]).then((values) => {
 });
 
 console.log("waiting for all");`,
+    codePtBr: `// Promise.all
+const p1 = Promise.resolve(10);
+const p2 = Promise.resolve(20);
+const p3 = Promise.resolve(30);
+
+Promise.all([p1, p2, p3]).then((valores) => {
+  console.log("soma:", valores[0] + valores[1] + valores[2]);
+});
+
+console.log("aguardando todas");`,
   },
 ];

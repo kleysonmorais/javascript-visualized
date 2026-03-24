@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
-import { run, consoleOutput } from "../helpers";
-import { ASYNC_EXAMPLES } from "@/constants/examples";
+import { describe, it, expect } from 'vitest';
+import { run, consoleOutput } from '../helpers';
+import { ASYNC_EXAMPLES } from '@/constants/examples';
 
-describe("Async Examples", () => {
-  describe("all async examples execute successfully", () => {
+describe('Async Examples', () => {
+  describe('all async examples execute successfully', () => {
     ASYNC_EXAMPLES.forEach((example) => {
       it(`"${example.title}" (${example.id}) executes without error`, () => {
         expect(() => run(example.code)).not.toThrow();
@@ -18,34 +18,34 @@ describe("Async Examples", () => {
 
   // ─── setTimeout Ordering ──────────────────────────────
 
-  describe("settimeout-ordering example", () => {
-    const example = ASYNC_EXAMPLES.find((e) => e.id === "settimeout-ordering")!;
+  describe('settimeout-ordering example', () => {
+    const example = ASYNC_EXAMPLES.find((e) => e.id === 'settimeout-ordering')!;
 
-    it("registers timers in Web APIs", () => {
+    it('registers timers in Web APIs', () => {
       const steps = run(example.code);
       const stepWithTimers = steps.find((s) => s.webAPIs.length > 0);
       expect(stepWithTimers).toBeDefined();
     });
 
-    it("outputs Start first", () => {
+    it('outputs Start first', () => {
       const output = consoleOutput(example.code);
-      expect(output[0]).toContain("Start");
+      expect(output[0]).toContain('Start');
     });
 
-    it("outputs End second (synchronous before async)", () => {
+    it('outputs End second (synchronous before async)', () => {
       const output = consoleOutput(example.code);
-      expect(output[1]).toContain("End");
+      expect(output[1]).toContain('End');
     });
 
-    it("shorter timeouts execute before longer ones", () => {
+    it('shorter timeouts execute before longer ones', () => {
       const output = consoleOutput(example.code);
       const timeoutOutputs = output.slice(2);
-      expect(timeoutOutputs[0]).toContain("0ms");
-      expect(timeoutOutputs[1]).toContain("100ms");
-      expect(timeoutOutputs[2]).toContain("2000ms");
+      expect(timeoutOutputs[0]).toContain('0ms');
+      expect(timeoutOutputs[1]).toContain('100ms');
+      expect(timeoutOutputs[2]).toContain('2000ms');
     });
 
-    it("all callbacks appear in Task Queue at some point", () => {
+    it('all callbacks appear in Task Queue at some point', () => {
       const steps = run(example.code);
       const stepsWithTasks = steps.filter((s) => s.taskQueue.length > 0);
       expect(stepsWithTasks.length).toBeGreaterThan(0);
@@ -54,80 +54,80 @@ describe("Async Examples", () => {
 
   // ─── Promise vs setTimeout ────────────────────────────
 
-  describe("promise-vs-settimeout example", () => {
+  describe('promise-vs-settimeout example', () => {
     const example = ASYNC_EXAMPLES.find(
-      (e) => e.id === "promise-vs-settimeout",
+      (e) => e.id === 'promise-vs-settimeout'
     )!;
 
-    it("synchronous code runs first (1, 5)", () => {
+    it('synchronous code runs first (1, 5)', () => {
       const output = consoleOutput(example.code);
-      expect(output[0]).toBe("1");
-      expect(output[1]).toBe("5");
+      expect(output[0]).toBe('1');
+      expect(output[1]).toBe('5');
     });
 
-    it("microtasks (Promise.then) run before macrotasks (setTimeout)", () => {
+    it('microtasks (Promise.then) run before macrotasks (setTimeout)', () => {
       const output = consoleOutput(example.code);
-      expect(output).toEqual(["1", "5", "3", "4", "2"]);
+      expect(output).toEqual(['1', '5', '3', '4', '2']);
     });
 
-    it("Promise callbacks appear in microtask queue", () => {
+    it('Promise callbacks appear in microtask queue', () => {
       const steps = run(example.code);
       const stepWithMicrotask = steps.find((s) => s.microtaskQueue.length > 0);
       expect(stepWithMicrotask).toBeDefined();
     });
 
-    it("setTimeout callback appears in task queue", () => {
+    it('setTimeout callback appears in task queue', () => {
       const steps = run(example.code);
       const stepWithTask = steps.find((s) => s.taskQueue.length > 0);
       expect(stepWithTask).toBeDefined();
     });
 
-    it("chained .then creates second microtask", () => {
+    it('chained .then creates second microtask', () => {
       const output = consoleOutput(example.code);
-      expect(output).toContain("3");
-      expect(output).toContain("4");
+      expect(output).toContain('3');
+      expect(output).toContain('4');
     });
   });
 
   // ─── Async/Await Flow ─────────────────────────────────
 
-  describe("async-await-flow example", () => {
-    const example = ASYNC_EXAMPLES.find((e) => e.id === "async-await-flow")!;
+  describe('async-await-flow example', () => {
+    const example = ASYNC_EXAMPLES.find((e) => e.id === 'async-await-flow')!;
 
-    it("outputs Start first", () => {
+    it('outputs Start first', () => {
       const output = consoleOutput(example.code);
-      expect(output[0]).toContain("Start");
+      expect(output[0]).toContain('Start');
     });
 
-    it("outputs Fetching... synchronously inside async function", () => {
+    it('outputs Fetching... synchronously inside async function', () => {
       const output = consoleOutput(example.code);
-      expect(output[1]).toContain("Fetching...");
+      expect(output[1]).toContain('Fetching...');
     });
 
-    it("outputs End before await completes", () => {
+    it('outputs End before await completes', () => {
       const output = consoleOutput(example.code);
-      const endIndex = output.findIndex((o) => o.includes("End"));
-      const dataIndex = output.findIndex((o) => o.includes("Data:"));
+      const endIndex = output.findIndex((o) => o.includes('End'));
+      const dataIndex = output.findIndex((o) => o.includes('Data:'));
       expect(endIndex).toBeLessThan(dataIndex);
     });
 
-    it("fetch appears in Web APIs", () => {
+    it('fetch appears in Web APIs', () => {
       const steps = run(example.code);
       const stepWithFetch = steps.find((s) =>
-        s.webAPIs.some((api) => api.type === "fetch"),
+        s.webAPIs.some((api) => api.type === 'fetch')
       );
       expect(stepWithFetch).toBeDefined();
     });
 
-    it("async function returns a Promise", () => {
+    it('async function returns a Promise', () => {
       const output = consoleOutput(example.code);
-      expect(output).toContainEqual(expect.stringContaining("Complete:"));
+      expect(output).toContainEqual(expect.stringContaining('Complete:'));
     });
 
-    it("fetchData frame on call stack", () => {
+    it('fetchData frame on call stack', () => {
       const steps = run(example.code);
       const fetchFrame = steps.find((s) =>
-        s.callStack.some((f) => f.name === "fetchData"),
+        s.callStack.some((f) => f.name === 'fetchData')
       );
       expect(fetchFrame).toBeDefined();
     });
@@ -135,60 +135,60 @@ describe("Async Examples", () => {
 
   // ─── Microtask vs Macrotask ───────────────────────────
 
-  describe("microtask-vs-macrotask example", () => {
+  describe('microtask-vs-macrotask example', () => {
     const example = ASYNC_EXAMPLES.find(
-      (e) => e.id === "microtask-vs-macrotask",
+      (e) => e.id === 'microtask-vs-macrotask'
     )!;
 
-    it("synchronous calls (A, D) execute first", () => {
+    it('synchronous calls (A, D) execute first', () => {
       const output = consoleOutput(example.code);
-      expect(output[0]).toBe("A");
-      expect(output[1]).toBe("D");
+      expect(output[0]).toBe('A');
+      expect(output[1]).toBe('D');
     });
 
-    it("Promise microtask (C) runs before setTimeout macrotask (B)", () => {
+    it('Promise microtask (C) runs before setTimeout macrotask (B)', () => {
       const output = consoleOutput(example.code);
-      const cIndex = output.indexOf("C");
-      const bIndex = output.indexOf("B");
+      const cIndex = output.indexOf('C');
+      const bIndex = output.indexOf('B');
       expect(cIndex).toBeLessThan(bIndex);
     });
 
-    it("complete output order is A, D, C, B", () => {
+    it('complete output order is A, D, C, B', () => {
       const output = consoleOutput(example.code);
-      expect(output).toEqual(["A", "D", "C", "B"]);
+      expect(output).toEqual(['A', 'D', 'C', 'B']);
     });
 
-    it("setTimeout callback appears in task queue", () => {
+    it('setTimeout callback appears in task queue', () => {
       const steps = run(example.code);
       const stepWithTask = steps.find((s) => s.taskQueue.length > 0);
       expect(stepWithTask).toBeDefined();
     });
 
-    it("Promise callback appears in microtask queue", () => {
+    it('Promise callback appears in microtask queue', () => {
       const steps = run(example.code);
       const stepWithMicrotask = steps.find((s) => s.microtaskQueue.length > 0);
       expect(stepWithMicrotask).toBeDefined();
     });
 
-    it("logA and logD frames appear on call stack", () => {
+    it('logA and logD frames appear on call stack', () => {
       const steps = run(example.code);
       const logAStep = steps.find((s) =>
-        s.callStack.some((f) => f.name === "logA"),
+        s.callStack.some((f) => f.name === 'logA')
       );
       const logDStep = steps.find((s) =>
-        s.callStack.some((f) => f.name === "logD"),
+        s.callStack.some((f) => f.name === 'logD')
       );
       expect(logAStep).toBeDefined();
       expect(logDStep).toBeDefined();
     });
 
-    it("expected event loop phase", () => {
+    it('expected event loop phase', () => {
       const steps = run(example.code);
-      expect(steps[16].eventLoop.phase).toBe("checking-microtasks");
-      expect(steps[17].eventLoop.phase).toBe("draining-microtasks");
+      expect(steps[16].eventLoop.phase).toBe('checking-microtasks');
+      expect(steps[17].eventLoop.phase).toBe('draining-microtasks');
     });
 
-    it("total of 28 steps executed", () => {
+    it('total of 28 steps executed', () => {
       const steps = run(example.code);
       expect(steps.length).toBe(28);
     });
@@ -196,37 +196,37 @@ describe("Async Examples", () => {
 
   // ─── Timer Race ───────────────────────────────────────
 
-  describe("timer-race example", () => {
-    const example = ASYNC_EXAMPLES.find((e) => e.id === "timer-race")!;
+  describe('timer-race example', () => {
+    const example = ASYNC_EXAMPLES.find((e) => e.id === 'timer-race')!;
 
-    it("registers three timers in Web APIs", () => {
+    it('registers three timers in Web APIs', () => {
       const steps = run(example.code);
       const maxWebAPIs = Math.max(...steps.map((s) => s.webAPIs.length));
       expect(maxWebAPIs).toBe(3);
     });
 
-    it("d() is called synchronously (frame appears on call stack)", () => {
+    it('d() is called synchronously (frame appears on call stack)', () => {
       const steps = run(example.code);
-      const dStep = steps.find((s) => s.callStack.some((f) => f.name === "d"));
+      const dStep = steps.find((s) => s.callStack.some((f) => f.name === 'd'));
       expect(dStep).toBeDefined();
     });
 
-    it("timers fire into the task queue", () => {
+    it('timers fire into the task queue', () => {
       const steps = run(example.code);
       const stepWithTask = steps.find((s) => s.taskQueue.length > 0);
       expect(stepWithTask).toBeDefined();
     });
 
-    it("callbacks execute in delay order: c (0ms) before b (500ms) before a (1000ms)", () => {
+    it('callbacks execute in delay order: c (0ms) before b (500ms) before a (1000ms)', () => {
       const steps = run(example.code);
       const cStep = steps.findIndex((s) =>
-        s.callStack.some((f) => f.name === "c"),
+        s.callStack.some((f) => f.name === 'c')
       );
       const bStep = steps.findIndex((s) =>
-        s.callStack.some((f) => f.name === "b"),
+        s.callStack.some((f) => f.name === 'b')
       );
       const aStep = steps.findIndex((s) =>
-        s.callStack.some((f) => f.name === "a"),
+        s.callStack.some((f) => f.name === 'a')
       );
       expect(cStep).toBeGreaterThan(-1);
       expect(bStep).toBeGreaterThan(-1);
@@ -235,7 +235,7 @@ describe("Async Examples", () => {
       expect(bStep).toBeLessThan(aStep);
     });
 
-    it("produces no console output (no console.log calls)", () => {
+    it('produces no console output (no console.log calls)', () => {
       const output = consoleOutput(example.code);
       expect(output).toHaveLength(0);
     });
@@ -243,21 +243,21 @@ describe("Async Examples", () => {
 
   // ─── Event Loop Quiz ──────────────────────────────────
 
-  describe("event-loop-quiz example", () => {
-    const example = ASYNC_EXAMPLES.find((e) => e.id === "event-loop-quiz")!;
+  describe('event-loop-quiz example', () => {
+    const example = ASYNC_EXAMPLES.find((e) => e.id === 'event-loop-quiz')!;
 
-    it("synchronous outputs come first (A, G)", () => {
+    it('synchronous outputs come first (A, G)', () => {
       const output = consoleOutput(example.code);
-      expect(output[0]).toBe("A");
-      expect(output[1]).toBe("G");
+      expect(output[0]).toBe('A');
+      expect(output[1]).toBe('G');
     });
 
-    it("microtasks execute before macrotasks (C, E before B, F)", () => {
+    it('microtasks execute before macrotasks (C, E before B, F)', () => {
       const output = consoleOutput(example.code);
-      const cIndex = output.indexOf("C");
-      const eIndex = output.indexOf("E");
-      const bIndex = output.indexOf("B");
-      const fIndex = output.indexOf("F");
+      const cIndex = output.indexOf('C');
+      const eIndex = output.indexOf('E');
+      const bIndex = output.indexOf('B');
+      const fIndex = output.indexOf('F');
 
       expect(cIndex).toBeLessThan(bIndex);
       expect(cIndex).toBeLessThan(fIndex);
@@ -265,18 +265,18 @@ describe("Async Examples", () => {
       expect(eIndex).toBeLessThan(fIndex);
     });
 
-    it("setTimeout inside .then (D) runs last", () => {
+    it('setTimeout inside .then (D) runs last', () => {
       const output = consoleOutput(example.code);
-      const dIndex = output.indexOf("D");
+      const dIndex = output.indexOf('D');
       expect(dIndex).toBe(output.length - 1);
     });
 
-    it("complete output order is A, G, C, E, B, F, D", () => {
+    it('complete output order is A, G, C, E, B, F, D', () => {
       const output = consoleOutput(example.code);
-      expect(output).toEqual(["A", "G", "C", "E", "B", "F", "D"]);
+      expect(output).toEqual(['A', 'G', 'C', 'E', 'B', 'F', 'D']);
     });
 
-    it("interpreter handles both microtask and task queues", () => {
+    it('interpreter handles both microtask and task queues', () => {
       const steps = run(example.code);
       const stepWithMicrotask = steps.find((s) => s.microtaskQueue.length > 0);
       expect(stepWithMicrotask).toBeDefined();

@@ -1,6 +1,6 @@
-import { parseCode } from "./parser";
-import { Interpreter } from "./interpreter";
-import type { ExecutionStep } from "@/types";
+import { parseCode } from './parser';
+import { Interpreter } from './interpreter';
+import type { ExecutionStep } from '@/types';
 
 export interface ExecutionResult {
   success: true;
@@ -39,10 +39,10 @@ export function generateSteps(code: string): GenerateStepsResult {
     // Handle parse errors
     if (
       error &&
-      typeof error === "object" &&
-      "message" in error &&
-      "line" in error &&
-      "column" in error
+      typeof error === 'object' &&
+      'message' in error &&
+      'line' in error &&
+      'column' in error
     ) {
       return {
         success: false,
@@ -59,14 +59,14 @@ export function generateSteps(code: string): GenerateStepsResult {
       success: false,
       error: {
         message:
-          error instanceof Error ? error.message : "Unknown error occurred",
+          error instanceof Error ? error.message : 'Unknown error occurred',
       },
     };
   }
 }
 
 // Re-export types and utilities
-export { parseCode } from "./parser";
-export type { SourceType } from "./parser";
-export { Interpreter } from "./interpreter";
-export type { ParseError } from "./parser";
+export { parseCode } from './parser';
+export type { SourceType } from './parser';
+export { Interpreter } from './interpreter';
+export type { ParseError } from './parser';

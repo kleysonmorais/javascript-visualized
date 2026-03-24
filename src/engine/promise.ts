@@ -1,11 +1,11 @@
 // Internal Promise representation for the interpreter's simulation.
 // This is NOT the JavaScript Promise — it's the interpreter's state model.
 
-export type PromiseState = "pending" | "fulfilled" | "rejected";
+export type PromiseState = 'pending' | 'fulfilled' | 'rejected';
 
 export interface PromiseReaction {
   id: string;
-  type: "fulfill" | "reject";
+  type: 'fulfill' | 'reject';
   callbackNode: unknown; // AST node of the callback
   callbackSource: string; // source code for display
   resultPromiseId: string; // the promise returned by .then()

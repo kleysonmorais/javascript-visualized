@@ -1,5 +1,5 @@
-import { generateSteps } from "@/engine";
-import type { ExecutionStep, HeapObject } from "@/types";
+import { generateSteps } from '@/engine';
+import type { ExecutionStep, HeapObject } from '@/types';
 
 /**
  * Generate steps from source code. Wrapper around generateSteps for test convenience.
@@ -27,7 +27,7 @@ export function lastStep(code: string): ExecutionStep {
  */
 export function consoleOutput(code: string): string[] {
   const step = lastStep(code);
-  return step.console.map((entry) => entry.args.join(" "));
+  return step.console.map((entry) => entry.args.join(' '));
 }
 
 /**
@@ -35,10 +35,10 @@ export function consoleOutput(code: string): string[] {
  */
 export function findStep(
   steps: ExecutionStep[],
-  descriptionFragment: string,
+  descriptionFragment: string
 ): ExecutionStep | undefined {
   return steps.find((s) =>
-    s.description.toLowerCase().includes(descriptionFragment.toLowerCase()),
+    s.description.toLowerCase().includes(descriptionFragment.toLowerCase())
   );
 }
 
@@ -47,12 +47,12 @@ export function findStep(
  */
 export function findStepWithFrame(
   steps: ExecutionStep[],
-  frameName: string,
+  frameName: string
 ): ExecutionStep | undefined {
   return steps.find(
     (s) =>
       s.callStack.length > 0 &&
-      s.callStack[s.callStack.length - 1].name === frameName,
+      s.callStack[s.callStack.length - 1].name === frameName
   );
 }
 
@@ -61,7 +61,7 @@ export function findStepWithFrame(
  */
 export function getMemoryEntryNames(
   step: ExecutionStep,
-  blockLabel: string,
+  blockLabel: string
 ): string[] {
   const block = step.memoryBlocks.find((b) => b.label.includes(blockLabel));
   return block ? block.entries.map((e) => e.name) : [];
@@ -83,7 +83,7 @@ export function getMemoryEntry(step: ExecutionStep, varName: string) {
  */
 export function getHeapObject(
   step: ExecutionStep,
-  heapId: string,
+  heapId: string
 ): HeapObject | undefined {
   return step.heap.find((h) => h.id === heapId);
 }

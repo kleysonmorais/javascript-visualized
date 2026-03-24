@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { useVisualizerStore } from "@/store/useVisualizerStore";
+import { useEffect, useRef } from 'react';
+import { useVisualizerStore } from '@/store/useVisualizerStore';
 
 export function useAutoPlay() {
   const isPlaying = useVisualizerStore((s) => s.isPlaying);

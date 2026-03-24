@@ -1,7 +1,8 @@
-import { create } from "zustand";
-import type { ExecutionStep, PlaybackSpeed } from "@/types";
-import { generateSteps } from "@/engine";
-import { mockSteps } from "@/lib/mockSteps";
+import { create } from 'zustand';
+import type { ExecutionStep, PlaybackSpeed } from '@/types';
+import { generateSteps } from '@/engine';
+import { mockSteps } from '@/lib/mockSteps';
+import i18n from '@/i18n';
 
 const DEFAULT_SOURCE_CODE = `// Can you guess the exact console output order?
 
@@ -14,6 +15,24 @@ logA();
 setTimeout(logB, 0);
 Promise.resolve().then(logC);
 logD();`;
+
+const DEFAULT_SOURCE_CODE_PT_BR = `// Você consegue adivinhar a ordem exata da saída no console?
+
+function logA() { console.log('A') }
+function logB() { console.log('B') }
+function logC() { console.log('C') }
+function logD() { console.log('D') }
+
+logA();
+setTimeout(logB, 0);
+Promise.resolve().then(logC);
+logD();`;
+
+function getDefaultSourceCode() {
+  return i18n.language === 'pt-BR'
+    ? DEFAULT_SOURCE_CODE_PT_BR
+    : DEFAULT_SOURCE_CODE;
+}
 
 interface VisualizerStore {
   // Source code
@@ -74,7 +93,7 @@ interface VisualizerStore {
 }
 
 export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
-  sourceCode: DEFAULT_SOURCE_CODE,
+  sourceCode: getDefaultSourceCode(),
   setSourceCode: (code) => set({ sourceCode: code }),
 
   steps: [],
@@ -194,7 +213,7 @@ export const useVisualizerStore = create<VisualizerStore>((set, get) => ({
     } catch (err) {
       set({
         error:
-          err instanceof Error ? err.message : "An unexpected error occurred",
+          err instanceof Error ? err.message : 'An unexpected error occurred',
         errorLine: null,
         steps: [],
         currentStepIndex: 0,
