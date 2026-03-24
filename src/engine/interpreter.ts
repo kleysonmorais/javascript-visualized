@@ -867,9 +867,6 @@ export class Interpreter {
       drainCount++;
     }
 
-    if (drainCount >= MAX_MICROTASK_DRAIN) {
-      console.warn('Microtask drain limit reached (possible infinite loop)');
-    }
   }
 
   private runTimerCallback(timer: PendingTimer): void {
@@ -3579,6 +3576,23 @@ export class Interpreter {
   }
 
   private evaluateCallExpression(node: CallExpressionNode): unknown {
+    // Handle global type-conversion functions: String(), Number(), Boolean()
+    if (
+      node.callee.type === 'Identifier' &&
+      ['String', 'Number', 'Boolean'].includes(
+        (node.callee as IdentifierNode).name
+      )
+    ) {
+      const fnName = (node.callee as IdentifierNode).name;
+      const arg =
+        node.arguments.length > 0
+          ? this.evaluateExpression(node.arguments[0] as ExpressionNode)
+          : undefined;
+      if (fnName === 'String') return String(arg);
+      if (fnName === 'Number') return Number(arg);
+      if (fnName === 'Boolean') return Boolean(arg);
+    }
+
     // Check for console.log, console.warn, etc.
     if (
       node.callee.type === 'MemberExpression' &&
