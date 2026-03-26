@@ -3,7 +3,6 @@ import { Link, useLocation } from 'react-router-dom';
 import GitHubButton from 'react-github-btn';
 import { FaJsSquare, FaTrophy } from 'react-icons/fa';
 import { THEME } from '@/constants/theme';
-import { MdFiberNew } from 'react-icons/md';
 import { useTranslation } from 'react-i18next';
 
 export function Navbar() {
@@ -51,8 +50,6 @@ export function Navbar() {
         >
           <FaTrophy size={16} />
           <span>{t('challenges.pageTitle')}</span>
-
-          <MdFiberNew color={THEME.colors.text.accent} size={16} />
         </Link>
 
         <div className='pt-1.25'>
